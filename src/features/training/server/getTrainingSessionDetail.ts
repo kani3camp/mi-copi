@@ -6,7 +6,12 @@ import {
   questionResults,
   trainingSessions,
 } from "../../../lib/db/schema/app";
-import type { NoteClass, QuestionDirection, TrainingMode } from "../model/types";
+import type {
+  NoteClass,
+  QuestionDirection,
+  TrainingConfigSnapshot,
+  TrainingMode,
+} from "../model/types";
 
 export interface TrainingSessionDetailQuestionResult {
   id: string;
@@ -23,6 +28,7 @@ export interface TrainingSessionDetailQuestionResult {
 export interface TrainingSessionDetail {
   id: string;
   mode: TrainingMode;
+  configSnapshot: TrainingConfigSnapshot;
   createdAt: string;
   endedAt: string;
   answeredQuestionCount: number;
@@ -48,6 +54,7 @@ export async function getTrainingSessionDetailForCurrentUser(
     .select({
       id: trainingSessions.id,
       mode: trainingSessions.mode,
+      configSnapshot: trainingSessions.configSnapshot,
       createdAt: trainingSessions.createdAt,
       endedAt: trainingSessions.endedAt,
       answeredQuestionCount: trainingSessions.answeredQuestionCount,
@@ -94,6 +101,7 @@ export async function getTrainingSessionDetailForCurrentUser(
   return {
     id: session.id,
     mode: session.mode,
+    configSnapshot: session.configSnapshot,
     createdAt: session.createdAt.toISOString(),
     endedAt: session.endedAt.toISOString(),
     answeredQuestionCount: session.answeredQuestionCount,

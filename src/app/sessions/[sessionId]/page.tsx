@@ -77,6 +77,50 @@ export default async function TrainingSessionDetailPage({
       <section
         style={{
           display: "grid",
+          gap: "8px",
+          padding: "16px",
+          border: "1px solid #d4d4d8",
+          borderRadius: "12px",
+        }}
+      >
+        <h2 style={{ margin: 0 }}>Config snapshot</h2>
+        <div>
+          <strong>Mode:</strong> {detail.configSnapshot.mode}
+        </div>
+        <div>
+          <strong>Interval range:</strong>{" "}
+          {detail.configSnapshot.intervalRange.minSemitones} -{" "}
+          {detail.configSnapshot.intervalRange.maxSemitones}
+        </div>
+        <div>
+          <strong>Direction:</strong> {detail.configSnapshot.directionMode}
+        </div>
+        <div>
+          <strong>Base note mode:</strong> {detail.configSnapshot.baseNoteMode}
+        </div>
+        <div>
+          <strong>Fixed base note:</strong>{" "}
+          {detail.configSnapshot.fixedBaseNote ?? "none"}
+        </div>
+        <div>
+          <strong>Include unison:</strong>{" "}
+          {detail.configSnapshot.includeUnison ? "yes" : "no"}
+        </div>
+        <div>
+          <strong>Include octave:</strong>{" "}
+          {detail.configSnapshot.includeOctave ? "yes" : "no"}
+        </div>
+        <div>
+          <strong>End condition:</strong>{" "}
+          {detail.configSnapshot.endCondition.type === "question_count"
+            ? `question_count (${detail.configSnapshot.endCondition.questionCount})`
+            : `time_limit (${detail.configSnapshot.endCondition.timeLimitMinutes} min)`}
+        </div>
+      </section>
+
+      <section
+        style={{
+          display: "grid",
           gap: "12px",
           padding: "16px",
           border: "1px solid #d4d4d8",
