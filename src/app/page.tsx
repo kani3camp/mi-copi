@@ -49,9 +49,11 @@ export default async function HomePage() {
               <ul style={{ margin: 0, paddingLeft: "20px" }}>
                 {summary.recentSessions.map((session) => (
                   <li key={session.id}>
-                    {session.mode} / score {Math.round(session.sessionScore)} / accuracy{" "}
-                    {Math.round(session.accuracyRate * 100)}% / answers{" "}
-                    {session.answeredQuestionCount} / {session.createdAt}
+                    <Link href={`/sessions/${session.id}`}>
+                      {session.mode} / score {Math.round(session.sessionScore)} / accuracy{" "}
+                      {Math.round(session.accuracyRate * 100)}% / answers{" "}
+                      {session.answeredQuestionCount} / {session.createdAt}
+                    </Link>
                   </li>
                 ))}
               </ul>
