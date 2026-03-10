@@ -4,8 +4,11 @@ import type {
   NoteClass,
   Question,
   QuestionDirection,
+  SaveQuestionResultInput,
+  SaveTrainingSessionInput,
   ScoreFormulaVersion,
 } from "./types";
+import { buildSessionSummaryFromResults } from "./summary";
 
 const NOTE_CLASSES: NoteClass[] = [
   "C",
@@ -211,6 +214,30 @@ export function getNoteFrequency(noteClass: NoteClass): number {
   return 440 * 2 ** (offsetFromA / 12);
 }
 
+export function buildDistanceGuestSaveInput(params: {
+  config: DistanceTrainingConfig;
+  startedAt: string;
+  results: DistanceGuestResult[];
+}): SaveTrainingSessionInput {
+  const saveResults = params.results.map(toSaveQuestionResultInput);
+  const plannedQuestionCount =
+    params.config.endCondition.type === "question_count"
+      ? params.config.endCondition.questionCount
+      : undefined;
+
+  return {
+    config: params.config,
+    finishReason: "target_reached",
+    endCondition: params.config.endCondition,
+    startedAt: params.startedAt,
+    endedAt: params.results.at(-1)?.answeredAt ?? params.startedAt,
+    summary: buildSessionSummaryFromResults(saveResults, {
+      plannedQuestionCount,
+    }),
+    results: saveResults,
+  };
+}
+
 function resolveDirection(
   directionMode: DirectionMode,
   randomValue: () => number,
@@ -229,6 +256,46 @@ function shiftNote(baseNote: NoteClass, distanceSemitones: number): NoteClass {
     NOTE_CLASSES.length;
 
   return NOTE_CLASSES[shiftedIndex];
+}
+
+function toSaveQuestionResultInput(
+  result: DistanceGuestResult,
+): SaveQuestionResultInput {
+  const directionFactor = result.question.direction === "up" ? 1 : -1;
+  const baseMidi = getBaseMidi(result.question.baseNote);
+  const targetMidi = baseMidi + result.question.distanceSemitones * directionFactor;
+  const answerMidi =
+    baseMidi + result.answeredDistanceSemitones * directionFactor;
+
+  return {
+    questionIndex: result.question.questionIndex,
+    presentedAt: result.presentedAt,
+    answeredAt: result.answeredAt,
+    mode: "distance",
+    baseNoteName: result.question.baseNote,
+    baseMidi,
+    targetNoteName: result.question.targetNote,
+    targetMidi,
+    answerNoteName: shiftNote(
+      result.question.baseNote,
+      result.answeredDistanceSemitones * directionFactor,
+    ),
+    answerMidi,
+    targetIntervalSemitones: result.question.distanceSemitones,
+    answerIntervalSemitones: result.answeredDistanceSemitones,
+    direction: result.question.direction,
+    isCorrect: result.isCorrect,
+    errorSemitones: result.errorSemitones,
+    responseTimeMs: result.responseTimeMs,
+    replayBaseCount: 0,
+    replayTargetCount: result.replayCount,
+    score: result.score,
+    scoreFormulaVersion: result.scoreFormulaVersion,
+  };
+}
+
+function getBaseMidi(noteClass: NoteClass): number {
+  return 60 + NOTE_CLASSES.indexOf(noteClass);
 }
 
 function calculateQuestionScore(
