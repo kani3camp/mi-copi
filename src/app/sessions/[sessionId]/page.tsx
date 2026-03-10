@@ -55,7 +55,7 @@ export default async function TrainingSessionDetailPage({
           <strong>Ended at:</strong> {detail.endedAt}
         </div>
         <div>
-          <strong>Questions:</strong> {detail.answeredQuestionCount}
+          <strong>Question count:</strong> {detail.answeredQuestionCount}
         </div>
         <div>
           <strong>Correct:</strong> {detail.correctQuestionCount}
@@ -64,10 +64,10 @@ export default async function TrainingSessionDetailPage({
           <strong>Accuracy:</strong> {Math.round(detail.accuracyRate * 100)}%
         </div>
         <div>
-          <strong>Average error:</strong> {detail.avgErrorAbs}
+          <strong>Avg error:</strong> {detail.avgErrorAbs}
         </div>
         <div>
-          <strong>Average response time:</strong> {detail.avgResponseTimeMs} ms
+          <strong>Avg response time:</strong> {detail.avgResponseTimeMs} ms
         </div>
         <div>
           <strong>Session score:</strong> {detail.sessionScore}
@@ -116,6 +116,12 @@ export default async function TrainingSessionDetailPage({
             ? `question_count (${detail.configSnapshot.endCondition.questionCount})`
             : `time_limit (${detail.configSnapshot.endCondition.timeLimitMinutes} min)`}
         </div>
+        {detail.configSnapshot.mode === "distance" ? (
+          <div>
+            <strong>Interval granularity:</strong>{" "}
+            {detail.configSnapshot.intervalGranularity}
+          </div>
+        ) : null}
       </section>
 
       <section

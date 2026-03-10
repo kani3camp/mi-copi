@@ -51,8 +51,8 @@ export default async function HomePage() {
                 {summary.recentSessions.map((session) => (
                   <li key={session.id}>
                     <Link href={`/sessions/${session.id}`}>
-                      {session.mode} / score {Math.round(session.sessionScore)} / accuracy{" "}
-                      {Math.round(session.accuracyRate * 100)}% / answers{" "}
+                      {session.mode} / session score {Math.round(session.sessionScore)} /
+                      accuracy {Math.round(session.accuracyRate * 100)}% / questions{" "}
                       {session.answeredQuestionCount} / {session.createdAt}
                     </Link>
                   </li>

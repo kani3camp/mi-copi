@@ -56,14 +56,14 @@ export default async function StatsPage() {
               <strong>Distance sessions:</strong> {stats.byMode.distance.sessionCount}
             </div>
             <div>
-              <strong>Distance average score:</strong>{" "}
+              <strong>Distance avg score:</strong>{" "}
               {Math.round(stats.byMode.distance.averageScore)}
             </div>
             <div>
               <strong>Keyboard sessions:</strong> {stats.byMode.keyboard.sessionCount}
             </div>
             <div>
-              <strong>Keyboard average score:</strong>{" "}
+              <strong>Keyboard avg score:</strong>{" "}
               {Math.round(stats.byMode.keyboard.averageScore)}
             </div>
           </section>
@@ -83,7 +83,8 @@ export default async function StatsPage() {
                 {stats.recentSessions.map((session) => (
                   <li key={session.id}>
                     <Link href={`/sessions/${session.id}`}>
-                      {session.mode} / score {Math.round(session.sessionScore)} / accuracy{" "}
+                      {session.mode} / session score {Math.round(session.sessionScore)} /
+                      questions {session.answeredQuestionCount} / accuracy{" "}
                       {Math.round(session.accuracyRate * 100)}% / {session.createdAt}
                     </Link>
                   </li>

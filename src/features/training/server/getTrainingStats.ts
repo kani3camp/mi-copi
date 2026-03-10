@@ -11,6 +11,7 @@ import type { TrainingMode } from "../model/types";
 interface RecentStatsSession {
   id: string;
   mode: TrainingMode;
+  answeredQuestionCount: number;
   sessionScore: number;
   accuracyRate: number;
   createdAt: string;
@@ -54,6 +55,7 @@ export async function getTrainingStatsForCurrentUser(): Promise<TrainingStats> {
     .select({
       id: trainingSessions.id,
       mode: trainingSessions.mode,
+      answeredQuestionCount: trainingSessions.answeredQuestionCount,
       sessionScore: trainingSessions.sessionScore,
       accuracyRate: trainingSessions.accuracyRate,
       createdAt: trainingSessions.createdAt,
@@ -72,6 +74,7 @@ export async function getTrainingStatsForCurrentUser(): Promise<TrainingStats> {
     recentSessions: allSessions.slice(0, 10).map((session) => ({
       id: session.id,
       mode: session.mode,
+      answeredQuestionCount: session.answeredQuestionCount,
       sessionScore: Number(session.sessionScore),
       accuracyRate: Number(session.accuracyRate),
       createdAt: session.createdAt.toISOString(),
