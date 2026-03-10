@@ -1,0 +1,12 @@
+---
+description: Global repository rules for mi-copi
+globs: []
+alwaysApply: true
+---
+
+- Follow `docs/` as the source of truth.
+- Keep diffs small and task-scoped.
+- Do not expand scope or invent missing requirements.
+- Prefer documenting uncertainty over guessing.
+- Avoid unnecessary refactors and dependency additions.
+- Ask for human review before DB, auth, env, or dependency changes.
