@@ -14,6 +14,7 @@ This document is the source of truth for the intended DB boundary between Better
 - Shared Drizzle schema exports live in `src/lib/db/schema/index.ts`.
 - Treat `src/lib/db/schema/index.ts` as the single Drizzle migration source entrypoint that re-exports both auth and app schema.
 - Drizzle config lives in `drizzle.config.ts` and points its `schema` to `src/lib/db/schema/index.ts`.
+- Initial migration files are expected under `./drizzle`, and schema generation can be reproduced via `npm run db:generate`.
 - Migrations for both auth and app schema are still not created or executed in the repository.
 - Before any migration is written, verify `src/lib/db/schema/auth.ts` against the Better Auth CLI generate output and treat the generated schema as the canonical reference for auth tables.
 - Reproduce the auth schema comparison via `npm run auth:generate:schema`, which writes comparison artifacts to `/tmp` instead of overwriting repo files.
@@ -67,7 +68,7 @@ One persisted training session per completed authenticated save.
 | --- | --- | --- |
 | `id` | `uuid` | Primary key; DB-generated UUID in the MVP |
 | `user_id` | auth user id type | Foreign key to `user.id`, not null |
-| `mode` | `text` | Not null; `distance` or `keyboard` |
+| `mode` | `training_mode` | Not null; `distance` or `keyboard` |
 | `score_formula_version` | `text` | Not null, initial value `v1` |
 | `finish_reason` | `text` | Not null; `target_reached`, `time_up`, or `manual_end` |
 | `end_condition_type` | `text` | Not null; `question_count` or `time_limit` |
@@ -118,7 +119,7 @@ One row per answered question that is included in a saved authenticated session.
 | `question_index` | `integer` | Zero-based stable order value |
 | `presented_at` | `timestamptz` | Not null |
 | `answered_at` | `timestamptz` | Not null |
-| `mode` | `text` | Not null; `distance` or `keyboard` |
+| `mode` | `training_mode` | Not null; `distance` or `keyboard` |
 | `base_note_name` | `text` | Not null; note class name |
 | `base_midi` | `integer` | Not null |
 | `target_note_name` | `text` | Not null; note class name |
@@ -141,6 +142,7 @@ Constraints and indexes:
 
 - Primary key on `id`
 - Foreign key on `training_session_id`
+- Foreign key on `user_id`
 - Unique key on `(training_session_id, question_index)`
 - Check `response_time_ms >= 0`
 - Check `replay_base_count >= 0`
@@ -156,7 +158,9 @@ Constraints and indexes:
 - Session-level summary values are stored so the home and stats views can read concise aggregates while still allowing recalculation from question rows if needed.
 - `training_sessions` stores the canonical session summary values corresponding to `SessionSummaryMetrics`.
 - `training_sessions` also stores explicit end-condition and finish-reason columns so session lifecycle can be queried without unpacking `config_snapshot`.
-- `training_sessions.mode` and `question_results.user_id` are stored explicitly so persistence insert shapes map directly to schema columns.
+- `training_sessions.mode` and `question_results.mode` share the `training_mode` enum so session-level and question-level rows stay aligned.
+- `user_settings.user_id`, `training_sessions.user_id`, and `question_results.user_id` all reference Better Auth `user.id`.
+- `training_sessions.mode`, `question_results.mode`, and `question_results.user_id` are stored explicitly so persistence insert shapes map directly to schema columns.
 - Score values are stored as decimals rounded to three fractional digits.
 - No guest-session backfill table or deferred attach flow is included in the MVP schema.
 - `config_snapshot` stores the canonical `TrainingConfig`, including note-class based `fixedBaseNote` and string-based `intervalGranularity` where applicable.

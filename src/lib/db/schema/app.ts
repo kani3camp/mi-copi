@@ -14,7 +14,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { authUserId } from "./auth";
+import { authUserId, authUsers } from "./auth";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
@@ -39,7 +39,10 @@ export const sessionEndConditionTypeEnum = pgEnum("session_end_condition_type", 
 ]);
 
 export const userSettings = pgTable("user_settings", {
-  userId: authUserId("user_id").primaryKey().notNull(),
+  userId: authUserId("user_id")
+    .references(() => authUsers.id)
+    .primaryKey()
+    .notNull(),
   lastDistanceConfig: jsonb("last_distance_config")
     .$type<DistanceTrainingConfig>()
     .notNull(),
@@ -54,7 +57,9 @@ export const trainingSessions = pgTable(
   "training_sessions",
   {
     id: uuid("id").defaultRandom().primaryKey().notNull(),
-    userId: authUserId("user_id").notNull(),
+    userId: authUserId("user_id")
+      .references(() => authUsers.id)
+      .notNull(),
     mode: trainingModeEnum("mode")
       .$type<TrainingMode>()
       .notNull(),
@@ -89,70 +94,67 @@ export const trainingSessions = pgTable(
     endedAt: timestamp("ended_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
-  (table) => ({
-    userIdIdx: index("training_sessions_user_id_idx").on(table.userId),
-    userIdModeEndedAtIdx: index("training_sessions_user_id_mode_ended_at_idx").on(
+  (table) => [
+    index("training_sessions_user_id_idx").on(table.userId),
+    index("training_sessions_user_id_mode_ended_at_idx").on(
       table.userId,
       table.mode,
       table.endedAt,
     ),
-    userIdEndedAtIdx: index("training_sessions_user_id_ended_at_idx").on(
-      table.userId,
-      table.endedAt,
-    ),
-    plannedQuestionCountCheck: check(
+    index("training_sessions_user_id_ended_at_idx").on(table.userId, table.endedAt),
+    check(
       "training_sessions_planned_question_count_non_negative",
       sql`${table.plannedQuestionCount} is null or ${table.plannedQuestionCount} >= 0`,
     ),
-    plannedTimeLimitSecondsCheck: check(
+    check(
       "training_sessions_planned_time_limit_seconds_positive",
       sql`${table.plannedTimeLimitSeconds} is null or ${table.plannedTimeLimitSeconds} > 0`,
     ),
-    answeredQuestionCountCheck: check(
+    check(
       "training_sessions_answered_question_count_non_negative",
       sql`${table.answeredQuestionCount} >= 0`,
     ),
-    correctQuestionCountCheck: check(
+    check(
       "training_sessions_correct_question_count_non_negative",
       sql`${table.correctQuestionCount} >= 0`,
     ),
-    answeredQuestionCountBoundCheck: check(
+    check(
       "training_sessions_answered_question_count_lte_planned_question_count",
       sql`${table.plannedQuestionCount} is null or ${table.answeredQuestionCount} <= ${table.plannedQuestionCount}`,
     ),
-    endConditionQuestionCountCheck: check(
+    check(
       "training_sessions_question_count_requires_planned_question_count",
       sql`${table.endConditionType} <> 'question_count' or ${table.plannedQuestionCount} is not null`,
     ),
-    endConditionTimeLimitCheck: check(
+    check(
       "training_sessions_time_limit_requires_planned_time_limit_seconds",
       sql`${table.endConditionType} <> 'time_limit' or ${table.plannedTimeLimitSeconds} is not null`,
     ),
-    correctQuestionCountBoundCheck: check(
+    check(
       "training_sessions_correct_question_count_lte_answered_question_count",
       sql`${table.correctQuestionCount} <= ${table.answeredQuestionCount}`,
     ),
-    sessionScoreCheck: check(
+    check(
       "training_sessions_session_score_non_negative",
       sql`${table.sessionScore} >= 0`,
     ),
-    avgScorePerQuestionCheck: check(
+    check(
       "training_sessions_avg_score_per_question_non_negative",
       sql`${table.avgScorePerQuestion} >= 0`,
     ),
-    accuracyRateCheck: check(
+    check(
       "training_sessions_accuracy_rate_between_zero_and_one",
       sql`${table.accuracyRate} >= 0 and ${table.accuracyRate} <= 1`,
     ),
-    avgErrorAbsCheck: check(
+    check(
       "training_sessions_avg_error_abs_non_negative",
       sql`${table.avgErrorAbs} >= 0`,
     ),
-    avgResponseTimeMsCheck: check(
+    check(
       "training_sessions_avg_response_time_ms_non_negative",
       sql`${table.avgResponseTimeMs} >= 0`,
     ),
-  }),
+  ],
 );
 
 export const questionResults = pgTable(
@@ -162,11 +164,13 @@ export const questionResults = pgTable(
     trainingSessionId: uuid("training_session_id")
       .references(() => trainingSessions.id)
       .notNull(),
-    userId: authUserId("user_id").notNull(),
+    userId: authUserId("user_id")
+      .references(() => authUsers.id)
+      .notNull(),
     questionIndex: integer("question_index").notNull(),
     presentedAt: timestamp("presented_at", { withTimezone: true }).notNull(),
     answeredAt: timestamp("answered_at", { withTimezone: true }).notNull(),
-    mode: text("mode")
+    mode: trainingModeEnum("mode")
       .$type<TrainingMode>()
       .notNull(),
     baseNoteName: text("base_note_name")
@@ -206,38 +210,38 @@ export const questionResults = pgTable(
       .notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
-  (table) => ({
-    trainingSessionIdIdx: index("question_results_training_session_id_idx").on(
-      table.trainingSessionId,
-    ),
-    userIdModeAnsweredAtIdx: index("question_results_user_id_mode_answered_at_idx").on(
+  (table) => [
+    index("question_results_training_session_id_idx").on(table.trainingSessionId),
+    index("question_results_user_id_mode_answered_at_idx").on(
       table.userId,
       table.mode,
       table.answeredAt,
     ),
-    trainingSessionIdQuestionIndexIdx: index(
-      "question_results_training_session_id_question_index_idx",
-    ).on(table.trainingSessionId, table.questionIndex),
-    trainingSessionIdQuestionIndexUnique: uniqueIndex(
-      "question_results_training_session_id_question_index_key",
-    ).on(table.trainingSessionId, table.questionIndex),
-    questionIndexCheck: check(
+    index("question_results_training_session_id_question_index_idx").on(
+      table.trainingSessionId,
+      table.questionIndex,
+    ),
+    uniqueIndex("question_results_training_session_id_question_index_key").on(
+      table.trainingSessionId,
+      table.questionIndex,
+    ),
+    check(
       "question_results_question_index_non_negative",
       sql`${table.questionIndex} >= 0`,
     ),
-    responseTimeMsCheck: check(
+    check(
       "question_results_response_time_ms_non_negative",
       sql`${table.responseTimeMs} >= 0`,
     ),
-    replayBaseCountCheck: check(
+    check(
       "question_results_replay_base_count_non_negative",
       sql`${table.replayBaseCount} >= 0`,
     ),
-    replayTargetCountCheck: check(
+    check(
       "question_results_replay_target_count_non_negative",
       sql`${table.replayTargetCount} >= 0`,
     ),
-  }),
+  ],
 );
 
 export type UserSettingsRow = typeof userSettings.$inferSelect;

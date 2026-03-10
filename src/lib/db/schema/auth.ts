@@ -40,9 +40,7 @@ export const authSessions = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => ({
-    userIdIdx: index("session_userId_idx").on(table.userId),
-  }),
+  (table) => [index("session_userId_idx").on(table.userId)],
 );
 
 export const authAccounts = pgTable(
@@ -66,9 +64,7 @@ export const authAccounts = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => ({
-    userIdIdx: index("account_userId_idx").on(table.userId),
-  }),
+  (table) => [index("account_userId_idx").on(table.userId)],
 );
 
 export const authVerifications = pgTable(
@@ -84,9 +80,7 @@ export const authVerifications = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => ({
-    identifierIdx: index("verification_identifier_idx").on(table.identifier),
-  }),
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
 // Keep repo-local symbol names while exposing Better Auth's canonical table keys
