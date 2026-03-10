@@ -30,6 +30,7 @@ The Better Auth side is modeled separately from app tables and should stay align
   - Verification / token lifecycle rows required by Better Auth flows
 
 These tables are scaffolded in code only at this stage. Exact columns, defaults, and constraints must be verified against the Better Auth generated schema before migration work begins.
+Current expected residual differences from generated output are limited to repo-local symbol names, adapter mapping wrappers, and helper/type exports; table/column semantics should match the generated schema.
 
 ## Parent Auth Table
 

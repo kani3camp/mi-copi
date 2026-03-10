@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import * as schema from "./schema/app";
+import * as schema from "./schema";
 
 type AppDb = ReturnType<typeof drizzle<typeof schema>>;
 type SqlClient = ReturnType<typeof postgres>;

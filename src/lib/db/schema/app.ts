@@ -14,6 +14,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import { authUserId } from "./auth";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
@@ -36,10 +37,6 @@ export const sessionEndConditionTypeEnum = pgEnum("session_end_condition_type", 
   "question_count",
   "time_limit",
 ]);
-
-// TODO: Replace this placeholder with the actual Better Auth `user.id` type and
-// foreign-key reference once the auth schema is added to the repository.
-const authUserId = (name: string) => text(name);
 
 export const userSettings = pgTable("user_settings", {
   userId: authUserId("user_id").primaryKey().notNull(),

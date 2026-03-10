@@ -16,6 +16,7 @@
 - Keep playback, timers, and interaction handling on the client.
 - Keep persistence, auth, and summary reads on the server.
 - Do not query the DB while the user is answering.
+- Keep Better Auth tables in a dedicated auth schema module and app tables in a separate app schema module.
 
 ## Development Process
 

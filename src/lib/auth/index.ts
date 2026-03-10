@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 import { getDb } from "../db/client";
+import { betterAuthSchema } from "../db/schema/auth";
 
 type AppAuth = ReturnType<typeof betterAuth>;
 
@@ -28,6 +29,7 @@ export function getAuth(): AppAuth {
   authInstance = betterAuth({
     database: drizzleAdapter(getDb(), {
       provider: "pg",
+      schema: betterAuthSchema,
     }),
     secret,
     baseURL,
