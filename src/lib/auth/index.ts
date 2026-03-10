@@ -33,6 +33,7 @@ export function getAuth(): AppAuth {
     }),
     secret,
     baseURL,
+    basePath: "/api/auth",
     socialProviders:
       googleClientId && googleClientSecret
         ? {
