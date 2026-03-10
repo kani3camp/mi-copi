@@ -12,6 +12,8 @@ This document is the source of truth for the intended DB boundary between Better
 - Auth schema code lives in `src/lib/db/schema/auth.ts`.
 - App schema code lives in `src/lib/db/schema/app.ts`.
 - Shared Drizzle schema exports live in `src/lib/db/schema/index.ts`.
+- Treat `src/lib/db/schema/index.ts` as the single Drizzle migration source entrypoint that re-exports both auth and app schema.
+- Drizzle config lives in `drizzle.config.ts` and points its `schema` to `src/lib/db/schema/index.ts`.
 - Migrations for both auth and app schema are still not created or executed in the repository.
 - Before any migration is written, verify `src/lib/db/schema/auth.ts` against the Better Auth CLI generate output and treat the generated schema as the canonical reference for auth tables.
 - Reproduce the auth schema comparison via `npm run auth:generate:schema`, which writes comparison artifacts to `/tmp` instead of overwriting repo files.
