@@ -6,6 +6,7 @@
   },
   "scripts": {
     "auth:generate:schema": "node -e \"const fs=require('fs'); const path=require('path'); const importPath=path.join(process.cwd(),'src/lib/auth/index.ts').split(path.sep).join('/'); const source='import { getAuth } from \\'' + importPath + '\\';\\nexport const auth = getAuth();\\n'; fs.writeFileSync('/tmp/mi-copi-better-auth.config.ts', source);\" && DATABASE_URL=\"${DATABASE_URL:-postgres://user:password@localhost:5432/mi_copi}\" BETTER_AUTH_SECRET=\"${BETTER_AUTH_SECRET:-test-secret}\" BETTER_AUTH_URL=\"${BETTER_AUTH_URL:-http://localhost:3000}\" GOOGLE_CLIENT_ID=\"${GOOGLE_CLIENT_ID:-test-google-client-id}\" GOOGLE_CLIENT_SECRET=\"${GOOGLE_CLIENT_SECRET:-test-google-client-secret}\" node node_modules/@better-auth/cli/dist/index.mjs generate --config /tmp/mi-copi-better-auth.config.ts --output /tmp/mi-copi-better-auth.generated.ts --yes",
+    "db:generate": "DATABASE_URL=\"${DATABASE_URL:-postgres://user:password@localhost:5432/mi_copi}\" node node_modules/drizzle-kit/bin.cjs generate",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
