@@ -22,6 +22,7 @@ export default async function HomePage() {
       <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
         <Link href="/train/distance">Start distance guest slice</Link>
         <Link href="/train/keyboard">Start keyboard guest slice</Link>
+        <Link href="/stats">Open stats</Link>
         <Link href="/auth-test">Open auth test</Link>
       </div>
 
