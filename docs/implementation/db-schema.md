@@ -1,11 +1,35 @@
 # DB Schema
 
-This document is the source of truth for the intended app-specific data model.
+This document is the source of truth for the intended DB boundary between Better Auth managed tables and app-specific tables.
 
 - Do not create or modify migrations from this document alone.
-- Better Auth managed tables are external to this document.
+- Better Auth managed tables live in a separate auth schema module from app tables.
 - App-specific tables must reference Better Auth's `user` table as the parent for authenticated data.
 - Guest sessions are not stored in the DB.
+
+## Schema Boundary
+
+- Auth schema code lives in `src/lib/db/schema/auth.ts`.
+- App schema code lives in `src/lib/db/schema/app.ts`.
+- Shared Drizzle schema exports live in `src/lib/db/schema/index.ts`.
+- Migrations for both auth and app schema are still not created or executed in the repository.
+- Before any migration is written, verify `src/lib/db/schema/auth.ts` against the Better Auth CLI generate output and treat the generated schema as the canonical reference for auth tables.
+- Reproduce the auth schema comparison via `npm run auth:generate:schema`, which writes comparison artifacts to `/tmp` instead of overwriting repo files.
+
+## Better Auth Tables
+
+The Better Auth side is modeled separately from app tables and should stay aligned with the library's generated schema before migrations are created.
+
+- `user`
+  - Parent authenticated user row used by app-side foreign keys
+- `session`
+  - Active session rows resolved by server-side current-user helpers
+- `account`
+  - Provider-linked account rows such as Google OAuth
+- `verification`
+  - Verification / token lifecycle rows required by Better Auth flows
+
+These tables are scaffolded in code only at this stage. Exact columns, defaults, and constraints must be verified against the Better Auth generated schema before migration work begins.
 
 ## Parent Auth Table
 
