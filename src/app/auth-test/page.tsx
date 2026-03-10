@@ -1,8 +1,21 @@
+import {
+  saveTrainingSessionForCurrentUser,
+} from "../../features/training/server/saveTrainingSession.entry";
+import type { SaveTrainingSessionInput } from "../../features/training/model/types";
+import type {
+  SaveTrainingSessionResult,
+} from "../../features/training/server/saveTrainingSession";
 import { getCurrentUserOrNull } from "../../lib/auth/server";
 import { AuthTestControls } from "./auth-test-controls";
 
 export default async function AuthTestPage() {
   const currentUser = await getCurrentUserOrNull();
+
+  async function saveDummyTrainingSession(): Promise<SaveTrainingSessionResult> {
+    "use server";
+
+    return saveTrainingSessionForCurrentUser(buildDummyTrainingSessionInput());
+  }
 
   return (
     <main
@@ -40,7 +53,81 @@ export default async function AuthTestPage() {
         </pre>
       </section>
 
-      <AuthTestControls />
+      <AuthTestControls
+        isAuthenticated={Boolean(currentUser)}
+        saveDummyTrainingSession={saveDummyTrainingSession}
+      />
     </main>
   );
+}
+
+function buildDummyTrainingSessionInput(): SaveTrainingSessionInput {
+  const startedAtDate = new Date();
+  const presentedAtDate = new Date(startedAtDate.getTime() + 1000);
+  const answeredAtDate = new Date(startedAtDate.getTime() + 2500);
+
+  const startedAt = startedAtDate.toISOString();
+  const presentedAt = presentedAtDate.toISOString();
+  const answeredAt = answeredAtDate.toISOString();
+
+  return {
+    config: {
+      mode: "distance",
+      intervalRange: {
+        minSemitones: 0,
+        maxSemitones: 12,
+      },
+      directionMode: "mixed",
+      includeUnison: false,
+      includeOctave: true,
+      baseNoteMode: "random",
+      fixedBaseNote: null,
+      endCondition: {
+        type: "question_count",
+        questionCount: 1,
+      },
+      intervalGranularity: "simple",
+    },
+    finishReason: "target_reached",
+    endCondition: {
+      type: "question_count",
+      questionCount: 1,
+    },
+    startedAt,
+    endedAt: answeredAt,
+    summary: {
+      plannedQuestionCount: 1,
+      answeredQuestionCount: 1,
+      correctQuestionCount: 1,
+      sessionScore: 100,
+      avgScorePerQuestion: 100,
+      accuracyRate: 1,
+      avgErrorAbs: 0,
+      avgResponseTimeMs: 1500,
+    },
+    results: [
+      {
+        questionIndex: 0,
+        presentedAt,
+        answeredAt,
+        mode: "distance",
+        baseNoteName: "C",
+        baseMidi: 60,
+        targetNoteName: "D",
+        targetMidi: 62,
+        answerNoteName: "D",
+        answerMidi: 62,
+        targetIntervalSemitones: 2,
+        answerIntervalSemitones: 2,
+        direction: "up",
+        isCorrect: true,
+        errorSemitones: 0,
+        responseTimeMs: 1500,
+        replayBaseCount: 0,
+        replayTargetCount: 1,
+        score: 100,
+        scoreFormulaVersion: "v1",
+      },
+    ],
+  };
 }
