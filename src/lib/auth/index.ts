@@ -14,6 +14,8 @@ export function getAuth(): AppAuth {
 
   const secret = process.env.BETTER_AUTH_SECRET;
   const baseURL = process.env.BETTER_AUTH_URL;
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
   if (!secret) {
     throw new Error("BETTER_AUTH_SECRET is not set.");
@@ -29,6 +31,15 @@ export function getAuth(): AppAuth {
     }),
     secret,
     baseURL,
+    socialProviders:
+      googleClientId && googleClientSecret
+        ? {
+            google: {
+              clientId: googleClientId,
+              clientSecret: googleClientSecret,
+            },
+          }
+        : undefined,
   });
 
   return authInstance;

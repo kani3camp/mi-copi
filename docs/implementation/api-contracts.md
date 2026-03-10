@@ -29,6 +29,7 @@ type GetCurrentUserResult = {
 - Role: start Google sign-in through Better Auth
 - Input: none
 - Output: redirect-oriented result or library-managed navigation side effect
+- External auth entrypoint is exposed through the App Router route handler at `src/app/api/auth/[...all]/route.ts`.
 
 ### `signOut`
 
@@ -148,6 +149,7 @@ Rules:
 - Server-side composition is layered as: current user resolve -> drizzle adapter resolve -> core `saveTrainingSession(...)` call.
 - The current-user resolve step is implemented via a Better Auth server-side helper under `src/lib/auth/server.ts`.
 - The repository-level Drizzle client export lives in `src/lib/db/client.ts`, and the training entrypoint imports it instead of using a DB stub.
+- Better Auth provider configuration lives in `src/lib/auth/index.ts`; Google OAuth uses `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` when present.
 - Persist only answered questions.
 - Save `training_sessions.finish_reason` from `finishReason`.
 - Save `training_sessions.end_condition_type` plus `planned_question_count` or `planned_time_limit_seconds` from `endCondition`.
@@ -160,6 +162,7 @@ Rules:
 - Save `question_results.user_id` from the authenticated user id passed into the persistence mapping layer.
 - Keep the Drizzle adapter as a thin boundary that only wraps transaction and insert calls; validation and business rules stay in the server action and pure mappers.
 - If repo-level DB/auth wiring is not available yet, the composition root may stay as a TODO-backed stub rather than inventing new infrastructure.
+- Better Auth route/provider wiring may exist before auth tables are migrated, so this alone does not guarantee a fully working login flow yet.
 - Recompute or validate summary fields on the server before writing.
 - Guest flows never call this contract.
 - Return `UNAUTHORIZED` for guest or missing-user calls, `INVALID_INPUT` for failed input validation, and `SAVE_FAILED` when the transaction fails.
