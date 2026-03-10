@@ -38,6 +38,8 @@ interface ActiveQuestionState {
 
 interface DistanceTrainClientProps {
   isAuthenticated: boolean;
+  initialConfig: DistanceTrainingConfig;
+  persistLastUsedConfigAction: (config: DistanceTrainingConfig) => Promise<void>;
   saveResultsAction: (
     input: Parameters<typeof buildDistanceGuestSaveInput>[0],
   ) => Promise<SaveTrainingSessionResult>;
@@ -45,10 +47,12 @@ interface DistanceTrainClientProps {
 
 export function DistanceTrainClient({
   isAuthenticated,
+  initialConfig,
+  persistLastUsedConfigAction,
   saveResultsAction,
 }: DistanceTrainClientProps) {
   const [config, setConfig] = useState<DistanceTrainingConfig>(
-    createDefaultDistanceTrainingConfig(),
+    initialConfig,
   );
   const [phase, setPhase] = useState<DistanceTrainPhase>("config");
   const [startedAt, setStartedAt] = useState<string | null>(null);
@@ -60,6 +64,7 @@ export function DistanceTrainClient({
   const [audioError, setAudioError] = useState<string | null>(null);
   const [saveResult, setSaveResult] = useState<SaveTrainingSessionResult | null>(null);
   const [isSavePending, startSaveTransition] = useTransition();
+  const persistedConfigSessionRef = useRef<string | null>(null);
   const playbackIdRef = useRef(0);
   const playedNonceRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -107,6 +112,20 @@ export function DistanceTrainClient({
     };
   }, [activeQuestion, phase]);
 
+  useEffect(() => {
+    if (
+      !isAuthenticated ||
+      phase !== "result" ||
+      !startedAt ||
+      persistedConfigSessionRef.current === startedAt
+    ) {
+      return;
+    }
+
+    persistedConfigSessionRef.current = startedAt;
+    void persistLastUsedConfigAction(config);
+  }, [config, isAuthenticated, persistLastUsedConfigAction, phase, startedAt]);
+
   function handleStart() {
     const validationError = validateDistanceTrainingConfig(config);
 
@@ -120,6 +139,7 @@ export function DistanceTrainClient({
     setConfigError(null);
     setAudioError(null);
     setSaveResult(null);
+    persistedConfigSessionRef.current = null;
     setStartedAt(nextStartedAt);
     setResults([]);
     setFeedbackResult(null);
@@ -196,6 +216,7 @@ export function DistanceTrainClient({
     setConfigError(null);
     setAudioError(null);
     setSaveResult(null);
+    persistedConfigSessionRef.current = null;
   }
 
   function handleSaveResults() {

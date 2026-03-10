@@ -39,6 +39,8 @@ interface ActiveQuestionState {
 
 interface KeyboardTrainClientProps {
   isAuthenticated: boolean;
+  initialConfig: KeyboardTrainingConfig;
+  persistLastUsedConfigAction: (config: KeyboardTrainingConfig) => Promise<void>;
   saveResultsAction: (
     input: Parameters<typeof buildKeyboardGuestSaveInput>[0],
   ) => Promise<SaveTrainingSessionResult>;
@@ -46,10 +48,12 @@ interface KeyboardTrainClientProps {
 
 export function KeyboardTrainClient({
   isAuthenticated,
+  initialConfig,
+  persistLastUsedConfigAction,
   saveResultsAction,
 }: KeyboardTrainClientProps) {
   const [config, setConfig] = useState<KeyboardTrainingConfig>(
-    createDefaultKeyboardTrainingConfig(),
+    initialConfig,
   );
   const [phase, setPhase] = useState<KeyboardTrainPhase>("config");
   const [startedAt, setStartedAt] = useState<string | null>(null);
@@ -61,6 +65,7 @@ export function KeyboardTrainClient({
   const [audioError, setAudioError] = useState<string | null>(null);
   const [saveResult, setSaveResult] = useState<SaveTrainingSessionResult | null>(null);
   const [isSavePending, startSaveTransition] = useTransition();
+  const persistedConfigSessionRef = useRef<string | null>(null);
   const playbackIdRef = useRef(0);
   const playedNonceRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -108,6 +113,20 @@ export function KeyboardTrainClient({
     };
   }, [activeQuestion, phase]);
 
+  useEffect(() => {
+    if (
+      !isAuthenticated ||
+      phase !== "result" ||
+      !startedAt ||
+      persistedConfigSessionRef.current === startedAt
+    ) {
+      return;
+    }
+
+    persistedConfigSessionRef.current = startedAt;
+    void persistLastUsedConfigAction(config);
+  }, [config, isAuthenticated, persistLastUsedConfigAction, phase, startedAt]);
+
   function handleStart() {
     const validationError = validateKeyboardTrainingConfig(config);
 
@@ -121,6 +140,7 @@ export function KeyboardTrainClient({
     setConfigError(null);
     setAudioError(null);
     setSaveResult(null);
+    persistedConfigSessionRef.current = null;
     setStartedAt(nextStartedAt);
     setResults([]);
     setFeedbackResult(null);
@@ -197,6 +217,7 @@ export function KeyboardTrainClient({
     setConfigError(null);
     setAudioError(null);
     setSaveResult(null);
+    persistedConfigSessionRef.current = null;
   }
 
   function handleSaveResults() {

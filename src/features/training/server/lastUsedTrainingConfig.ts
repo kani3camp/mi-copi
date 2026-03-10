@@ -1,0 +1,131 @@
+"use server";
+
+import { eq } from "drizzle-orm";
+
+import { getCurrentUserOrNull } from "../../../lib/auth/server";
+import { getDb } from "../../../lib/db/client";
+import { userSettings } from "../../../lib/db/schema/app";
+import {
+  createDefaultDistanceTrainingConfig,
+} from "../model/distance-guest";
+import {
+  createDefaultKeyboardTrainingConfig,
+} from "../model/keyboard-guest";
+import type {
+  DistanceTrainingConfig,
+  KeyboardTrainingConfig,
+  TrainingMode,
+} from "../model/types";
+
+export interface LastUsedTrainingConfigs {
+  isAuthenticated: boolean;
+  lastDistanceConfig: DistanceTrainingConfig | null;
+  lastKeyboardConfig: KeyboardTrainingConfig | null;
+}
+
+export async function getLastUsedTrainingConfigsForCurrentUser(): Promise<LastUsedTrainingConfigs> {
+  const currentUser = await getCurrentUserOrNull();
+
+  if (!currentUser) {
+    return {
+      isAuthenticated: false,
+      lastDistanceConfig: null,
+      lastKeyboardConfig: null,
+    };
+  }
+
+  const db = getDb();
+  const [settings] = await db
+    .select({
+      lastDistanceConfig: userSettings.lastDistanceConfig,
+      lastKeyboardConfig: userSettings.lastKeyboardConfig,
+    })
+    .from(userSettings)
+    .where(eq(userSettings.userId, currentUser.id))
+    .limit(1);
+
+  return {
+    isAuthenticated: true,
+    lastDistanceConfig: settings?.lastDistanceConfig ?? null,
+    lastKeyboardConfig: settings?.lastKeyboardConfig ?? null,
+  };
+}
+
+export async function updateLastUsedTrainingConfigForCurrentUser(
+  mode: "distance",
+  config: DistanceTrainingConfig,
+): Promise<void>;
+export async function updateLastUsedTrainingConfigForCurrentUser(
+  mode: "keyboard",
+  config: KeyboardTrainingConfig,
+): Promise<void>;
+export async function updateLastUsedTrainingConfigForCurrentUser(
+  mode: TrainingMode,
+  config: DistanceTrainingConfig | KeyboardTrainingConfig,
+): Promise<void> {
+  const currentUser = await getCurrentUserOrNull();
+
+  if (!currentUser) {
+    return;
+  }
+
+  const db = getDb();
+  const [existing] = await db
+    .select({
+      lastDistanceConfig: userSettings.lastDistanceConfig,
+      lastKeyboardConfig: userSettings.lastKeyboardConfig,
+    })
+    .from(userSettings)
+    .where(eq(userSettings.userId, currentUser.id))
+    .limit(1);
+
+  const now = new Date();
+
+  if (mode === "distance") {
+    const distanceConfig = config as DistanceTrainingConfig;
+
+    await db
+      .insert(userSettings)
+      .values({
+        userId: currentUser.id,
+        lastDistanceConfig: distanceConfig,
+        lastKeyboardConfig:
+          existing?.lastKeyboardConfig ?? createDefaultKeyboardTrainingConfig(),
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: userSettings.userId,
+        set: {
+          lastDistanceConfig: distanceConfig,
+          lastKeyboardConfig:
+            existing?.lastKeyboardConfig ?? createDefaultKeyboardTrainingConfig(),
+          updatedAt: now,
+        },
+      });
+
+    return;
+  }
+
+  const keyboardConfig = config as KeyboardTrainingConfig;
+
+  await db
+    .insert(userSettings)
+    .values({
+      userId: currentUser.id,
+      lastDistanceConfig:
+        existing?.lastDistanceConfig ?? createDefaultDistanceTrainingConfig(),
+      lastKeyboardConfig: keyboardConfig,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: userSettings.userId,
+      set: {
+        lastDistanceConfig:
+          existing?.lastDistanceConfig ?? createDefaultDistanceTrainingConfig(),
+        lastKeyboardConfig: keyboardConfig,
+        updatedAt: now,
+      },
+    });
+}

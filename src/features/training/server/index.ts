@@ -17,3 +17,8 @@ export {
   saveTrainingSessionForCurrentUser,
   type SaveTrainingSessionEntryDependencies,
 } from "./saveTrainingSession.entry";
+export {
+  getLastUsedTrainingConfigsForCurrentUser,
+  updateLastUsedTrainingConfigForCurrentUser,
+  type LastUsedTrainingConfigs,
+} from "./lastUsedTrainingConfig";
