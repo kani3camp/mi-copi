@@ -22,22 +22,23 @@ const palette = {
 };
 
 export const pageShellStyle: CSSProperties = {
-  maxWidth: "980px",
+  width: "100%",
+  maxWidth: "1040px",
   margin: "0 auto",
-  padding: "40px 20px 64px",
+  padding: "48px 24px 72px",
   display: "grid",
-  gap: "20px",
+  gap: "24px",
   color: palette.text,
 };
 
 export const pageHeroStyle: CSSProperties = {
   display: "grid",
-  gap: "10px",
-  padding: "24px",
+  gap: "12px",
+  padding: "28px",
   background: `linear-gradient(135deg, ${palette.card} 0%, ${palette.cardMuted} 100%)`,
   border: `1px solid ${palette.border}`,
-  borderRadius: "20px",
-  boxShadow: "0 12px 30px rgba(15, 23, 42, 0.06)",
+  borderRadius: "24px",
+  boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
 };
 
 export const pageTitleStyle: CSSProperties = {
@@ -56,10 +57,10 @@ export const pageSubtitleStyle: CSSProperties = {
 export const cardStyle: CSSProperties = {
   display: "grid",
   gap: "14px",
-  padding: "18px",
+  padding: "20px",
   background: palette.card,
   border: `1px solid ${palette.border}`,
-  borderRadius: "18px",
+  borderRadius: "20px",
   boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)",
 };
 
