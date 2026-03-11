@@ -101,6 +101,8 @@ export function DistanceTrainClient({
   const answerChoices = useMemo(() => getDistanceAnswerChoices(config), [config]);
   const summary = useMemo(() => buildDistanceGuestSummary(results), [results]);
   const cannotSaveBecauseNoAnswers = phase === "result" && results.length === 0;
+  const saveFailureMessage =
+    saveResult && !saveResult.ok ? getSaveFailureMessage(saveResult) : null;
 
   useEffect(() => {
     if (phase !== "playing" || !activeQuestion) {
@@ -665,18 +667,22 @@ export function DistanceTrainClient({
                     <div>
                       Results saved successfully. Session ID: <code>{saveResult.sessionId}</code>
                     </div>
-                    <div>
+                    <div style={navRowStyle}>
                       <Link href={`/sessions/${saveResult.sessionId}`} style={navLinkStyle}>
                         Open session detail
+                      </Link>
+                      <Link href="/stats" style={navLinkStyle}>
+                        Go to stats
                       </Link>
                     </div>
                   </div>
                 ) : saveResult ? (
-                  <div>
-                    Save failed ({saveResult.code}): {saveResult.message}
+                  <div style={{ display: "grid", gap: "6px" }}>
+                    <div>{saveFailureMessage}</div>
+                    <div style={subtleTextStyle}>
+                      Details: {saveResult.code} / {saveResult.message}
+                    </div>
                   </div>
-                ) : cannotSaveBecauseNoAnswers ? (
-                  <div>You cannot save this session because no answered questions were recorded.</div>
                 ) : (
                   <div>You are signed in. Save is manual in this slice.</div>
                 )}
@@ -692,8 +698,15 @@ export function DistanceTrainClient({
             </div>
           ) : null}
 
+          {cannotSaveBecauseNoAnswers ? (
+            <div style={noticeStyle("info")}>
+              No answered questions were recorded, so this session cannot be saved. Try starting a
+              new session with more time.
+            </div>
+          ) : null}
+
           <button type="button" onClick={handleReset} style={buttonStyle()}>
-            Start over
+            {cannotSaveBecauseNoAnswers ? "Start a new session" : "Start over"}
           </button>
         </section>
       ) : null}
@@ -801,4 +814,16 @@ function formatRemainingTimeLabel(valueMs: number): string {
   const seconds = totalSeconds % 60;
 
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function getSaveFailureMessage(result: Extract<SaveTrainingSessionResult, { ok: false }>): string {
+  if (result.code === "UNAUTHORIZED") {
+    return "Your sign-in session is no longer available. Please sign in again and retry.";
+  }
+
+  if (result.code === "INVALID_INPUT") {
+    return "This result could not be saved because the session data was incomplete.";
+  }
+
+  return "We couldn't save this result. Please try again.";
 }
