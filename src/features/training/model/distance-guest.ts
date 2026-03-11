@@ -6,6 +6,7 @@ import type {
   QuestionDirection,
   SaveQuestionResultInput,
   SaveTrainingSessionInput,
+  SessionFinishReason,
   ScoreFormulaVersion,
 } from "./types";
 import { buildSessionSummaryFromResults } from "./summary";
@@ -76,7 +77,7 @@ export function getDistanceQuestionCount(
     return config.endCondition.questionCount;
   }
 
-  return 10;
+  return 0;
 }
 
 export function getDistanceAnswerChoices(
@@ -126,6 +127,13 @@ export function validateDistanceTrainingConfig(
     config.endCondition.questionCount <= 0
   ) {
     return "questionCount must be at least 1.";
+  }
+
+  if (
+    config.endCondition.type === "time_limit" &&
+    config.endCondition.timeLimitMinutes <= 0
+  ) {
+    return "timeLimitMinutes must be at least 1.";
   }
 
   return null;
@@ -217,6 +225,8 @@ export function getNoteFrequency(noteClass: NoteClass): number {
 export function buildDistanceGuestSaveInput(params: {
   config: DistanceTrainingConfig;
   startedAt: string;
+  endedAt: string;
+  finishReason: SessionFinishReason;
   results: DistanceGuestResult[];
 }): SaveTrainingSessionInput {
   const saveResults = params.results.map(toSaveQuestionResultInput);
@@ -227,10 +237,10 @@ export function buildDistanceGuestSaveInput(params: {
 
   return {
     config: params.config,
-    finishReason: "target_reached",
+    finishReason: params.finishReason,
     endCondition: params.config.endCondition,
     startedAt: params.startedAt,
-    endedAt: params.results.at(-1)?.answeredAt ?? params.startedAt,
+    endedAt: params.endedAt,
     summary: buildSessionSummaryFromResults(saveResults, {
       plannedQuestionCount,
     }),

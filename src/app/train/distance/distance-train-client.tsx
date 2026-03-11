@@ -27,6 +27,7 @@ import {
 import type {
   DistanceTrainingConfig,
   Question,
+  SessionFinishReason,
 } from "../../../features/training/model/types";
 import {
   buildDistanceGuestSaveInput,
@@ -79,6 +80,8 @@ export function DistanceTrainClient({
   );
   const [phase, setPhase] = useState<DistanceTrainPhase>("config");
   const [startedAt, setStartedAt] = useState<string | null>(null);
+  const [endedAt, setEndedAt] = useState<string | null>(null);
+  const [finishReason, setFinishReason] = useState<SessionFinishReason | null>(null);
   const [activeQuestion, setActiveQuestion] = useState<ActiveQuestionState | null>(null);
   const [results, setResults] = useState<DistanceGuestResult[]>([]);
   const [feedbackResult, setFeedbackResult] = useState<DistanceGuestResult | null>(null);
@@ -91,7 +94,10 @@ export function DistanceTrainClient({
   const playbackIdRef = useRef(0);
   const playedNonceRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const sessionDeadlineAtRef = useRef<number | null>(null);
+  const timeoutHandledRef = useRef(false);
   const plannedQuestionCount = getDistanceQuestionCount(config);
+  const [remainingTimeMs, setRemainingTimeMs] = useState<number | null>(null);
   const answerChoices = useMemo(() => getDistanceAnswerChoices(config), [config]);
   const summary = useMemo(() => buildDistanceGuestSummary(results), [results]);
 
@@ -149,6 +155,45 @@ export function DistanceTrainClient({
     void persistLastUsedConfigAction(config);
   }, [config, isAuthenticated, persistLastUsedConfigAction, phase, startedAt]);
 
+  useEffect(() => {
+    if (
+      !startedAt ||
+      phase === "config" ||
+      phase === "result" ||
+      config.endCondition.type !== "time_limit" ||
+      sessionDeadlineAtRef.current === null
+    ) {
+      setRemainingTimeMs(null);
+      return;
+    }
+
+    const updateRemaining = () => {
+      if (sessionDeadlineAtRef.current === null) {
+        return;
+      }
+
+      const nextRemaining = Math.max(0, sessionDeadlineAtRef.current - Date.now());
+      setRemainingTimeMs(nextRemaining);
+
+      if (nextRemaining === 0 && !timeoutHandledRef.current) {
+        timeoutHandledRef.current = true;
+        setActiveQuestion(null);
+        setFeedbackResult(null);
+        setLastAnsweredWasFinal(true);
+        setFinishReason("time_up");
+        setEndedAt(new Date().toISOString());
+        setPhase("result");
+      }
+    };
+
+    updateRemaining();
+    const intervalId = window.setInterval(updateRemaining, 250);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [config.endCondition, phase, startedAt]);
+
   function handleStart() {
     const validationError = validateDistanceTrainingConfig(config);
 
@@ -163,10 +208,22 @@ export function DistanceTrainClient({
     setAudioError(null);
     setSaveResult(null);
     persistedConfigSessionRef.current = null;
+    timeoutHandledRef.current = false;
     setStartedAt(nextStartedAt);
+    setEndedAt(null);
+    setFinishReason(null);
     setResults([]);
     setFeedbackResult(null);
     setLastAnsweredWasFinal(false);
+    sessionDeadlineAtRef.current =
+      config.endCondition.type === "time_limit"
+        ? Date.parse(nextStartedAt) + config.endCondition.timeLimitMinutes * 60 * 1000
+        : null;
+    setRemainingTimeMs(
+      config.endCondition.type === "time_limit"
+        ? config.endCondition.timeLimitMinutes * 60 * 1000
+        : null,
+    );
     setActiveQuestion(createActiveQuestion(config, 0, playbackIdRef));
     setPhase("playing");
   }
@@ -207,7 +264,10 @@ export function DistanceTrainClient({
 
     setResults((current) => [...current, result]);
     setFeedbackResult(result);
-    setLastAnsweredWasFinal(updatedCount >= plannedQuestionCount);
+    setLastAnsweredWasFinal(
+      config.endCondition.type === "question_count" &&
+        updatedCount >= config.endCondition.questionCount,
+    );
     setPhase("feedback");
   }
 
@@ -216,8 +276,15 @@ export function DistanceTrainClient({
       return;
     }
 
-    if (lastAnsweredWasFinal) {
+    const nextQuestionIndex = activeQuestion.question.questionIndex + 1;
+    const reachedTarget =
+      config.endCondition.type === "question_count" &&
+      nextQuestionIndex >= config.endCondition.questionCount;
+
+    if (lastAnsweredWasFinal || reachedTarget) {
       setActiveQuestion(null);
+      setFinishReason("target_reached");
+      setEndedAt(feedbackResult.answeredAt);
       setPhase("result");
       return;
     }
@@ -232,6 +299,8 @@ export function DistanceTrainClient({
   function handleReset() {
     setPhase("config");
     setStartedAt(null);
+    setEndedAt(null);
+    setFinishReason(null);
     setActiveQuestion(null);
     setResults([]);
     setFeedbackResult(null);
@@ -240,10 +309,13 @@ export function DistanceTrainClient({
     setAudioError(null);
     setSaveResult(null);
     persistedConfigSessionRef.current = null;
+    sessionDeadlineAtRef.current = null;
+    timeoutHandledRef.current = false;
+    setRemainingTimeMs(null);
   }
 
   function handleSaveResults() {
-    if (!startedAt || results.length === 0 || saveResult?.ok) {
+    if (!startedAt || !endedAt || !finishReason || results.length === 0 || saveResult?.ok) {
       return;
     }
 
@@ -251,6 +323,8 @@ export function DistanceTrainClient({
       const result = await saveResultsAction({
         config,
         startedAt,
+        endedAt,
+        finishReason,
         results,
       });
       setSaveResult(result);
@@ -285,12 +359,18 @@ export function DistanceTrainClient({
             <strong>Phase</strong>
             <span>{phase}</span>
           </div>
-        {startedAt ? (
-          <div style={keyValueCardStyle}>
-            <strong>Started at</strong>
-            <span>{formatDateTimeLabel(startedAt)}</span>
-          </div>
-        ) : null}
+          {startedAt ? (
+            <div style={keyValueCardStyle}>
+              <strong>Started at</strong>
+              <span>{formatDateTimeLabel(startedAt)}</span>
+            </div>
+          ) : null}
+          {config.endCondition.type === "time_limit" && remainingTimeMs !== null ? (
+            <div style={keyValueCardStyle}>
+              <strong>Time remaining</strong>
+              <span>{formatRemainingTimeLabel(remainingTimeMs)}</span>
+            </div>
+          ) : null}
         </div>
         <p style={subtleTextStyle}>
           {isAuthenticated
@@ -304,23 +384,63 @@ export function DistanceTrainClient({
         <section style={cardStyle}>
           <h2 style={sectionTitleStyle}>Config</h2>
           <label style={{ display: "grid", gap: "8px" }}>
-            <span>Question count</span>
-            <input
-              type="number"
-              min={1}
-              max={20}
-              value={plannedQuestionCount}
+            <span>End condition</span>
+            <select
+              value={config.endCondition.type}
               onChange={(event) =>
                 setConfig((current) => ({
                   ...current,
-                  endCondition: {
-                    type: "question_count",
-                    questionCount: clampNumber(event.target.value, 1, 20),
-                  },
+                  endCondition:
+                    event.target.value === "time_limit"
+                      ? { type: "time_limit", timeLimitMinutes: 3 }
+                      : { type: "question_count", questionCount: 10 },
                 }))
               }
-            />
+            >
+              <option value="question_count">question_count</option>
+              <option value="time_limit">time_limit</option>
+            </select>
           </label>
+
+          {config.endCondition.type === "question_count" ? (
+            <label style={{ display: "grid", gap: "8px" }}>
+              <span>Question count</span>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={plannedQuestionCount}
+                onChange={(event) =>
+                  setConfig((current) => ({
+                    ...current,
+                    endCondition: {
+                      type: "question_count",
+                      questionCount: clampNumber(event.target.value, 1, 20),
+                    },
+                  }))
+                }
+              />
+            </label>
+          ) : (
+            <label style={{ display: "grid", gap: "8px" }}>
+              <span>Time limit (minutes)</span>
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={config.endCondition.timeLimitMinutes}
+                onChange={(event) =>
+                  setConfig((current) => ({
+                    ...current,
+                    endCondition: {
+                      type: "time_limit",
+                      timeLimitMinutes: clampNumber(event.target.value, 1, 30),
+                    },
+                  }))
+                }
+              />
+            </label>
+          )}
 
           <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "1fr 1fr" }}>
             <label style={{ display: "grid", gap: "8px" }}>
@@ -404,11 +524,11 @@ export function DistanceTrainClient({
           </p>
           <div style={keyValueGridStyle}>
             <div style={keyValueCardStyle}>
-            <strong>Direction:</strong> {activeQuestion.question.direction}
+              <strong>Direction:</strong> {activeQuestion.question.direction}
             </div>
             <div style={keyValueCardStyle}>
-            <strong>Replay count:</strong> {activeQuestion.replayCount}
-          </div>
+              <strong>Replay count:</strong> {activeQuestion.replayCount}
+            </div>
           </div>
 
           {phase === "playing" ? <div style={noticeStyle("info")}>Playing question audio...</div> : null}
@@ -442,24 +562,24 @@ export function DistanceTrainClient({
           <h2 style={sectionTitleStyle}>Feedback</h2>
           <div style={keyValueGridStyle}>
             <div style={keyValueCardStyle}>
-            <strong>Result:</strong> {feedbackResult.isCorrect ? "Correct" : "Incorrect"}
+              <strong>Result:</strong> {feedbackResult.isCorrect ? "Correct" : "Incorrect"}
             </div>
             <div style={keyValueCardStyle}>
-            <strong>Correct distance:</strong> {feedbackResult.question.distanceSemitones}
+              <strong>Correct distance:</strong> {feedbackResult.question.distanceSemitones}
             </div>
             <div style={keyValueCardStyle}>
-            <strong>Your answer:</strong> {feedbackResult.answeredDistanceSemitones}
+              <strong>Your answer:</strong> {feedbackResult.answeredDistanceSemitones}
             </div>
             <div style={keyValueCardStyle}>
-            <strong>Error:</strong> {Math.abs(feedbackResult.errorSemitones)}
+              <strong>Error:</strong> {Math.abs(feedbackResult.errorSemitones)}
             </div>
             <div style={keyValueCardStyle}>
-            <strong>Response time:</strong>{" "}
-            {formatResponseTimeMsLabel(feedbackResult.responseTimeMs)}
+              <strong>Response time:</strong>{" "}
+              {formatResponseTimeMsLabel(feedbackResult.responseTimeMs)}
             </div>
             <div style={keyValueCardStyle}>
-            <strong>Score:</strong> {formatScoreLabel(feedbackResult.score)}
-          </div>
+              <strong>Score:</strong> {formatScoreLabel(feedbackResult.score)}
+            </div>
           </div>
           <button type="button" onClick={handleContinue} style={buttonStyle("primary")}>
             {lastAnsweredWasFinal ? "Show result" : "Next question"}
@@ -474,6 +594,10 @@ export function DistanceTrainClient({
             <div style={keyValueCardStyle}>
               <strong>Questions</strong>
               <span>{summary.questionCount}</span>
+            </div>
+            <div style={keyValueCardStyle}>
+              <strong>Finish reason</strong>
+              <span>{finishReason ?? "unknown"}</span>
             </div>
             <div style={keyValueCardStyle}>
               <strong>Correct</strong>
@@ -528,6 +652,12 @@ export function DistanceTrainClient({
           ) : (
             <div style={noticeStyle("info")}>Guest session only. This result is not saved.</div>
           )}
+
+          {finishReason === "time_up" ? (
+            <div style={noticeStyle("info")}>
+              Session ended because the time limit ran out. The unanswered question was discarded.
+            </div>
+          ) : null}
 
           <button type="button" onClick={handleReset} style={buttonStyle()}>
             Start over
@@ -630,4 +760,12 @@ function clampNumber(rawValue: string, min: number, max: number): number {
   }
 
   return Math.min(Math.max(parsedValue, min), max);
+}
+
+function formatRemainingTimeLabel(valueMs: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(valueMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }

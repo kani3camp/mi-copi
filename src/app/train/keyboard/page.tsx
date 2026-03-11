@@ -1,7 +1,6 @@
 import { saveTrainingSessionForCurrentUser } from "../../../features/training/server/saveTrainingSession.entry";
 import { buildKeyboardGuestSaveInput } from "../../../features/training/model/keyboard-guest";
 import type { KeyboardTrainingConfig } from "../../../features/training/model/types";
-import type { KeyboardGuestResult } from "../../../features/training/model/keyboard-guest";
 import {
   getLastUsedTrainingConfigsForCurrentUser,
   updateLastUsedTrainingConfigForCurrentUser,
@@ -14,11 +13,9 @@ export default async function KeyboardTrainPage() {
   const currentUser = await getCurrentUserOrNull();
   const lastUsedConfigs = await getLastUsedTrainingConfigsForCurrentUser();
 
-  async function saveResultsAction(input: {
-    config: KeyboardTrainingConfig;
-    startedAt: string;
-    results: KeyboardGuestResult[];
-  }) {
+  async function saveResultsAction(
+    input: Parameters<typeof buildKeyboardGuestSaveInput>[0],
+  ) {
     "use server";
 
     return saveTrainingSessionForCurrentUser(buildKeyboardGuestSaveInput(input));

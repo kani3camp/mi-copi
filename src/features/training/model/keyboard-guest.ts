@@ -6,6 +6,7 @@ import type {
   QuestionDirection,
   SaveQuestionResultInput,
   SaveTrainingSessionInput,
+  SessionFinishReason,
   ScoreFormulaVersion,
 } from "./types";
 import { buildSessionSummaryFromResults } from "./summary";
@@ -74,7 +75,7 @@ export function getKeyboardQuestionCount(
     return config.endCondition.questionCount;
   }
 
-  return 10;
+  return 0;
 }
 
 export function getKeyboardAnswerChoices(): NoteClass[] {
@@ -97,6 +98,13 @@ export function validateKeyboardTrainingConfig(
     config.endCondition.questionCount <= 0
   ) {
     return "questionCount must be at least 1.";
+  }
+
+  if (
+    config.endCondition.type === "time_limit" &&
+    config.endCondition.timeLimitMinutes <= 0
+  ) {
+    return "timeLimitMinutes must be at least 1.";
   }
 
   return null;
@@ -199,6 +207,8 @@ export function getNoteFrequency(noteClass: NoteClass): number {
 export function buildKeyboardGuestSaveInput(params: {
   config: KeyboardTrainingConfig;
   startedAt: string;
+  endedAt: string;
+  finishReason: SessionFinishReason;
   results: KeyboardGuestResult[];
 }): SaveTrainingSessionInput {
   const saveResults = params.results.map(toSaveQuestionResultInput);
@@ -209,10 +219,10 @@ export function buildKeyboardGuestSaveInput(params: {
 
   return {
     config: params.config,
-    finishReason: "target_reached",
+    finishReason: params.finishReason,
     endCondition: params.config.endCondition,
     startedAt: params.startedAt,
-    endedAt: params.results.at(-1)?.answeredAt ?? params.startedAt,
+    endedAt: params.endedAt,
     summary: buildSessionSummaryFromResults(saveResults, {
       plannedQuestionCount,
     }),
