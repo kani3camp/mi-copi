@@ -16,6 +16,7 @@ import {
   type GlobalUserSettings,
   normalizeGlobalUserSettings,
 } from "../model/global-user-settings";
+import { isRecoverableUserSettingsStorageError } from "./user-settings-storage";
 
 interface UserSettingsRow {
   masterVolume: number;
@@ -141,20 +142,29 @@ async function getUserSettingsRowForUserId(
   userId: string,
 ): Promise<UserSettingsRow | null> {
   const db = getDb();
-  const [existing] = await db
-    .select({
-      masterVolume: userSettings.masterVolume,
-      soundEffectsEnabled: userSettings.soundEffectsEnabled,
-      intervalNotationStyle: userSettings.intervalNotationStyle,
-      keyboardNoteLabelsVisible: userSettings.keyboardNoteLabelsVisible,
-      lastDistanceConfig: userSettings.lastDistanceConfig,
-      lastKeyboardConfig: userSettings.lastKeyboardConfig,
-      createdAt: userSettings.createdAt,
-      updatedAt: userSettings.updatedAt,
-    })
-    .from(userSettings)
-    .where(eq(userSettings.userId, userId))
-    .limit(1);
 
-  return existing ?? null;
+  try {
+    const [existing] = await db
+      .select({
+        masterVolume: userSettings.masterVolume,
+        soundEffectsEnabled: userSettings.soundEffectsEnabled,
+        intervalNotationStyle: userSettings.intervalNotationStyle,
+        keyboardNoteLabelsVisible: userSettings.keyboardNoteLabelsVisible,
+        lastDistanceConfig: userSettings.lastDistanceConfig,
+        lastKeyboardConfig: userSettings.lastKeyboardConfig,
+        createdAt: userSettings.createdAt,
+        updatedAt: userSettings.updatedAt,
+      })
+      .from(userSettings)
+      .where(eq(userSettings.userId, userId))
+      .limit(1);
+
+    return existing ?? null;
+  } catch (error) {
+    if (isRecoverableUserSettingsStorageError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 }

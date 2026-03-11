@@ -6,6 +6,7 @@ import { getCurrentUserOrNull } from "../../../lib/auth/server";
 import { getDb } from "../../../lib/db/client";
 import { userSettings } from "../../../lib/db/schema/app";
 import { createDefaultGlobalUserSettings } from "../../settings/model/global-user-settings";
+import { isRecoverableUserSettingsStorageError } from "../../settings/server/user-settings-storage";
 import { createDefaultDistanceTrainingConfig } from "../model/distance-guest";
 import { createDefaultKeyboardTrainingConfig } from "../model/keyboard-guest";
 import type {
@@ -34,15 +35,29 @@ export async function getLastUsedTrainingConfigsForCurrentUser(): Promise<LastUs
   }
 
   const db = getDb();
-  const [settings] = await db
-    .select({
-      lastDistanceConfig: userSettings.lastDistanceConfig,
-      lastKeyboardConfig: userSettings.lastKeyboardConfig,
-      updatedAt: userSettings.updatedAt,
-    })
-    .from(userSettings)
-    .where(eq(userSettings.userId, currentUser.id))
-    .limit(1);
+  let settings: {
+    lastDistanceConfig: DistanceTrainingConfig;
+    lastKeyboardConfig: KeyboardTrainingConfig;
+    updatedAt: Date;
+  } | null = null;
+
+  try {
+    const [existing] = await db
+      .select({
+        lastDistanceConfig: userSettings.lastDistanceConfig,
+        lastKeyboardConfig: userSettings.lastKeyboardConfig,
+        updatedAt: userSettings.updatedAt,
+      })
+      .from(userSettings)
+      .where(eq(userSettings.userId, currentUser.id))
+      .limit(1);
+
+    settings = existing ?? null;
+  } catch (error) {
+    if (!isRecoverableUserSettingsStorageError(error)) {
+      throw error;
+    }
+  }
 
   return {
     isAuthenticated: true,
@@ -50,6 +65,40 @@ export async function getLastUsedTrainingConfigsForCurrentUser(): Promise<LastUs
     lastKeyboardConfig: settings?.lastKeyboardConfig ?? null,
     updatedAt: settings?.updatedAt?.toISOString() ?? null,
   };
+}
+
+export async function tryUpdateLastUsedTrainingConfigForCurrentUser(
+  mode: "distance",
+  config: DistanceTrainingConfig,
+): Promise<void>;
+export async function tryUpdateLastUsedTrainingConfigForCurrentUser(
+  mode: "keyboard",
+  config: KeyboardTrainingConfig,
+): Promise<void>;
+export async function tryUpdateLastUsedTrainingConfigForCurrentUser(
+  mode: TrainingMode,
+  config: DistanceTrainingConfig | KeyboardTrainingConfig,
+): Promise<void> {
+  try {
+    if (mode === "distance") {
+      await updateLastUsedTrainingConfigForCurrentUser(
+        mode,
+        config as DistanceTrainingConfig,
+      );
+      return;
+    }
+
+    await updateLastUsedTrainingConfigForCurrentUser(
+      mode,
+      config as KeyboardTrainingConfig,
+    );
+  } catch (error) {
+    if (isRecoverableUserSettingsStorageError(error)) {
+      return;
+    }
+
+    throw error;
+  }
 }
 
 export async function updateLastUsedTrainingConfigForCurrentUser(

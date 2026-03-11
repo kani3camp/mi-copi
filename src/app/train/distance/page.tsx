@@ -2,7 +2,7 @@ import { createDefaultDistanceTrainingConfig } from "../../../features/training/
 import type { DistanceTrainingConfig } from "../../../features/training/model/types";
 import {
   getLastUsedTrainingConfigsForCurrentUser,
-  updateLastUsedTrainingConfigForCurrentUser,
+  tryUpdateLastUsedTrainingConfigForCurrentUser,
 } from "../../../features/training/server/lastUsedTrainingConfig";
 import { saveTrainingSessionForCurrentUser } from "../../../features/training/server/saveTrainingSession.entry";
 import { getCurrentUserOrNull } from "../../../lib/auth/server";
@@ -31,7 +31,7 @@ export default async function DistanceTrainPage() {
   async function persistLastUsedConfigAction(config: DistanceTrainingConfig) {
     "use server";
 
-    await updateLastUsedTrainingConfigForCurrentUser("distance", config);
+    await tryUpdateLastUsedTrainingConfigForCurrentUser("distance", config);
   }
 
   return (

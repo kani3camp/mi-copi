@@ -5,7 +5,7 @@ import {
 import type { KeyboardTrainingConfig } from "../../../features/training/model/types";
 import {
   getLastUsedTrainingConfigsForCurrentUser,
-  updateLastUsedTrainingConfigForCurrentUser,
+  tryUpdateLastUsedTrainingConfigForCurrentUser,
 } from "../../../features/training/server/lastUsedTrainingConfig";
 import { saveTrainingSessionForCurrentUser } from "../../../features/training/server/saveTrainingSession.entry";
 import { getCurrentUserOrNull } from "../../../lib/auth/server";
@@ -28,7 +28,7 @@ export default async function KeyboardTrainPage() {
   async function persistLastUsedConfigAction(config: KeyboardTrainingConfig) {
     "use server";
 
-    await updateLastUsedTrainingConfigForCurrentUser("keyboard", config);
+    await tryUpdateLastUsedTrainingConfigForCurrentUser("keyboard", config);
   }
 
   return (
