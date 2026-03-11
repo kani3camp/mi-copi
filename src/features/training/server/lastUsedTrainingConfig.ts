@@ -21,6 +21,7 @@ export interface LastUsedTrainingConfigs {
   isAuthenticated: boolean;
   lastDistanceConfig: DistanceTrainingConfig | null;
   lastKeyboardConfig: KeyboardTrainingConfig | null;
+  updatedAt: string | null;
 }
 
 export async function getLastUsedTrainingConfigsForCurrentUser(): Promise<LastUsedTrainingConfigs> {
@@ -31,6 +32,7 @@ export async function getLastUsedTrainingConfigsForCurrentUser(): Promise<LastUs
       isAuthenticated: false,
       lastDistanceConfig: null,
       lastKeyboardConfig: null,
+      updatedAt: null,
     };
   }
 
@@ -39,6 +41,7 @@ export async function getLastUsedTrainingConfigsForCurrentUser(): Promise<LastUs
     .select({
       lastDistanceConfig: userSettings.lastDistanceConfig,
       lastKeyboardConfig: userSettings.lastKeyboardConfig,
+      updatedAt: userSettings.updatedAt,
     })
     .from(userSettings)
     .where(eq(userSettings.userId, currentUser.id))
@@ -48,6 +51,7 @@ export async function getLastUsedTrainingConfigsForCurrentUser(): Promise<LastUs
     isAuthenticated: true,
     lastDistanceConfig: settings?.lastDistanceConfig ?? null,
     lastKeyboardConfig: settings?.lastKeyboardConfig ?? null,
+    updatedAt: settings?.updatedAt?.toISOString() ?? null,
   };
 }
 
@@ -128,4 +132,21 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
         updatedAt: now,
       },
     });
+}
+
+export async function resetLastUsedTrainingConfigForCurrentUser(
+  mode: "distance" | "keyboard",
+): Promise<void> {
+  if (mode === "distance") {
+    await updateLastUsedTrainingConfigForCurrentUser(
+      "distance",
+      createDefaultDistanceTrainingConfig(),
+    );
+    return;
+  }
+
+  await updateLastUsedTrainingConfigForCurrentUser(
+    "keyboard",
+    createDefaultKeyboardTrainingConfig(),
+  );
 }

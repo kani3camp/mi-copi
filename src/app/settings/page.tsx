@@ -1,9 +1,28 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 
+import { formatDateTimeLabel } from "../../features/training/model/format";
 import { getSettingsPageDataForCurrentUser } from "../../features/training/server/getSettingsPageData";
+import { resetLastUsedTrainingConfigForCurrentUser } from "../../features/training/server/lastUsedTrainingConfig";
 
 export default async function SettingsPage() {
   const data = await getSettingsPageDataForCurrentUser();
+
+  async function resetDistanceAction() {
+    "use server";
+
+    await resetLastUsedTrainingConfigForCurrentUser("distance");
+    revalidatePath("/settings");
+    revalidatePath("/train/distance");
+  }
+
+  async function resetKeyboardAction() {
+    "use server";
+
+    await resetLastUsedTrainingConfigForCurrentUser("keyboard");
+    revalidatePath("/settings");
+    revalidatePath("/train/keyboard");
+  }
 
   return (
     <main
@@ -19,6 +38,8 @@ export default async function SettingsPage() {
         <h1 style={{ margin: 0 }}>Settings</h1>
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <Link href="/">Back home</Link>
+          <Link href="/train/distance">Open distance train</Link>
+          <Link href="/train/keyboard">Open keyboard train</Link>
         </div>
       </header>
 
@@ -42,6 +63,10 @@ export default async function SettingsPage() {
             <div>
               <strong>Email:</strong> {data.user?.email ?? "unknown"}
             </div>
+            <div>
+              <strong>Last updated:</strong>{" "}
+              {data.updatedAt ? formatDateTimeLabel(data.updatedAt) : "not saved yet"}
+            </div>
           </section>
 
           <section
@@ -55,9 +80,19 @@ export default async function SettingsPage() {
           >
             <h2 style={{ margin: 0 }}>Last-used distance config</h2>
             {data.lastDistanceConfig ? (
-              <ConfigSnapshotView config={data.lastDistanceConfig} />
+              <>
+                <ConfigSnapshotView config={data.lastDistanceConfig} />
+                <form action={resetDistanceAction}>
+                  <button type="submit">Reset distance to defaults</button>
+                </form>
+              </>
             ) : (
-              <div>No saved distance config yet.</div>
+              <>
+                <div>No saved distance config yet.</div>
+                <form action={resetDistanceAction}>
+                  <button type="submit">Reset distance to defaults</button>
+                </form>
+              </>
             )}
           </section>
 
@@ -72,9 +107,19 @@ export default async function SettingsPage() {
           >
             <h2 style={{ margin: 0 }}>Last-used keyboard config</h2>
             {data.lastKeyboardConfig ? (
-              <ConfigSnapshotView config={data.lastKeyboardConfig} />
+              <>
+                <ConfigSnapshotView config={data.lastKeyboardConfig} />
+                <form action={resetKeyboardAction}>
+                  <button type="submit">Reset keyboard to defaults</button>
+                </form>
+              </>
             ) : (
-              <div>No saved keyboard config yet.</div>
+              <>
+                <div>No saved keyboard config yet.</div>
+                <form action={resetKeyboardAction}>
+                  <button type="submit">Reset keyboard to defaults</button>
+                </form>
+              </>
             )}
           </section>
         </>

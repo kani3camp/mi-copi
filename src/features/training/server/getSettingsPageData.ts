@@ -12,6 +12,7 @@ export interface SettingsPageData {
   user: CurrentUser | null;
   lastDistanceConfig: DistanceTrainingConfig | null;
   lastKeyboardConfig: KeyboardTrainingConfig | null;
+  updatedAt: string | null;
 }
 
 export async function getSettingsPageDataForCurrentUser(): Promise<SettingsPageData> {
@@ -26,6 +27,7 @@ export async function getSettingsPageDataForCurrentUser(): Promise<SettingsPageD
       user: null,
       lastDistanceConfig: null,
       lastKeyboardConfig: null,
+      updatedAt: null,
     };
   }
 
@@ -34,5 +36,6 @@ export async function getSettingsPageDataForCurrentUser(): Promise<SettingsPageD
     user: currentUser,
     lastDistanceConfig: lastUsedConfigs.lastDistanceConfig,
     lastKeyboardConfig: lastUsedConfigs.lastKeyboardConfig,
+    updatedAt: lastUsedConfigs.updatedAt,
   };
 }
