@@ -53,11 +53,15 @@ type DistanceTrainPhase =
   | "feedback"
   | "result";
 
+type PlaybackKind = "question" | "base" | "target";
+
 interface ActiveQuestionState {
   question: Question;
   presentedAt: string;
   answeringStartedAt: string | null;
-  replayCount: number;
+  replayBaseCount: number;
+  replayTargetCount: number;
+  playbackKind: PlaybackKind;
   playNonce: number;
 }
 
@@ -102,6 +106,7 @@ export function DistanceTrainClient({
   const persistedConfigSessionRef = useRef<string | null>(null);
   const playbackIdRef = useRef(0);
   const playedNonceRef = useRef<number | null>(null);
+  const playbackLockRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sessionDeadlineAtRef = useRef<number | null>(null);
   const timeoutHandledRef = useRef(false);
@@ -134,8 +139,10 @@ export function DistanceTrainClient({
 
     void playQuestionAudio(
       activeQuestion.question,
+      activeQuestion.playbackKind,
       audioContextRef,
       settings.masterVolume,
+      playbackLockRef,
     )
       .catch(() => {
         if (!cancelled) {
@@ -257,14 +264,29 @@ export function DistanceTrainClient({
     setPhase("playing");
   }
 
-  function handleReplay() {
+  function handleReplayBase() {
     if (!activeQuestion) {
       return;
     }
 
     setActiveQuestion({
       ...activeQuestion,
-      replayCount: activeQuestion.replayCount + 1,
+      replayBaseCount: activeQuestion.replayBaseCount + 1,
+      playbackKind: "base",
+      playNonce: nextPlaybackNonce(playbackIdRef),
+    });
+    setPhase("playing");
+  }
+
+  function handleReplayTarget() {
+    if (!activeQuestion) {
+      return;
+    }
+
+    setActiveQuestion({
+      ...activeQuestion,
+      replayTargetCount: activeQuestion.replayTargetCount + 1,
+      playbackKind: "target",
       playNonce: nextPlaybackNonce(playbackIdRef),
     });
     setPhase("playing");
@@ -284,7 +306,8 @@ export function DistanceTrainClient({
       question: activeQuestion.question,
       answeredDistanceSemitones,
       responseTimeMs,
-      replayCount: activeQuestion.replayCount,
+      replayBaseCount: activeQuestion.replayBaseCount,
+      replayTargetCount: activeQuestion.replayTargetCount,
       presentedAt: activeQuestion.presentedAt,
       answeredAt,
     });
@@ -303,7 +326,24 @@ export function DistanceTrainClient({
       settings.masterVolume,
       settings.soundEffectsEnabled,
       result.isCorrect,
+      playbackLockRef,
     );
+  }
+
+  function handleReplayCorrectTarget() {
+    if (!feedbackResult) {
+      return;
+    }
+
+    void playQuestionAudio(
+      feedbackResult.question,
+      "target",
+      audioContextRef,
+      settings.masterVolume,
+      playbackLockRef,
+    ).catch(() => {
+      setAudioError("Audio playback failed. You can still continue.");
+    });
   }
 
   function handleContinue() {
@@ -601,12 +641,17 @@ export function DistanceTrainClient({
               <strong>Direction:</strong> {activeQuestion.question.direction}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Replay count:</strong> {activeQuestion.replayCount}
+              <strong>Base replay:</strong> {activeQuestion.replayBaseCount}
+            </div>
+            <div style={keyValueCardStyle}>
+              <strong>Target replay:</strong> {activeQuestion.replayTargetCount}
             </div>
           </div>
 
           {phase === "playing" ? (
-            <div style={noticeStyle("info")}>Playing question audio...</div>
+            <div style={noticeStyle("info")}>
+              {getPlaybackStatusLabel(activeQuestion.playbackKind)}
+            </div>
           ) : null}
 
           {phase === "answering" ? (
@@ -614,10 +659,17 @@ export function DistanceTrainClient({
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 <button
                   type="button"
-                  onClick={handleReplay}
+                  onClick={handleReplayBase}
                   style={buttonStyle()}
                 >
-                  Replay
+                  Replay base tone
+                </button>
+                <button
+                  type="button"
+                  onClick={handleReplayTarget}
+                  style={buttonStyle()}
+                >
+                  Replay target tone
                 </button>
               </div>
               <div style={answerButtonGridStyle}>
@@ -690,6 +742,13 @@ export function DistanceTrainClient({
               <span>{formatScoreLabel(feedbackResult.score)}</span>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={handleReplayCorrectTarget}
+            style={buttonStyle()}
+          >
+            Replay correct target tone
+          </button>
           <button
             type="button"
             onClick={handleContinue}
@@ -871,7 +930,9 @@ function createActiveQuestion(
     question: generateDistanceQuestion(config, questionIndex),
     presentedAt: new Date().toISOString(),
     answeringStartedAt: null,
-    replayCount: 0,
+    replayBaseCount: 0,
+    replayTargetCount: 0,
+    playbackKind: "question",
     playNonce: nextPlaybackNonce(playbackIdRef),
   };
 }
@@ -886,43 +947,28 @@ function nextPlaybackNonce(
 
 async function playQuestionAudio(
   question: Question,
+  playbackKind: PlaybackKind,
   audioContextRef: React.MutableRefObject<AudioContext | null>,
   masterVolume: number,
+  playbackLockRef: React.MutableRefObject<boolean>,
 ): Promise<void> {
-  if (typeof window === "undefined") {
-    return;
-  }
+  await runGuardedPlayback(playbackLockRef, async () => {
+    const audioContext = await getAudioContext(audioContextRef);
 
-  const AudioContextClass =
-    window.AudioContext ||
-    (window as typeof window & { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext;
+    if (playbackKind === "base") {
+      await playNote(audioContext, question.baseNote, masterVolume);
+      return;
+    }
 
-  if (!AudioContextClass) {
-    throw new Error("AudioContext is not available.");
-  }
+    if (playbackKind === "target") {
+      await playNote(audioContext, question.targetNote, masterVolume);
+      return;
+    }
 
-  const audioContext = audioContextRef.current ?? new AudioContextClass();
-
-  audioContextRef.current = audioContext;
-
-  if (audioContext.state === "suspended") {
-    await audioContext.resume();
-  }
-
-  await playTone(
-    audioContext,
-    getNoteFrequency(question.baseNote),
-    0.35,
-    masterVolume,
-  );
-  await wait(140);
-  await playTone(
-    audioContext,
-    getNoteFrequency(question.targetNote),
-    0.35,
-    masterVolume,
-  );
+    await playNote(audioContext, question.baseNote, masterVolume);
+    await wait(140);
+    await playNote(audioContext, question.targetNote, masterVolume);
+  });
 }
 
 function playTone(
@@ -959,9 +1005,40 @@ async function playFeedbackEffect(
   masterVolume: number,
   soundEffectsEnabled: boolean,
   isCorrect: boolean,
+  playbackLockRef: React.MutableRefObject<boolean>,
 ): Promise<void> {
   if (!soundEffectsEnabled || typeof window === "undefined") {
     return;
+  }
+
+  await runGuardedPlayback(playbackLockRef, async () => {
+    const audioContext = await getAudioContext(audioContextRef);
+
+    await playTone(
+      audioContext,
+      isCorrect ? 880 : 220,
+      0.08,
+      Math.max(12, Math.round(masterVolume * 0.5)),
+    );
+  });
+}
+
+function getPlaybackStatusLabel(playbackKind: PlaybackKind): string {
+  switch (playbackKind) {
+    case "base":
+      return "Playing base tone...";
+    case "target":
+      return "Playing target tone...";
+    default:
+      return "Playing base tone then target tone...";
+  }
+}
+
+async function getAudioContext(
+  audioContextRef: React.MutableRefObject<AudioContext | null>,
+): Promise<AudioContext> {
+  if (typeof window === "undefined") {
+    throw new Error("AudioContext is not available.");
   }
 
   const AudioContextClass =
@@ -970,7 +1047,7 @@ async function playFeedbackEffect(
       .webkitAudioContext;
 
   if (!AudioContextClass) {
-    return;
+    throw new Error("AudioContext is not available.");
   }
 
   const audioContext = audioContextRef.current ?? new AudioContextClass();
@@ -980,12 +1057,32 @@ async function playFeedbackEffect(
     await audioContext.resume();
   }
 
-  await playTone(
-    audioContext,
-    isCorrect ? 880 : 220,
-    0.08,
-    Math.max(12, Math.round(masterVolume * 0.5)),
-  );
+  return audioContext;
+}
+
+async function playNote(
+  audioContext: AudioContext,
+  note: Question["baseNote"],
+  masterVolume: number,
+): Promise<void> {
+  await playTone(audioContext, getNoteFrequency(note), 0.35, masterVolume);
+}
+
+async function runGuardedPlayback(
+  playbackLockRef: React.MutableRefObject<boolean>,
+  playback: () => Promise<void>,
+): Promise<void> {
+  if (playbackLockRef.current) {
+    return;
+  }
+
+  playbackLockRef.current = true;
+
+  try {
+    await playback();
+  } finally {
+    playbackLockRef.current = false;
+  }
 }
 
 function wait(durationMs: number): Promise<void> {

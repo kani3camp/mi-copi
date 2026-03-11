@@ -35,7 +35,8 @@ export interface KeyboardGuestResult {
   responseTimeMs: number;
   score: number;
   scoreFormulaVersion: ScoreFormulaVersion;
-  replayCount: number;
+  replayBaseCount: number;
+  replayTargetCount: number;
   presentedAt: string;
   answeredAt: string;
 }
@@ -146,7 +147,8 @@ export function evaluateKeyboardAnswer(params: {
   question: Question;
   answeredNote: NoteClass;
   responseTimeMs: number;
-  replayCount: number;
+  replayBaseCount: number;
+  replayTargetCount: number;
   presentedAt: string;
   answeredAt: string;
 }): KeyboardGuestResult {
@@ -174,7 +176,8 @@ export function evaluateKeyboardAnswer(params: {
       params.question.distanceSemitones,
     ),
     scoreFormulaVersion: "v1",
-    replayCount: params.replayCount,
+    replayBaseCount: params.replayBaseCount,
+    replayTargetCount: params.replayTargetCount,
     presentedAt: params.presentedAt,
     answeredAt: params.answeredAt,
   };
@@ -324,8 +327,8 @@ function toSaveQuestionResultInput(
     isCorrect: result.isCorrect,
     errorSemitones: result.errorSemitones,
     responseTimeMs: result.responseTimeMs,
-    replayBaseCount: 0,
-    replayTargetCount: result.replayCount,
+    replayBaseCount: result.replayBaseCount,
+    replayTargetCount: result.replayTargetCount,
     score: result.score,
     scoreFormulaVersion: result.scoreFormulaVersion,
   };

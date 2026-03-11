@@ -106,7 +106,8 @@ export interface EvaluatedQuestionResult {
   answer: AnswerSubmission;
   pitchErrorCents: number;
   responseTimeMs: number;
-  replayCount: number;
+  replayBaseCount: number;
+  replayTargetCount: number;
   distanceSemitones: number;
   score: number;
   scoreFormulaVersion: ScoreFormulaVersion;
