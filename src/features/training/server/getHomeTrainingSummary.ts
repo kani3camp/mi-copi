@@ -2,10 +2,7 @@ import { count, desc, eq } from "drizzle-orm";
 
 import { getCurrentUserOrNull } from "../../../lib/auth/server";
 import { getDb } from "../../../lib/db/client";
-import {
-  questionResults,
-  trainingSessions,
-} from "../../../lib/db/schema/app";
+import { questionResults, trainingSessions } from "../../../lib/db/schema/app";
 import type { TrainingMode } from "../model/types";
 
 export interface RecentTrainingSessionSummary {

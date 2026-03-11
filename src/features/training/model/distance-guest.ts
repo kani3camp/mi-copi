@@ -1,3 +1,4 @@
+import { buildSessionSummaryFromResults } from "./summary";
 import type {
   DirectionMode,
   DistanceTrainingConfig,
@@ -6,10 +7,9 @@ import type {
   QuestionDirection,
   SaveQuestionResultInput,
   SaveTrainingSessionInput,
-  SessionFinishReason,
   ScoreFormulaVersion,
+  SessionFinishReason,
 } from "./types";
-import { buildSessionSummaryFromResults } from "./summary";
 
 const NOTE_CLASSES: NoteClass[] = [
   "C",
@@ -162,7 +162,10 @@ export function generateDistanceQuestion(
     questionIndex,
     direction,
     baseNote,
-    targetNote: shiftNote(baseNote, direction === "up" ? distanceSemitones : -distanceSemitones),
+    targetNote: shiftNote(
+      baseNote,
+      direction === "up" ? distanceSemitones : -distanceSemitones,
+    ),
     distanceSemitones,
     notationStyle: "sharp",
   };
@@ -202,7 +205,9 @@ export function buildDistanceGuestSummary(
 ): DistanceGuestSummary {
   const questionCount = results.length;
   const correctCount = results.filter((result) => result.isCorrect).length;
-  const totalError = sumBy(results, (result) => Math.abs(result.errorSemitones));
+  const totalError = sumBy(results, (result) =>
+    Math.abs(result.errorSemitones),
+  );
   const totalResponseTime = sumBy(results, (result) => result.responseTimeMs);
   const totalScore = sumBy(results, (result) => result.score);
 
@@ -217,7 +222,8 @@ export function buildDistanceGuestSummary(
 }
 
 export function getNoteFrequency(noteClass: NoteClass): number {
-  const offsetFromA = NOTE_CLASSES.indexOf(noteClass) - NOTE_CLASSES.indexOf("A");
+  const offsetFromA =
+    NOTE_CLASSES.indexOf(noteClass) - NOTE_CLASSES.indexOf("A");
 
   return 440 * 2 ** (offsetFromA / 12);
 }
@@ -273,7 +279,8 @@ function toSaveQuestionResultInput(
 ): SaveQuestionResultInput {
   const directionFactor = result.question.direction === "up" ? 1 : -1;
   const baseMidi = getBaseMidi(result.question.baseNote);
-  const targetMidi = baseMidi + result.question.distanceSemitones * directionFactor;
+  const targetMidi =
+    baseMidi + result.question.distanceSemitones * directionFactor;
   const answerMidi =
     baseMidi + result.answeredDistanceSemitones * directionFactor;
 

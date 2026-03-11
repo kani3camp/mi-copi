@@ -1,3 +1,4 @@
+import { buildSessionSummaryFromResults } from "./summary";
 import type {
   DirectionMode,
   KeyboardTrainingConfig,
@@ -6,10 +7,9 @@ import type {
   QuestionDirection,
   SaveQuestionResultInput,
   SaveTrainingSessionInput,
-  SessionFinishReason,
   ScoreFormulaVersion,
+  SessionFinishReason,
 } from "./types";
-import { buildSessionSummaryFromResults } from "./summary";
 
 const NOTE_CLASSES: NoteClass[] = [
   "C",
@@ -121,7 +121,8 @@ export function generateKeyboardQuestion(
     throw new Error("No candidate intervals available for keyboard question.");
   }
 
-  const distanceSemitones = intervals[Math.floor(randomValue() * intervals.length)];
+  const distanceSemitones =
+    intervals[Math.floor(randomValue() * intervals.length)];
   const direction = resolveDirection(config.directionMode, randomValue);
   const baseNote =
     config.baseNoteMode === "fixed" && config.fixedBaseNote
@@ -184,7 +185,9 @@ export function buildKeyboardGuestSummary(
 ): KeyboardGuestSummary {
   const questionCount = results.length;
   const correctCount = results.filter((result) => result.isCorrect).length;
-  const totalError = sumBy(results, (result) => Math.abs(result.errorSemitones));
+  const totalError = sumBy(results, (result) =>
+    Math.abs(result.errorSemitones),
+  );
   const totalResponseTime = sumBy(results, (result) => result.responseTimeMs);
   const totalScore = sumBy(results, (result) => result.score);
 
@@ -199,7 +202,8 @@ export function buildKeyboardGuestSummary(
 }
 
 export function getNoteFrequency(noteClass: NoteClass): number {
-  const offsetFromA = NOTE_CLASSES.indexOf(noteClass) - NOTE_CLASSES.indexOf("A");
+  const offsetFromA =
+    NOTE_CLASSES.indexOf(noteClass) - NOTE_CLASSES.indexOf("A");
 
   return 440 * 2 ** (offsetFromA / 12);
 }
@@ -283,10 +287,14 @@ function getDirectedDistanceSemitones(
   const answeredIndex = NOTE_CLASSES.indexOf(answeredNote);
 
   if (direction === "up") {
-    return (answeredIndex - baseIndex + NOTE_CLASSES.length) % NOTE_CLASSES.length;
+    return (
+      (answeredIndex - baseIndex + NOTE_CLASSES.length) % NOTE_CLASSES.length
+    );
   }
 
-  return (baseIndex - answeredIndex + NOTE_CLASSES.length) % NOTE_CLASSES.length;
+  return (
+    (baseIndex - answeredIndex + NOTE_CLASSES.length) % NOTE_CLASSES.length
+  );
 }
 
 function toSaveQuestionResultInput(
@@ -294,8 +302,10 @@ function toSaveQuestionResultInput(
 ): SaveQuestionResultInput {
   const directionFactor = result.question.direction === "up" ? 1 : -1;
   const baseMidi = getBaseMidi(result.question.baseNote);
-  const targetMidi = baseMidi + result.question.distanceSemitones * directionFactor;
-  const answerMidi = baseMidi + result.answeredDistanceSemitones * directionFactor;
+  const targetMidi =
+    baseMidi + result.question.distanceSemitones * directionFactor;
+  const answerMidi =
+    baseMidi + result.answeredDistanceSemitones * directionFactor;
 
   return {
     questionIndex: result.question.questionIndex,

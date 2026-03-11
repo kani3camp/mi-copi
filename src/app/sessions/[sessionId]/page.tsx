@@ -39,11 +39,11 @@ export default async function TrainingSessionDetailPage({
   }
 
   return (
-    <main
-      style={pageShellStyle}
-    >
+    <main style={pageShellStyle}>
       <header style={pageHeroStyle}>
-        <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>Session detail</h1>
+        <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>
+          Session detail
+        </h1>
         <p style={subtleTextStyle}>
           保存済み session の概要、設定、question results を最小表示しています。
         </p>
@@ -61,32 +61,35 @@ export default async function TrainingSessionDetailPage({
         <h2 style={sectionTitleStyle}>Summary</h2>
         <div style={keyValueGridStyle}>
           <div style={keyValueCardStyle}>
-          <strong>Mode:</strong> {detail.mode}
+            <strong>Mode:</strong> {detail.mode}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Created at:</strong> {formatDateTimeLabel(detail.createdAt)}
+            <strong>Created at:</strong> {formatDateTimeLabel(detail.createdAt)}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Ended at:</strong> {formatDateTimeLabel(detail.endedAt)}
+            <strong>Ended at:</strong> {formatDateTimeLabel(detail.endedAt)}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Question count:</strong> {detail.answeredQuestionCount}
+            <strong>Question count:</strong> {detail.answeredQuestionCount}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Correct:</strong> {detail.correctQuestionCount}
+            <strong>Correct:</strong> {detail.correctQuestionCount}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Accuracy:</strong> {formatAccuracyLabel(detail.accuracyRate)}
+            <strong>Accuracy:</strong>{" "}
+            {formatAccuracyLabel(detail.accuracyRate)}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Avg error:</strong> {formatAvgErrorLabel(detail.avgErrorAbs)}
+            <strong>Avg error:</strong>{" "}
+            {formatAvgErrorLabel(detail.avgErrorAbs)}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Avg response time:</strong>{" "}
-          {formatResponseTimeMsLabel(detail.avgResponseTimeMs)}
+            <strong>Avg response time:</strong>{" "}
+            {formatResponseTimeMsLabel(detail.avgResponseTimeMs)}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Session score:</strong> {formatScoreLabel(detail.sessionScore)}
+            <strong>Session score:</strong>{" "}
+            {formatScoreLabel(detail.sessionScore)}
           </div>
         </div>
       </section>
@@ -95,47 +98,48 @@ export default async function TrainingSessionDetailPage({
         <h2 style={sectionTitleStyle}>Config snapshot</h2>
         <div style={keyValueGridStyle}>
           <div style={keyValueCardStyle}>
-          <strong>Mode:</strong> {detail.configSnapshot.mode}
+            <strong>Mode:</strong> {detail.configSnapshot.mode}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Interval range:</strong>{" "}
-          {detail.configSnapshot.intervalRange.minSemitones} -{" "}
-          {detail.configSnapshot.intervalRange.maxSemitones}
+            <strong>Interval range:</strong>{" "}
+            {detail.configSnapshot.intervalRange.minSemitones} -{" "}
+            {detail.configSnapshot.intervalRange.maxSemitones}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Direction:</strong> {detail.configSnapshot.directionMode}
+            <strong>Direction:</strong> {detail.configSnapshot.directionMode}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Base note mode:</strong> {detail.configSnapshot.baseNoteMode}
+            <strong>Base note mode:</strong>{" "}
+            {detail.configSnapshot.baseNoteMode}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Fixed base note:</strong>{" "}
-          {detail.configSnapshot.fixedBaseNote ?? "none"}
+            <strong>Fixed base note:</strong>{" "}
+            {detail.configSnapshot.fixedBaseNote ?? "none"}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Include unison:</strong>{" "}
-          {detail.configSnapshot.includeUnison ? "yes" : "no"}
+            <strong>Include unison:</strong>{" "}
+            {detail.configSnapshot.includeUnison ? "yes" : "no"}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>Include octave:</strong>{" "}
-          {detail.configSnapshot.includeOctave ? "yes" : "no"}
+            <strong>Include octave:</strong>{" "}
+            {detail.configSnapshot.includeOctave ? "yes" : "no"}
           </div>
           <div style={keyValueCardStyle}>
-          <strong>End condition:</strong>{" "}
-          {detail.configSnapshot.endCondition.type === "question_count"
-            ? `question_count (${detail.configSnapshot.endCondition.questionCount})`
-            : `time_limit (${detail.configSnapshot.endCondition.timeLimitMinutes} min)`}
+            <strong>End condition:</strong>{" "}
+            {detail.configSnapshot.endCondition.type === "question_count"
+              ? `question_count (${detail.configSnapshot.endCondition.questionCount})`
+              : `time_limit (${detail.configSnapshot.endCondition.timeLimitMinutes} min)`}
           </div>
-        {detail.configSnapshot.mode === "distance" ? (
-          <div style={keyValueCardStyle}>
-            <strong>Interval granularity:</strong>{" "}
-            {detail.configSnapshot.intervalGranularity}
-          </div>
-        ) : (
-          <div style={keyValueCardStyle}>
-            <strong>Keyboard answer style:</strong> note class
-          </div>
-        )}
+          {detail.configSnapshot.mode === "distance" ? (
+            <div style={keyValueCardStyle}>
+              <strong>Interval granularity:</strong>{" "}
+              {detail.configSnapshot.intervalGranularity}
+            </div>
+          ) : (
+            <div style={keyValueCardStyle}>
+              <strong>Keyboard answer style:</strong> note class
+            </div>
+          )}
         </div>
       </section>
 

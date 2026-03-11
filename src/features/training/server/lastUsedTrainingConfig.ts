@@ -5,12 +5,8 @@ import { eq } from "drizzle-orm";
 import { getCurrentUserOrNull } from "../../../lib/auth/server";
 import { getDb } from "../../../lib/db/client";
 import { userSettings } from "../../../lib/db/schema/app";
-import {
-  createDefaultDistanceTrainingConfig,
-} from "../model/distance-guest";
-import {
-  createDefaultKeyboardTrainingConfig,
-} from "../model/keyboard-guest";
+import { createDefaultDistanceTrainingConfig } from "../model/distance-guest";
+import { createDefaultKeyboardTrainingConfig } from "../model/keyboard-guest";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
@@ -103,7 +99,8 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
         set: {
           lastDistanceConfig: distanceConfig,
           lastKeyboardConfig:
-            existing?.lastKeyboardConfig ?? createDefaultKeyboardTrainingConfig(),
+            existing?.lastKeyboardConfig ??
+            createDefaultKeyboardTrainingConfig(),
           updatedAt: now,
         },
       });

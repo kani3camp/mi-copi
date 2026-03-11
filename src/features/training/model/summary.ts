@@ -12,9 +12,13 @@ export function buildSessionSummaryFromResults(
   options: BuildSessionSummaryOptions = {},
 ): SaveTrainingSessionSummaryInput {
   const answeredQuestionCount = results.length;
-  const correctQuestionCount = results.filter((result) => result.isCorrect).length;
+  const correctQuestionCount = results.filter(
+    (result) => result.isCorrect,
+  ).length;
   const sessionScore = sumBy(results, (result) => result.score);
-  const totalErrorAbs = sumBy(results, (result) => Math.abs(result.errorSemitones));
+  const totalErrorAbs = sumBy(results, (result) =>
+    Math.abs(result.errorSemitones),
+  );
   const totalResponseTimeMs = sumBy(results, (result) => result.responseTimeMs);
 
   return {
@@ -25,7 +29,10 @@ export function buildSessionSummaryFromResults(
     avgScorePerQuestion: averageOrZero(sessionScore, answeredQuestionCount),
     accuracyRate: averageOrZero(correctQuestionCount, answeredQuestionCount),
     avgErrorAbs: averageOrZero(totalErrorAbs, answeredQuestionCount),
-    avgResponseTimeMs: averageOrZero(totalResponseTimeMs, answeredQuestionCount),
+    avgResponseTimeMs: averageOrZero(
+      totalResponseTimeMs,
+      answeredQuestionCount,
+    ),
   };
 }
 

@@ -11,26 +11,11 @@ import {
   formatScoreLabel,
 } from "../../../features/training/model/format";
 import {
-  buttonStyle,
-  cardStyle,
-  keyValueCardStyle,
-  keyValueGridStyle,
-  noticeStyle,
-  pageHeroStyle,
-  pageShellStyle,
-  phaseBadgeStyle,
-  sectionTitleStyle,
-  subtleTextStyle,
-  navLinkStyle,
-  navRowStyle,
-} from "../../ui/polish";
-import {
+  type buildKeyboardGuestSaveInput,
   buildKeyboardGuestSummary,
-  createDefaultKeyboardTrainingConfig,
   evaluateKeyboardAnswer,
   generateKeyboardQuestion,
   getKeyboardAnswerChoices,
-  buildKeyboardGuestSaveInput,
   getKeyboardQuestionCount,
   getNoteFrequency,
   type KeyboardGuestResult,
@@ -43,6 +28,20 @@ import type {
   SessionFinishReason,
 } from "../../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
+import {
+  buttonStyle,
+  cardStyle,
+  keyValueCardStyle,
+  keyValueGridStyle,
+  navLinkStyle,
+  navRowStyle,
+  noticeStyle,
+  pageHeroStyle,
+  pageShellStyle,
+  phaseBadgeStyle,
+  sectionTitleStyle,
+  subtleTextStyle,
+} from "../../ui/polish";
 
 type KeyboardTrainPhase =
   | "config"
@@ -63,7 +62,9 @@ interface KeyboardTrainClientProps {
   isAuthenticated: boolean;
   initialConfig: KeyboardTrainingConfig;
   hasStoredConfig: boolean;
-  persistLastUsedConfigAction: (config: KeyboardTrainingConfig) => Promise<void>;
+  persistLastUsedConfigAction: (
+    config: KeyboardTrainingConfig,
+  ) => Promise<void>;
   saveResultsAction: (
     input: Parameters<typeof buildKeyboardGuestSaveInput>[0],
   ) => Promise<SaveTrainingSessionResult>;
@@ -76,20 +77,23 @@ export function KeyboardTrainClient({
   persistLastUsedConfigAction,
   saveResultsAction,
 }: KeyboardTrainClientProps) {
-  const [config, setConfig] = useState<KeyboardTrainingConfig>(
-    initialConfig,
-  );
+  const [config, setConfig] = useState<KeyboardTrainingConfig>(initialConfig);
   const [phase, setPhase] = useState<KeyboardTrainPhase>("config");
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [endedAt, setEndedAt] = useState<string | null>(null);
-  const [finishReason, setFinishReason] = useState<SessionFinishReason | null>(null);
-  const [activeQuestion, setActiveQuestion] = useState<ActiveQuestionState | null>(null);
+  const [finishReason, setFinishReason] = useState<SessionFinishReason | null>(
+    null,
+  );
+  const [activeQuestion, setActiveQuestion] =
+    useState<ActiveQuestionState | null>(null);
   const [results, setResults] = useState<KeyboardGuestResult[]>([]);
-  const [feedbackResult, setFeedbackResult] = useState<KeyboardGuestResult | null>(null);
+  const [feedbackResult, setFeedbackResult] =
+    useState<KeyboardGuestResult | null>(null);
   const [lastAnsweredWasFinal, setLastAnsweredWasFinal] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
-  const [saveResult, setSaveResult] = useState<SaveTrainingSessionResult | null>(null);
+  const [saveResult, setSaveResult] =
+    useState<SaveTrainingSessionResult | null>(null);
   const [isSavePending, startSaveTransition] = useTransition();
   const persistedConfigSessionRef = useRef<string | null>(null);
   const playbackIdRef = useRef(0);
@@ -120,7 +124,9 @@ export function KeyboardTrainClient({
     void playQuestionAudio(activeQuestion.question, audioContextRef)
       .catch(() => {
         if (!cancelled) {
-          setAudioError("Audio playback failed. You can still answer and continue.");
+          setAudioError(
+            "Audio playback failed. You can still answer and continue.",
+          );
         }
       })
       .finally(() => {
@@ -176,7 +182,10 @@ export function KeyboardTrainClient({
         return;
       }
 
-      const nextRemaining = Math.max(0, sessionDeadlineAtRef.current - Date.now());
+      const nextRemaining = Math.max(
+        0,
+        sessionDeadlineAtRef.current - Date.now(),
+      );
       setRemainingTimeMs(nextRemaining);
 
       if (nextRemaining === 0 && !timeoutHandledRef.current) {
@@ -221,7 +230,8 @@ export function KeyboardTrainClient({
     setLastAnsweredWasFinal(false);
     sessionDeadlineAtRef.current =
       config.endCondition.type === "time_limit"
-        ? Date.parse(nextStartedAt) + config.endCondition.timeLimitMinutes * 60 * 1000
+        ? Date.parse(nextStartedAt) +
+          config.endCondition.timeLimitMinutes * 60 * 1000
         : null;
     setRemainingTimeMs(
       config.endCondition.type === "time_limit"
@@ -295,7 +305,11 @@ export function KeyboardTrainClient({
 
     setFeedbackResult(null);
     setActiveQuestion(
-      createActiveQuestion(config, activeQuestion.question.questionIndex + 1, playbackIdRef),
+      createActiveQuestion(
+        config,
+        activeQuestion.question.questionIndex + 1,
+        playbackIdRef,
+      ),
     );
     setPhase("playing");
   }
@@ -319,7 +333,13 @@ export function KeyboardTrainClient({
   }
 
   function handleSaveResults() {
-    if (!startedAt || !endedAt || !finishReason || results.length === 0 || saveResult?.ok) {
+    if (
+      !startedAt ||
+      !endedAt ||
+      !finishReason ||
+      results.length === 0 ||
+      saveResult?.ok
+    ) {
       return;
     }
 
@@ -336,16 +356,24 @@ export function KeyboardTrainClient({
   }
 
   return (
-    <main
-      style={pageShellStyle}
-    >
+    <main style={pageShellStyle}>
       <header style={pageHeroStyle}>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-          <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>Keyboard Train</h1>
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>
+            Keyboard Train
+          </h1>
           <span style={phaseBadgeStyle(phase)}>{phase}</span>
         </div>
         <p style={subtleTextStyle}>
-          設定 → 出題 → 回答 → フィードバック → 結果までを keyboard モードで通せる最小実装です。
+          設定 → 出題 → 回答 → フィードバック → 結果までを keyboard
+          モードで通せる最小実装です。
         </p>
         <div style={navRowStyle}>
           <Link href="/" style={navLinkStyle}>
@@ -369,7 +397,8 @@ export function KeyboardTrainClient({
               <span>{formatDateTimeLabel(startedAt)}</span>
             </div>
           ) : null}
-          {config.endCondition.type === "time_limit" && remainingTimeMs !== null ? (
+          {config.endCondition.type === "time_limit" &&
+          remainingTimeMs !== null ? (
             <div style={keyValueCardStyle}>
               <strong>Time remaining</strong>
               <span>{formatRemainingTimeLabel(remainingTimeMs)}</span>
@@ -381,7 +410,9 @@ export function KeyboardTrainClient({
             ? "You can save from the result screen."
             : "Guest mode keeps results only in client state and does not save."}
         </p>
-        {audioError ? <div style={noticeStyle("error")}>{audioError}</div> : null}
+        {audioError ? (
+          <div style={noticeStyle("error")}>{audioError}</div>
+        ) : null}
       </section>
 
       {phase === "config" ? (
@@ -446,7 +477,13 @@ export function KeyboardTrainClient({
             </label>
           )}
 
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "1fr 1fr" }}>
+          <div
+            style={{
+              display: "grid",
+              gap: "12px",
+              gridTemplateColumns: "1fr 1fr",
+            }}
+          >
             <label style={{ display: "grid", gap: "8px" }}>
               <span>Min semitones</span>
               <input
@@ -493,7 +530,8 @@ export function KeyboardTrainClient({
               onChange={(event) =>
                 setConfig((current) => ({
                   ...current,
-                  directionMode: event.target.value as KeyboardTrainingConfig["directionMode"],
+                  directionMode: event.target
+                    .value as KeyboardTrainingConfig["directionMode"],
                 }))
               }
             >
@@ -510,10 +548,16 @@ export function KeyboardTrainClient({
             <div style={noticeStyle("info")}>前回設定を読み込み済みです。</div>
           ) : null}
 
-          {configError ? <div style={noticeStyle("error")}>{configError}</div> : null}
+          {configError ? (
+            <div style={noticeStyle("error")}>{configError}</div>
+          ) : null}
 
           <div>
-            <button type="button" onClick={handleStart} style={buttonStyle("primary")}>
+            <button
+              type="button"
+              onClick={handleStart}
+              style={buttonStyle("primary")}
+            >
               Start
             </button>
           </div>
@@ -522,9 +566,12 @@ export function KeyboardTrainClient({
 
       {(phase === "playing" || phase === "answering") && activeQuestion ? (
         <section style={cardStyle}>
-          <h2 style={sectionTitleStyle}>Question {activeQuestion.question.questionIndex + 1}</h2>
+          <h2 style={sectionTitleStyle}>
+            Question {activeQuestion.question.questionIndex + 1}
+          </h2>
           <p style={subtleTextStyle}>
-            Hear the base tone and target tone, then answer the target note name.
+            Hear the base tone and target tone, then answer the target note
+            name.
           </p>
           <div style={keyValueGridStyle}>
             <div style={keyValueCardStyle}>
@@ -535,12 +582,18 @@ export function KeyboardTrainClient({
             </div>
           </div>
 
-          {phase === "playing" ? <div style={noticeStyle("info")}>Playing question audio...</div> : null}
+          {phase === "playing" ? (
+            <div style={noticeStyle("info")}>Playing question audio...</div>
+          ) : null}
 
           {phase === "answering" ? (
             <>
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                <button type="button" onClick={handleReplay} style={buttonStyle()}>
+                <button
+                  type="button"
+                  onClick={handleReplay}
+                  style={buttonStyle()}
+                >
                   Replay
                 </button>
               </div>
@@ -566,10 +619,12 @@ export function KeyboardTrainClient({
           <h2 style={sectionTitleStyle}>Feedback</h2>
           <div style={keyValueGridStyle}>
             <div style={keyValueCardStyle}>
-              <strong>Result:</strong> {feedbackResult.isCorrect ? "Correct" : "Incorrect"}
+              <strong>Result:</strong>{" "}
+              {feedbackResult.isCorrect ? "Correct" : "Incorrect"}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Correct note:</strong> {feedbackResult.question.targetNote}
+              <strong>Correct note:</strong>{" "}
+              {feedbackResult.question.targetNote}
             </div>
             <div style={keyValueCardStyle}>
               <strong>Your answer:</strong> {feedbackResult.answeredNote}
@@ -585,7 +640,11 @@ export function KeyboardTrainClient({
               <strong>Score:</strong> {formatScoreLabel(feedbackResult.score)}
             </div>
           </div>
-          <button type="button" onClick={handleContinue} style={buttonStyle("primary")}>
+          <button
+            type="button"
+            onClick={handleContinue}
+            style={buttonStyle("primary")}
+          >
             {lastAnsweredWasFinal ? "Show result" : "Next question"}
           </button>
         </section>
@@ -617,7 +676,9 @@ export function KeyboardTrainClient({
             </div>
             <div style={keyValueCardStyle}>
               <strong>Avg response time</strong>
-              <span>{formatResponseTimeMsLabel(summary.avgResponseTimeMs)}</span>
+              <span>
+                {formatResponseTimeMsLabel(summary.avgResponseTimeMs)}
+              </span>
             </div>
             <div style={keyValueCardStyle}>
               <strong>Session score</strong>
@@ -627,14 +688,15 @@ export function KeyboardTrainClient({
 
           {finishReason === "time_up" ? (
             <div style={noticeStyle("info")}>
-              Session ended because time ran out. Any unanswered question in progress was discarded.
+              Session ended because time ran out. Any unanswered question in
+              progress was discarded.
             </div>
           ) : null}
 
           {cannotSaveBecauseNoAnswers ? (
             <div style={noticeStyle("info")}>
-              No answered questions were recorded, so this session cannot be saved. Try starting a
-              new session with more time.
+              No answered questions were recorded, so this session cannot be
+              saved. Try starting a new session with more time.
             </div>
           ) : null}
 
@@ -679,10 +741,14 @@ export function KeyboardTrainClient({
                 {saveResult?.ok ? (
                   <div style={{ display: "grid", gap: "10px" }}>
                     <div>
-                      Results saved successfully. Session ID: <code>{saveResult.sessionId}</code>
+                      Results saved successfully. Session ID:{" "}
+                      <code>{saveResult.sessionId}</code>
                     </div>
                     <div style={navRowStyle}>
-                      <Link href={`/sessions/${saveResult.sessionId}`} style={navLinkStyle}>
+                      <Link
+                        href={`/sessions/${saveResult.sessionId}`}
+                        style={navLinkStyle}
+                      >
                         Open session detail
                       </Link>
                       <Link href="/stats" style={navLinkStyle}>
@@ -703,7 +769,9 @@ export function KeyboardTrainClient({
               </div>
             </>
           ) : (
-            <div style={noticeStyle("info")}>Guest session only. This result is not saved.</div>
+            <div style={noticeStyle("info")}>
+              Guest session only. This result is not saved.
+            </div>
           )}
 
           <button type="button" onClick={handleReset} style={buttonStyle()}>
@@ -729,7 +797,9 @@ function createActiveQuestion(
   };
 }
 
-function nextPlaybackNonce(playbackIdRef: React.MutableRefObject<number>): number {
+function nextPlaybackNonce(
+  playbackIdRef: React.MutableRefObject<number>,
+): number {
   playbackIdRef.current += 1;
 
   return playbackIdRef.current;
@@ -752,8 +822,7 @@ async function playQuestionAudio(
     throw new Error("AudioContext is not available.");
   }
 
-  const audioContext =
-    audioContextRef.current ?? new AudioContextClass();
+  const audioContext = audioContextRef.current ?? new AudioContextClass();
 
   audioContextRef.current = audioContext;
 
@@ -780,10 +849,7 @@ function playTone(
     oscillator.frequency.value = frequency;
     gainNode.gain.setValueAtTime(0.0001, now);
     gainNode.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
-    gainNode.gain.exponentialRampToValueAtTime(
-      0.0001,
-      now + durationSeconds,
-    );
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + durationSeconds);
 
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
@@ -817,7 +883,9 @@ function formatRemainingTimeLabel(valueMs: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function getSaveFailureMessage(result: Extract<SaveTrainingSessionResult, { ok: false }>): string {
+function getSaveFailureMessage(
+  result: Extract<SaveTrainingSessionResult, { ok: false }>,
+): string {
   if (result.code === "UNAUTHORIZED") {
     return "Your sign-in session is no longer available. Please sign in again and retry.";
   }

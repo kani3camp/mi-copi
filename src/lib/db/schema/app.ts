@@ -13,8 +13,6 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-
-import { authUserId, authUsers } from "./auth";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
@@ -22,21 +20,25 @@ import type {
   QuestionDirection,
   SessionEndConditionType,
   SessionFinishReason,
-  TrainingMode,
   TrainingConfigSnapshot,
+  TrainingMode,
 } from "../../../features/training/model/types";
+import { authUserId, authUsers } from "./auth";
 
 export const scoreFormulaVersionEnum = pgEnum("score_formula_version", ["v1"]);
-export const trainingModeEnum = pgEnum("training_mode", ["distance", "keyboard"]);
+export const trainingModeEnum = pgEnum("training_mode", [
+  "distance",
+  "keyboard",
+]);
 export const sessionFinishReasonEnum = pgEnum("session_finish_reason", [
   "target_reached",
   "time_up",
   "manual_end",
 ]);
-export const sessionEndConditionTypeEnum = pgEnum("session_end_condition_type", [
-  "question_count",
-  "time_limit",
-]);
+export const sessionEndConditionTypeEnum = pgEnum(
+  "session_end_condition_type",
+  ["question_count", "time_limit"],
+);
 
 export const userSettings = pgTable("user_settings", {
   userId: authUserId("user_id")
@@ -65,9 +67,7 @@ export const trainingSessions = pgTable(
     userId: authUserId("user_id")
       .references(() => authUsers.id, { onDelete: "cascade" })
       .notNull(),
-    mode: trainingModeEnum("mode")
-      .$type<TrainingMode>()
-      .notNull(),
+    mode: trainingModeEnum("mode").$type<TrainingMode>().notNull(),
     scoreFormulaVersion: scoreFormulaVersionEnum("score_formula_version")
       .default("v1")
       .notNull(),
@@ -84,13 +84,22 @@ export const trainingSessions = pgTable(
     plannedTimeLimitSeconds: integer("planned_time_limit_seconds"),
     answeredQuestionCount: integer("answered_question_count").notNull(),
     correctQuestionCount: integer("correct_question_count").notNull(),
-    sessionScore: numeric("session_score", { precision: 10, scale: 3 }).notNull(),
+    sessionScore: numeric("session_score", {
+      precision: 10,
+      scale: 3,
+    }).notNull(),
     avgScorePerQuestion: numeric("avg_score_per_question", {
       precision: 10,
       scale: 3,
     }).notNull(),
-    accuracyRate: numeric("accuracy_rate", { precision: 10, scale: 3 }).notNull(),
-    avgErrorAbs: numeric("avg_error_abs", { precision: 10, scale: 3 }).notNull(),
+    accuracyRate: numeric("accuracy_rate", {
+      precision: 10,
+      scale: 3,
+    }).notNull(),
+    avgErrorAbs: numeric("avg_error_abs", {
+      precision: 10,
+      scale: 3,
+    }).notNull(),
     avgResponseTimeMs: numeric("avg_response_time_ms", {
       precision: 10,
       scale: 3,
@@ -108,7 +117,10 @@ export const trainingSessions = pgTable(
       table.mode,
       table.endedAt,
     ),
-    index("training_sessions_user_id_ended_at_idx").on(table.userId, table.endedAt),
+    index("training_sessions_user_id_ended_at_idx").on(
+      table.userId,
+      table.endedAt,
+    ),
     check(
       "training_sessions_planned_question_count_non_negative",
       sql`${table.plannedQuestionCount} is null or ${table.plannedQuestionCount} >= 0`,
@@ -177,20 +189,12 @@ export const questionResults = pgTable(
     questionIndex: integer("question_index").notNull(),
     presentedAt: timestamp("presented_at", { withTimezone: true }).notNull(),
     answeredAt: timestamp("answered_at", { withTimezone: true }).notNull(),
-    mode: trainingModeEnum("mode")
-      .$type<TrainingMode>()
-      .notNull(),
-    baseNoteName: text("base_note_name")
-      .$type<NoteClass>()
-      .notNull(),
+    mode: trainingModeEnum("mode").$type<TrainingMode>().notNull(),
+    baseNoteName: text("base_note_name").$type<NoteClass>().notNull(),
     baseMidi: integer("base_midi").notNull(),
-    targetNoteName: text("target_note_name")
-      .$type<NoteClass>()
-      .notNull(),
+    targetNoteName: text("target_note_name").$type<NoteClass>().notNull(),
     targetMidi: integer("target_midi").notNull(),
-    answerNoteName: text("answer_note_name")
-      .$type<NoteClass>()
-      .notNull(),
+    answerNoteName: text("answer_note_name").$type<NoteClass>().notNull(),
     answerMidi: integer("answer_midi").notNull(),
     targetIntervalSemitones: numeric("target_interval_semitones", {
       precision: 10,
@@ -200,9 +204,7 @@ export const questionResults = pgTable(
       precision: 10,
       scale: 3,
     }).notNull(),
-    direction: text("direction")
-      .$type<QuestionDirection>()
-      .notNull(),
+    direction: text("direction").$type<QuestionDirection>().notNull(),
     isCorrect: boolean("is_correct").notNull(),
     errorSemitones: numeric("error_semitones", {
       precision: 10,
@@ -220,7 +222,9 @@ export const questionResults = pgTable(
       .notNull(),
   },
   (table) => [
-    index("question_results_training_session_id_idx").on(table.trainingSessionId),
+    index("question_results_training_session_id_idx").on(
+      table.trainingSessionId,
+    ),
     index("question_results_user_id_mode_answered_at_idx").on(
       table.userId,
       table.mode,
@@ -271,16 +275,19 @@ export const trainingSessionRelations = relations(
   }),
 );
 
-export const questionResultRelations = relations(questionResults, ({ one }) => ({
-  trainingSession: one(trainingSessions, {
-    fields: [questionResults.trainingSessionId],
-    references: [trainingSessions.id],
+export const questionResultRelations = relations(
+  questionResults,
+  ({ one }) => ({
+    trainingSession: one(trainingSessions, {
+      fields: [questionResults.trainingSessionId],
+      references: [trainingSessions.id],
+    }),
+    user: one(authUsers, {
+      fields: [questionResults.userId],
+      references: [authUsers.id],
+    }),
   }),
-  user: one(authUsers, {
-    fields: [questionResults.userId],
-    references: [authUsers.id],
-  }),
-}));
+);
 
 export type UserSettingsRow = typeof userSettings.$inferSelect;
 export type NewUserSettingsRow = typeof userSettings.$inferInsert;

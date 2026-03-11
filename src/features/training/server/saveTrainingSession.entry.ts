@@ -1,19 +1,19 @@
 "use server";
 
-import type { SaveTrainingSessionInput } from "../model/types";
 import {
-  getCurrentUserOrNull as resolveCurrentUserOrNull,
   type CurrentUser,
+  getCurrentUserOrNull as resolveCurrentUserOrNull,
 } from "../../../lib/auth/server";
 import { getDb } from "../../../lib/db/client";
+import type { SaveTrainingSessionInput } from "../model/types";
+import {
+  type SaveTrainingSessionResult,
+  saveTrainingSession,
+} from "./saveTrainingSession";
 import {
   createSaveTrainingSessionDb,
   type SaveTrainingSessionDrizzleDb,
 } from "./saveTrainingSession.drizzle";
-import {
-  saveTrainingSession,
-  type SaveTrainingSessionResult,
-} from "./saveTrainingSession";
 
 export interface SaveTrainingSessionEntryDependencies {
   db?: SaveTrainingSessionDrizzleDb | null;

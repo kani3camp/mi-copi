@@ -166,6 +166,9 @@ ChatGPT は **仕様不足・仕様変更・設計相談・ブロッカー解消
 実際のコマンド名は `package.json` を参照して判断すること。  
 `AGENTS.md` に例が書かれていても、それが実態と違う場合は repo 実態を優先してよい。
 
+現時点の標準 script は `format` / `lint` / `lint:repo` / `check` / `typecheck` / `test` / `build` / `verify`。  
+日常の総合検証は `npm run verify` を基準にする。
+
 ### 検証失敗時
 - まず自分で原因を切り分ける
 - 自分で直せるものは直す

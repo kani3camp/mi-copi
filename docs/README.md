@@ -1,22 +1,35 @@
 # Docs Overview
 
-`docs/` is the source of truth for this repository.
+`docs/` contains the repository source of truth. The canonical reading order matches `AGENTS.md`.
 
-## Structure
+## Canonical Order
 
-- `docs/product/requirements.md`
-  - Product goals, target users, scope, and non-scope for the MVP.
-- `docs/architecture/basic-design.md`
-  - Screen structure, routing, state transitions, and client/server responsibilities.
-- `docs/architecture/tech-stack.md`
-  - Adopted technologies and the development quality strategy.
+1. `docs/tasks/active-task.md`
+   - Current task scope, in-scope/out-of-scope, and acceptance criteria.
+2. `docs/product/current-constraints.md`
+   - Fixed product, architecture, and AI-development constraints currently in force.
+3. `docs/product/decision-log.md`
+   - Decision history that resolves implementation ambiguity.
+4. `docs/product/requirements.md`
+   - Product goals, scope, and MVP behavior requirements.
+5. `docs/product/basic-design.md`
+   - Screen structure, routing, state transitions, and client/server responsibilities.
+6. `docs/product/tech-stack.md`
+   - Adopted technologies and the development quality strategy.
+7. `AGENTS.md`
+   - Execution policy, approval boundaries, verification, and reporting rules.
+
+## Supporting Docs
+
 - `docs/implementation/*.md`
-  - Source-of-truth implementation design for schema, TypeScript types, contracts, flow, and scoring.
+  - Implementation-level contracts and design details derived from the product docs.
 - `docs/delivery/*.md`
-  - PR breakdown and completion criteria.
+  - Delivery process notes, acceptance templates, and PR planning aids.
+- `docs/architecture/*.md`
+  - Legacy compatibility pointers kept only so older links still resolve. Do not treat them as canonical.
 
-## How To Use
+## Verification
 
-- If an existing markdown or text file outside `docs/` differs from `docs/`, treat `docs/` as canonical for new work and report the difference explicitly.
-- If a point is still undecided, keep it as `TODO` or an unresolved point instead of guessing.
-- Do not create migrations, add dependencies, or change auth behavior based only on these docs without human confirmation.
+- Standard repo scripts live in `package.json`.
+- Daily Codex verification should use `npm run verify`.
+- Biome write/read-only checks are split into `npm run format`, `npm run lint`, and `npm run check`.

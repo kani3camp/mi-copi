@@ -1,8 +1,8 @@
 import {
-  questionResults,
-  trainingSessions,
   type NewQuestionResultRow,
   type NewTrainingSessionRow,
+  questionResults,
+  trainingSessions,
 } from "../../../lib/db/schema/app";
 import type {
   PersistedQuestionResultInsert,
@@ -12,14 +12,10 @@ import type {
 } from "./saveTrainingSession";
 
 export interface SaveTrainingSessionDrizzleTx {
-  insert(
-    table: typeof trainingSessions,
-  ): {
+  insert(table: typeof trainingSessions): {
     values(values: NewTrainingSessionRow): PromiseLike<unknown> | unknown;
   };
-  insert(
-    table: typeof questionResults,
-  ): {
+  insert(table: typeof questionResults): {
     values(values: NewQuestionResultRow[]): PromiseLike<unknown> | unknown;
   };
 }
@@ -45,14 +41,10 @@ function createSaveTrainingSessionTx(
 ): SaveTrainingSessionTx {
   return {
     async insertTrainingSession(values) {
-      await tx
-        .insert(trainingSessions)
-        .values(toNewTrainingSessionRow(values));
+      await tx.insert(trainingSessions).values(toNewTrainingSessionRow(values));
     },
     async insertQuestionResults(values) {
-      await tx
-        .insert(questionResults)
-        .values(toNewQuestionResultRows(values));
+      await tx.insert(questionResults).values(toNewQuestionResultRows(values));
     },
   };
 }

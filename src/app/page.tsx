@@ -12,8 +12,8 @@ import {
   listStyle,
   metricCardStyle,
   metricLabelStyle,
-  metricValueStyle,
   metricsGridStyle,
+  metricValueStyle,
   navLinkStyle,
   navRowStyle,
   pageHeroStyle,
@@ -28,13 +28,12 @@ export default async function HomePage() {
   const summary = await getHomeTrainingSummaryForCurrentUser();
 
   return (
-    <main
-      style={pageShellStyle}
-    >
+    <main style={pageShellStyle}>
       <header style={pageHeroStyle}>
         <h1 style={pageTitleStyle}>ミーコピ</h1>
         <p style={pageSubtitleStyle}>
-          MVP の最小導線です。distance / keyboard の練習、保存結果の確認、設定確認までを軽く通せます。
+          MVP の最小導線です。distance / keyboard
+          の練習、保存結果の確認、設定確認までを軽く通せます。
         </p>
         <div style={navRowStyle}>
           <Link href="/train/distance" style={navLinkStyle}>
@@ -66,7 +65,9 @@ export default async function HomePage() {
               </div>
               <div style={metricCardStyle}>
                 <span style={metricLabelStyle}>Saved question results</span>
-                <span style={metricValueStyle}>{summary.totalSavedQuestionResults}</span>
+                <span style={metricValueStyle}>
+                  {summary.totalSavedQuestionResults}
+                </span>
               </div>
             </div>
 
@@ -74,12 +75,17 @@ export default async function HomePage() {
               <ul style={listStyle}>
                 {summary.recentSessions.map((session) => (
                   <li key={session.id}>
-                    <Link href={`/sessions/${session.id}`} style={listLinkStyle}>
-                      <strong style={{ fontSize: "16px" }}>{session.mode}</strong>
+                    <Link
+                      href={`/sessions/${session.id}`}
+                      style={listLinkStyle}
+                    >
+                      <strong style={{ fontSize: "16px" }}>
+                        {session.mode}
+                      </strong>
                       <span style={subtleTextStyle}>
-                        Session score {formatScoreLabel(session.sessionScore)} / accuracy{" "}
-                        {formatAccuracyLabel(session.accuracyRate)} / questions{" "}
-                        {session.answeredQuestionCount}
+                        Session score {formatScoreLabel(session.sessionScore)} /
+                        accuracy {formatAccuracyLabel(session.accuracyRate)} /
+                        questions {session.answeredQuestionCount}
                       </span>
                       <span style={subtleTextStyle}>
                         Created {formatDateTimeLabel(session.createdAt)}

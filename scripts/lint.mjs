@@ -14,8 +14,8 @@ const checks = [
     pattern: /\bdebugger\b/,
   },
   {
-    message: "Remove eslint-disable comments until ESLint is introduced.",
-    pattern: /eslint-disable(?:-next-line|-line)?/,
+    message: "Remove lint suppression comments before commit.",
+    pattern: /eslint-disable(?:-next-line|-line)?|biome-ignore/,
   },
 ];
 

@@ -1,5 +1,9 @@
 export {
-  saveTrainingSession,
+  getLastUsedTrainingConfigsForCurrentUser,
+  type LastUsedTrainingConfigs,
+  updateLastUsedTrainingConfigForCurrentUser,
+} from "./lastUsedTrainingConfig";
+export {
   type PersistedQuestionResultInsert,
   type PersistedTrainingSessionInsert,
   type SaveTrainingSessionDb,
@@ -7,6 +11,7 @@ export {
   type SaveTrainingSessionErrorCode,
   type SaveTrainingSessionResult,
   type SaveTrainingSessionTx,
+  saveTrainingSession,
 } from "./saveTrainingSession";
 export {
   createSaveTrainingSessionDb,
@@ -14,11 +19,6 @@ export {
   type SaveTrainingSessionDrizzleTx,
 } from "./saveTrainingSession.drizzle";
 export {
-  saveTrainingSessionForCurrentUser,
   type SaveTrainingSessionEntryDependencies,
+  saveTrainingSessionForCurrentUser,
 } from "./saveTrainingSession.entry";
-export {
-  getLastUsedTrainingConfigsForCurrentUser,
-  updateLastUsedTrainingConfigForCurrentUser,
-  type LastUsedTrainingConfigs,
-} from "./lastUsedTrainingConfig";

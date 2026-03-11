@@ -1,12 +1,14 @@
-import { saveTrainingSessionForCurrentUser } from "../../../features/training/server/saveTrainingSession.entry";
-import { buildKeyboardGuestSaveInput } from "../../../features/training/model/keyboard-guest";
+import {
+  buildKeyboardGuestSaveInput,
+  createDefaultKeyboardTrainingConfig,
+} from "../../../features/training/model/keyboard-guest";
 import type { KeyboardTrainingConfig } from "../../../features/training/model/types";
 import {
   getLastUsedTrainingConfigsForCurrentUser,
   updateLastUsedTrainingConfigForCurrentUser,
 } from "../../../features/training/server/lastUsedTrainingConfig";
+import { saveTrainingSessionForCurrentUser } from "../../../features/training/server/saveTrainingSession.entry";
 import { getCurrentUserOrNull } from "../../../lib/auth/server";
-import { createDefaultKeyboardTrainingConfig } from "../../../features/training/model/keyboard-guest";
 import { KeyboardTrainClient } from "./keyboard-train-client";
 
 export default async function KeyboardTrainPage() {
@@ -18,7 +20,9 @@ export default async function KeyboardTrainPage() {
   ) {
     "use server";
 
-    return saveTrainingSessionForCurrentUser(buildKeyboardGuestSaveInput(input));
+    return saveTrainingSessionForCurrentUser(
+      buildKeyboardGuestSaveInput(input),
+    );
   }
 
   async function persistLastUsedConfigAction(config: KeyboardTrainingConfig) {
@@ -31,9 +35,12 @@ export default async function KeyboardTrainPage() {
     <KeyboardTrainClient
       isAuthenticated={Boolean(currentUser)}
       initialConfig={
-        lastUsedConfigs.lastKeyboardConfig ?? createDefaultKeyboardTrainingConfig()
+        lastUsedConfigs.lastKeyboardConfig ??
+        createDefaultKeyboardTrainingConfig()
       }
-      hasStoredConfig={Boolean(currentUser && lastUsedConfigs.lastKeyboardConfig)}
+      hasStoredConfig={Boolean(
+        currentUser && lastUsedConfigs.lastKeyboardConfig,
+      )}
       persistLastUsedConfigAction={persistLastUsedConfigAction}
       saveResultsAction={saveResultsAction}
     />

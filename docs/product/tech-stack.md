@@ -138,11 +138,26 @@
 ### 8.2 品質担保
 最低限、以下を自動チェック対象とする。
 
+- format
 - typecheck
 - lint
 - unit test
-- 主要導線の E2E smoke test
 - DB schema / migration の整合確認
+
+現時点の標準 script は以下。
+
+- `npm run format`
+- `npm run lint`
+- `npm run lint:repo`
+- `npm run check`
+- `npm run typecheck`
+- `npm run test`
+- `npm run build`
+- `npm run verify`
+
+`npm run verify` は `typecheck` → `check` → `lint:repo` → `test` → `build` をまとめて実行する。
+
+CI provider は GitHub Actions を採用する。
 
 ### 8.3 テスト方針
 特に以下は純粋ロジックとして分離し、重点的にテストする。
@@ -187,4 +202,3 @@ MVP では、以下のような縦切りで進める。
 - 音は Web Audio API を用いてクライアント側で生成・再生する
 - 回答中は DB にアクセスしない
 - AI 主体開発を前提に、小さい PR と自動検証で品質を担保する
-

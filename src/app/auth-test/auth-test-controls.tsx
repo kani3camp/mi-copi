@@ -2,9 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-
-import { getAuthClient } from "../../lib/auth/client";
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
+import { getAuthClient } from "../../lib/auth/client";
 
 interface AuthTestControlsProps {
   isAuthenticated: boolean;
@@ -18,7 +17,8 @@ export function AuthTestControls({
   const authClient = getAuthClient();
   const router = useRouter();
   const { data: session, isPending, error, refetch } = authClient.useSession();
-  const [saveResult, setSaveResult] = useState<SaveTrainingSessionResult | null>(null);
+  const [saveResult, setSaveResult] =
+    useState<SaveTrainingSessionResult | null>(null);
   const [isSavePending, startSaveTransition] = useTransition();
 
   async function handleGoogleSignIn() {

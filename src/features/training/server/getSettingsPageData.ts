@@ -1,11 +1,12 @@
-import { getCurrentUserOrNull, type CurrentUser } from "../../../lib/auth/server";
 import {
-  getLastUsedTrainingConfigsForCurrentUser,
-} from "./lastUsedTrainingConfig";
+  type CurrentUser,
+  getCurrentUserOrNull,
+} from "../../../lib/auth/server";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
 } from "../model/types";
+import { getLastUsedTrainingConfigsForCurrentUser } from "./lastUsedTrainingConfig";
 
 export interface SettingsPageData {
   isAuthenticated: boolean;

@@ -10,10 +10,7 @@ export type SessionPhase =
 
 export type SessionEndConditionType = "question_count" | "time_limit";
 
-export type SessionFinishReason =
-  | "target_reached"
-  | "time_up"
-  | "manual_end";
+export type SessionFinishReason = "target_reached" | "time_up" | "manual_end";
 
 export type BaseNoteMode = "fixed" | "random";
 

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!**/.git",
+      "!**/.next",
+      "!**/node_modules",
+      "!drizzle/meta",
+      "!package-lock.json",
+      "!tmp",
+      "!tsconfig.tsbuildinfo"
+    ],
+    "ignoreUnknown": true
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space"
+  },
+  "linter": {
+    "enabled": true
+  }
+}

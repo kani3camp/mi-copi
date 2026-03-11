@@ -94,7 +94,11 @@ export async function saveTrainingSession(
   const sessionId = deps.generateSessionId?.() ?? crypto.randomUUID();
   const createdAt = (deps.now?.() ?? new Date()).toISOString();
   const trainingSessionInsert = toTrainingSessionInsert(input, userId);
-  const questionResultInserts = toQuestionResultInserts(input, sessionId, userId);
+  const questionResultInserts = toQuestionResultInserts(
+    input,
+    sessionId,
+    userId,
+  );
 
   try {
     await deps.db.transaction(async (tx) => {
@@ -137,7 +141,9 @@ function validateSaveTrainingSessionInput(
     issues.push("answeredQuestionCount must match results.length.");
   }
 
-  if (input.summary.correctQuestionCount > input.summary.answeredQuestionCount) {
+  if (
+    input.summary.correctQuestionCount > input.summary.answeredQuestionCount
+  ) {
     issues.push("correctQuestionCount cannot exceed answeredQuestionCount.");
   }
 
@@ -211,9 +217,7 @@ function buildQuestionResultInsertRows(
   }));
 }
 
-function isSessionFinishReason(
-  value: string,
-): value is SessionFinishReason {
+function isSessionFinishReason(value: string): value is SessionFinishReason {
   return SESSION_FINISH_REASONS.includes(value as SessionFinishReason);
 }
 

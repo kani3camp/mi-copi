@@ -10,10 +10,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "format": "biome check --write .",
     "typecheck": "tsc --noEmit",
-    "lint": "node scripts/lint.mjs",
+    "lint": "biome lint .",
+    "lint:repo": "node scripts/lint.mjs",
+    "check": "biome check .",
     "test": "node scripts/run-tests.mjs",
-    "verify": "npm run typecheck && npm run lint && npm run test"
+    "verify": "npm run typecheck && npm run check && npm run lint:repo && npm run test && npm run build"
   },
   "dependencies": {
     "better-auth": "1.3.8",
@@ -25,6 +28,7 @@
   },
   "devDependencies": {
     "@better-auth/cli": "1.3.8",
+    "@biomejs/biome": "^2.4.6",
     "@types/node": "24.1.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",

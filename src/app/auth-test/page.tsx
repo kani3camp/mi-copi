@@ -1,10 +1,6 @@
-import {
-  saveTrainingSessionForCurrentUser,
-} from "../../features/training/server/saveTrainingSession.entry";
 import type { SaveTrainingSessionInput } from "../../features/training/model/types";
-import type {
-  SaveTrainingSessionResult,
-} from "../../features/training/server/saveTrainingSession";
+import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
+import { saveTrainingSessionForCurrentUser } from "../../features/training/server/saveTrainingSession.entry";
 import { getCurrentUserOrNull } from "../../lib/auth/server";
 import { AuthTestControls } from "./auth-test-controls";
 

@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { formatDateTimeLabel } from "../../features/training/model/format";
@@ -26,7 +26,9 @@ interface SettingsPageProps {
   }>;
 }
 
-export default async function SettingsPage({ searchParams }: SettingsPageProps) {
+export default async function SettingsPage({
+  searchParams,
+}: SettingsPageProps) {
   const data = await getSettingsPageDataForCurrentUser();
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const resetTarget = resolvedSearchParams?.reset;
@@ -61,13 +63,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   }
 
   return (
-    <main
-      style={pageShellStyle}
-    >
+    <main style={pageShellStyle}>
       <header style={pageHeroStyle}>
         <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>Settings</h1>
         <p style={subtleTextStyle}>
-          保存済みの last-used config を確認し、必要なら mode ごとに既定値へ戻せます。
+          保存済みの last-used config を確認し、必要なら mode
+          ごとに既定値へ戻せます。
         </p>
         <div style={navRowStyle}>
           <Link href="/" style={navLinkStyle}>
@@ -117,7 +118,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </div>
               <div style={keyValueCardStyle}>
                 <strong>Last updated</strong>
-                <span>{data.updatedAt ? formatDateTimeLabel(data.updatedAt) : "not saved yet"}</span>
+                <span>
+                  {data.updatedAt
+                    ? formatDateTimeLabel(data.updatedAt)
+                    : "not saved yet"}
+                </span>
               </div>
             </div>
           </section>
@@ -171,7 +176,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       ) : (
         <section style={cardStyle}>
           <p style={subtleTextStyle}>
-            You are using guest mode. Saved settings become available after sign-in.
+            You are using guest mode. Saved settings become available after
+            sign-in.
           </p>
         </section>
       )}

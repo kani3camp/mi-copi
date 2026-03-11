@@ -7,7 +7,7 @@ This file defines the completion template for implementation PRs.
 - The PR matches the approved docs and does not expand scope.
 - The PR has one main responsibility.
 - Types, tests, and validation are updated where the logic changes require them.
-- Lint, typecheck, and relevant tests pass when the project scaffold exists.
+- `check`, `lint:repo`, `typecheck`, relevant tests, and build pass when the project scaffold exists.
 
 ## Per-PR Template
 
@@ -25,9 +25,10 @@ Each PR should explicitly answer the following:
 
 ### Required verification
 
-- Which lint command was run
+- Which `check` / `lint` / `lint:repo` command was run
 - Which typecheck command was run
 - Which test files or test command were run
+- Whether `npm run build` or `npm run verify` was run
 - Which manual verification steps were performed, if any
 
 ## Examples By Planned PR
