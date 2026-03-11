@@ -24,6 +24,7 @@ export default async function HomePage() {
         <Link href="/train/distance">Start distance guest slice</Link>
         <Link href="/train/keyboard">Start keyboard guest slice</Link>
         <Link href="/stats">Open stats</Link>
+        <Link href="/settings">Open settings</Link>
         <Link href="/auth-test">Open auth test</Link>
       </div>
 
