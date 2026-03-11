@@ -13,6 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { IntervalNotationStyle } from "../../../features/settings/model/global-user-settings";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
@@ -45,6 +46,12 @@ export const userSettings = pgTable("user_settings", {
     .references(() => authUsers.id, { onDelete: "cascade" })
     .primaryKey()
     .notNull(),
+  masterVolume: integer("master_volume").notNull(),
+  soundEffectsEnabled: boolean("sound_effects_enabled").notNull(),
+  intervalNotationStyle: text("interval_notation_style")
+    .$type<IntervalNotationStyle>()
+    .notNull(),
+  keyboardNoteLabelsVisible: boolean("keyboard_note_labels_visible").notNull(),
   lastDistanceConfig: jsonb("last_distance_config")
     .$type<DistanceTrainingConfig>()
     .notNull(),

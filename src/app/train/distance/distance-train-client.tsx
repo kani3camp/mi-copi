@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
 import {
   type buildDistanceGuestSaveInput,
   buildDistanceGuestSummary,
@@ -20,6 +21,10 @@ import {
   formatResponseTimeMsLabel,
   formatScoreLabel,
 } from "../../../features/training/model/format";
+import {
+  formatSignedSemitoneLabel,
+  getIntervalLabel,
+} from "../../../features/training/model/interval-notation";
 import type {
   DistanceTrainingConfig,
   Question,
@@ -75,6 +80,7 @@ export function DistanceTrainClient({
   persistLastUsedConfigAction,
   saveResultsAction,
 }: DistanceTrainClientProps) {
+  const { settings } = useGlobalUserSettings();
   const [config, setConfig] = useState<DistanceTrainingConfig>(initialConfig);
   const [phase, setPhase] = useState<DistanceTrainPhase>("config");
   const [startedAt, setStartedAt] = useState<string | null>(null);
@@ -101,7 +107,7 @@ export function DistanceTrainClient({
   const timeoutHandledRef = useRef(false);
   const plannedQuestionCount = getDistanceQuestionCount(config);
   const [remainingTimeMs, setRemainingTimeMs] = useState<number | null>(null);
-  const answerChoices = useMemo(
+  const answerChoiceValues = useMemo(
     () => getDistanceAnswerChoices(config),
     [config],
   );
@@ -122,7 +128,11 @@ export function DistanceTrainClient({
     playedNonceRef.current = activeQuestion.playNonce;
     let cancelled = false;
 
-    void playQuestionAudio(activeQuestion.question, audioContextRef)
+    void playQuestionAudio(
+      activeQuestion.question,
+      audioContextRef,
+      settings.masterVolume,
+    )
       .catch(() => {
         if (!cancelled) {
           setAudioError(
@@ -150,7 +160,7 @@ export function DistanceTrainClient({
     return () => {
       cancelled = true;
     };
-  }, [activeQuestion, phase]);
+  }, [activeQuestion, phase, settings.masterVolume]);
 
   useEffect(() => {
     if (
@@ -284,6 +294,12 @@ export function DistanceTrainClient({
         updatedCount >= config.endCondition.questionCount,
     );
     setPhase("feedback");
+    void playFeedbackEffect(
+      audioContextRef,
+      settings.masterVolume,
+      settings.soundEffectsEnabled,
+      result.isCorrect,
+    );
   }
 
   function handleContinue() {
@@ -542,7 +558,12 @@ export function DistanceTrainClient({
           </label>
 
           <div>
-            <strong>Candidate answers:</strong> {answerChoices.join(", ")}
+            <strong>Candidate answers:</strong>{" "}
+            {answerChoiceValues
+              .map((choice) =>
+                getIntervalLabel(choice, settings.intervalNotationStyle),
+              )
+              .join(", ")}
           </div>
 
           {isAuthenticated && hasStoredConfig ? (
@@ -571,8 +592,7 @@ export function DistanceTrainClient({
             Question {activeQuestion.question.questionIndex + 1}
           </h2>
           <p style={subtleTextStyle}>
-            Hear the base tone and target tone, then answer the interval
-            distance in semitones.
+            Hear the base tone and target tone, then answer the interval name.
           </p>
           <div style={keyValueGridStyle}>
             <div style={keyValueCardStyle}>
@@ -599,14 +619,14 @@ export function DistanceTrainClient({
                 </button>
               </div>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                {answerChoices.map((choice) => (
+                {answerChoiceValues.map((choice) => (
                   <button
                     key={choice}
                     type="button"
                     onClick={() => handleAnswer(choice)}
                     style={buttonStyle("secondary")}
                   >
-                    {choice}
+                    {getIntervalLabel(choice, settings.intervalNotationStyle)}
                   </button>
                 ))}
               </div>
@@ -624,15 +644,22 @@ export function DistanceTrainClient({
               {feedbackResult.isCorrect ? "Correct" : "Incorrect"}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Correct distance:</strong>{" "}
-              {feedbackResult.question.distanceSemitones}
+              <strong>Correct interval:</strong>{" "}
+              {getIntervalLabel(
+                feedbackResult.question.distanceSemitones,
+                settings.intervalNotationStyle,
+              )}
             </div>
             <div style={keyValueCardStyle}>
               <strong>Your answer:</strong>{" "}
-              {feedbackResult.answeredDistanceSemitones}
+              {getIntervalLabel(
+                feedbackResult.answeredDistanceSemitones,
+                settings.intervalNotationStyle,
+              )}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Error:</strong> {Math.abs(feedbackResult.errorSemitones)}
+              <strong>Error:</strong>{" "}
+              {formatSignedSemitoneLabel(feedbackResult.errorSemitones)}
             </div>
             <div style={keyValueCardStyle}>
               <strong>Response time:</strong>{" "}
@@ -810,6 +837,7 @@ function nextPlaybackNonce(
 async function playQuestionAudio(
   question: Question,
   audioContextRef: React.MutableRefObject<AudioContext | null>,
+  masterVolume: number,
 ): Promise<void> {
   if (typeof window === "undefined") {
     return;
@@ -832,25 +860,40 @@ async function playQuestionAudio(
     await audioContext.resume();
   }
 
-  await playTone(audioContext, getNoteFrequency(question.baseNote), 0.35);
+  await playTone(
+    audioContext,
+    getNoteFrequency(question.baseNote),
+    0.35,
+    masterVolume,
+  );
   await wait(140);
-  await playTone(audioContext, getNoteFrequency(question.targetNote), 0.35);
+  await playTone(
+    audioContext,
+    getNoteFrequency(question.targetNote),
+    0.35,
+    masterVolume,
+  );
 }
 
 function playTone(
   audioContext: AudioContext,
   frequency: number,
   durationSeconds: number,
+  masterVolume: number,
 ): Promise<void> {
   return new Promise((resolve) => {
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     const now = audioContext.currentTime;
+    const peakGain = Math.max(
+      0.0001,
+      (Math.min(100, Math.max(0, masterVolume)) / 100) * 0.15,
+    );
 
     oscillator.type = "sine";
     oscillator.frequency.value = frequency;
     gainNode.gain.setValueAtTime(0.0001, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(peakGain, now + 0.02);
     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + durationSeconds);
 
     oscillator.connect(gainNode);
@@ -859,6 +902,40 @@ function playTone(
     oscillator.stop(now + durationSeconds);
     oscillator.onended = () => resolve();
   });
+}
+
+async function playFeedbackEffect(
+  audioContextRef: React.MutableRefObject<AudioContext | null>,
+  masterVolume: number,
+  soundEffectsEnabled: boolean,
+  isCorrect: boolean,
+): Promise<void> {
+  if (!soundEffectsEnabled || typeof window === "undefined") {
+    return;
+  }
+
+  const AudioContextClass =
+    window.AudioContext ||
+    (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext;
+
+  if (!AudioContextClass) {
+    return;
+  }
+
+  const audioContext = audioContextRef.current ?? new AudioContextClass();
+  audioContextRef.current = audioContext;
+
+  if (audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
+
+  await playTone(
+    audioContext,
+    isCorrect ? 880 : 220,
+    0.08,
+    Math.max(12, Math.round(masterVolume * 0.5)),
+  );
 }
 
 function wait(durationMs: number): Promise<void> {

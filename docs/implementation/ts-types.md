@@ -241,7 +241,17 @@ export interface SessionState {
 ## Settings And Summary
 
 ```ts
+export type IntervalNotationStyle = "ja" | "abbr" | "mixed";
+
+export interface GlobalUserSettings {
+  masterVolume: number;
+  soundEffectsEnabled: boolean;
+  intervalNotationStyle: IntervalNotationStyle;
+  keyboardNoteLabelsVisible: boolean;
+}
+
 export interface UserSettings {
+  global: GlobalUserSettings;
   lastDistanceConfig: DistanceTrainingConfig;
   lastKeyboardConfig: KeyboardTrainingConfig;
 }

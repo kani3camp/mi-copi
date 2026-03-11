@@ -48,6 +48,10 @@ One row per authenticated user.
 | Column | Type | Notes |
 | --- | --- | --- |
 | `user_id` | auth user id type | Primary key, foreign key to `user.id` |
+| `master_volume` | `integer` | Not null; `0..100` global output volume |
+| `sound_effects_enabled` | `boolean` | Not null; feedback effect playback toggle |
+| `interval_notation_style` | `text` | Not null; `ja`, `abbr`, or `mixed` |
+| `keyboard_note_labels_visible` | `boolean` | Not null; keyboard answer UI label toggle |
 | `last_distance_config` | `jsonb` | Not null; latest saved `DistanceTrainingConfig` |
 | `last_keyboard_config` | `jsonb` | Not null; latest saved `KeyboardTrainingConfig` |
 | `created_at` | `timestamptz` | Not null |

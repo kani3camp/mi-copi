@@ -20,6 +20,7 @@ export type QuestionDirection = "up" | "down";
 
 // MVP canonical note naming uses sharps only.
 export type NotationStyle = "sharp";
+export type IntervalNotationStyle = "ja" | "abbr" | "mixed";
 
 export type IntervalGranularity = "simple" | "aug_dim";
 
@@ -220,6 +221,12 @@ export interface SaveTrainingSessionInput {
 }
 
 export interface UserSettings {
+  global: {
+    masterVolume: number;
+    soundEffectsEnabled: boolean;
+    intervalNotationStyle: IntervalNotationStyle;
+    keyboardNoteLabelsVisible: boolean;
+  };
   lastDistanceConfig: DistanceTrainingConfig;
   lastKeyboardConfig: KeyboardTrainingConfig;
 }

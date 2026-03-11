@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getCurrentUserOrNull } from "../../../lib/auth/server";
 import { getDb } from "../../../lib/db/client";
 import { userSettings } from "../../../lib/db/schema/app";
+import { createDefaultGlobalUserSettings } from "../../settings/model/global-user-settings";
 import { createDefaultDistanceTrainingConfig } from "../model/distance-guest";
 import { createDefaultKeyboardTrainingConfig } from "../model/keyboard-guest";
 import type {
@@ -72,6 +73,10 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
   const db = getDb();
   const [existing] = await db
     .select({
+      masterVolume: userSettings.masterVolume,
+      soundEffectsEnabled: userSettings.soundEffectsEnabled,
+      intervalNotationStyle: userSettings.intervalNotationStyle,
+      keyboardNoteLabelsVisible: userSettings.keyboardNoteLabelsVisible,
       lastDistanceConfig: userSettings.lastDistanceConfig,
       lastKeyboardConfig: userSettings.lastKeyboardConfig,
     })
@@ -79,6 +84,7 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
     .where(eq(userSettings.userId, currentUser.id))
     .limit(1);
 
+  const defaultGlobalSettings = createDefaultGlobalUserSettings();
   const now = new Date();
 
   if (mode === "distance") {
@@ -88,6 +94,17 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
       .insert(userSettings)
       .values({
         userId: currentUser.id,
+        masterVolume:
+          existing?.masterVolume ?? defaultGlobalSettings.masterVolume,
+        soundEffectsEnabled:
+          existing?.soundEffectsEnabled ??
+          defaultGlobalSettings.soundEffectsEnabled,
+        intervalNotationStyle:
+          existing?.intervalNotationStyle ??
+          defaultGlobalSettings.intervalNotationStyle,
+        keyboardNoteLabelsVisible:
+          existing?.keyboardNoteLabelsVisible ??
+          defaultGlobalSettings.keyboardNoteLabelsVisible,
         lastDistanceConfig: distanceConfig,
         lastKeyboardConfig:
           existing?.lastKeyboardConfig ?? createDefaultKeyboardTrainingConfig(),
@@ -97,6 +114,17 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
       .onConflictDoUpdate({
         target: userSettings.userId,
         set: {
+          masterVolume:
+            existing?.masterVolume ?? defaultGlobalSettings.masterVolume,
+          soundEffectsEnabled:
+            existing?.soundEffectsEnabled ??
+            defaultGlobalSettings.soundEffectsEnabled,
+          intervalNotationStyle:
+            existing?.intervalNotationStyle ??
+            defaultGlobalSettings.intervalNotationStyle,
+          keyboardNoteLabelsVisible:
+            existing?.keyboardNoteLabelsVisible ??
+            defaultGlobalSettings.keyboardNoteLabelsVisible,
           lastDistanceConfig: distanceConfig,
           lastKeyboardConfig:
             existing?.lastKeyboardConfig ??
@@ -114,6 +142,17 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
     .insert(userSettings)
     .values({
       userId: currentUser.id,
+      masterVolume:
+        existing?.masterVolume ?? defaultGlobalSettings.masterVolume,
+      soundEffectsEnabled:
+        existing?.soundEffectsEnabled ??
+        defaultGlobalSettings.soundEffectsEnabled,
+      intervalNotationStyle:
+        existing?.intervalNotationStyle ??
+        defaultGlobalSettings.intervalNotationStyle,
+      keyboardNoteLabelsVisible:
+        existing?.keyboardNoteLabelsVisible ??
+        defaultGlobalSettings.keyboardNoteLabelsVisible,
       lastDistanceConfig:
         existing?.lastDistanceConfig ?? createDefaultDistanceTrainingConfig(),
       lastKeyboardConfig: keyboardConfig,
@@ -123,6 +162,17 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
     .onConflictDoUpdate({
       target: userSettings.userId,
       set: {
+        masterVolume:
+          existing?.masterVolume ?? defaultGlobalSettings.masterVolume,
+        soundEffectsEnabled:
+          existing?.soundEffectsEnabled ??
+          defaultGlobalSettings.soundEffectsEnabled,
+        intervalNotationStyle:
+          existing?.intervalNotationStyle ??
+          defaultGlobalSettings.intervalNotationStyle,
+        keyboardNoteLabelsVisible:
+          existing?.keyboardNoteLabelsVisible ??
+          defaultGlobalSettings.keyboardNoteLabelsVisible,
         lastDistanceConfig:
           existing?.lastDistanceConfig ?? createDefaultDistanceTrainingConfig(),
         lastKeyboardConfig: keyboardConfig,

@@ -18,6 +18,7 @@ import {
   sectionTitleStyle,
   subtleTextStyle,
 } from "../ui/polish";
+import { GlobalSettingsSection } from "./global-settings-section";
 
 interface SettingsPageProps {
   searchParams?: Promise<{
@@ -67,8 +68,8 @@ export default async function SettingsPage({
       <header style={pageHeroStyle}>
         <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>Settings</h1>
         <p style={subtleTextStyle}>
-          保存済みの last-used config を確認し、必要なら mode
-          ごとに既定値へ戻せます。
+          グローバル設定の変更と、保存済み last-used config の確認 /
+          リセットを行えます。
         </p>
         <div style={navRowStyle}>
           <Link href="/" style={navLinkStyle}>
@@ -98,6 +99,8 @@ export default async function SettingsPage({
             : "Failed to reset keyboard config. Please try again."}
         </section>
       ) : null}
+
+      <GlobalSettingsSection />
 
       {data.isAuthenticated ? (
         <>

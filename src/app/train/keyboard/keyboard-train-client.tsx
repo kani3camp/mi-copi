@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 
+import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
 import {
   formatAccuracyLabel,
   formatAvgErrorLabel,
@@ -77,6 +85,7 @@ export function KeyboardTrainClient({
   persistLastUsedConfigAction,
   saveResultsAction,
 }: KeyboardTrainClientProps) {
+  const { settings } = useGlobalUserSettings();
   const [config, setConfig] = useState<KeyboardTrainingConfig>(initialConfig);
   const [phase, setPhase] = useState<KeyboardTrainPhase>("config");
   const [startedAt, setStartedAt] = useState<string | null>(null);
@@ -121,7 +130,11 @@ export function KeyboardTrainClient({
     playedNonceRef.current = activeQuestion.playNonce;
     let cancelled = false;
 
-    void playQuestionAudio(activeQuestion.question, audioContextRef)
+    void playQuestionAudio(
+      activeQuestion.question,
+      audioContextRef,
+      settings.masterVolume,
+    )
       .catch(() => {
         if (!cancelled) {
           setAudioError(
@@ -149,7 +162,7 @@ export function KeyboardTrainClient({
     return () => {
       cancelled = true;
     };
-  }, [activeQuestion, phase]);
+  }, [activeQuestion, phase, settings.masterVolume]);
 
   useEffect(() => {
     if (
@@ -283,6 +296,12 @@ export function KeyboardTrainClient({
         updatedCount >= config.endCondition.questionCount,
     );
     setPhase("feedback");
+    void playFeedbackEffect(
+      audioContextRef,
+      settings.masterVolume,
+      settings.soundEffectsEnabled,
+      result.isCorrect,
+    );
   }
 
   function handleContinue() {
@@ -541,7 +560,12 @@ export function KeyboardTrainClient({
           </label>
 
           <div>
-            <strong>Answer choices:</strong> {answerChoices.join(", ")}
+            <strong>Answer choices:</strong>{" "}
+            {settings.keyboardNoteLabelsVisible
+              ? answerChoices
+                  .map((choice) => formatKeyboardNoteLabel(choice))
+                  .join(", ")
+              : "Labels are hidden on the keyboard UI."}
           </div>
 
           {isAuthenticated && hasStoredConfig ? (
@@ -597,18 +621,11 @@ export function KeyboardTrainClient({
                   Replay
                 </button>
               </div>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                {answerChoices.map((choice) => (
-                  <button
-                    key={choice}
-                    type="button"
-                    onClick={() => handleAnswer(choice)}
-                    style={buttonStyle("secondary")}
-                  >
-                    {choice}
-                  </button>
-                ))}
-              </div>
+              <KeyboardAnswerPad
+                answerChoices={answerChoices}
+                onAnswer={handleAnswer}
+                showLabels={settings.keyboardNoteLabelsVisible}
+              />
             </>
           ) : null}
         </section>
@@ -808,6 +825,7 @@ function nextPlaybackNonce(
 async function playQuestionAudio(
   question: Question,
   audioContextRef: React.MutableRefObject<AudioContext | null>,
+  masterVolume: number,
 ): Promise<void> {
   if (typeof window === "undefined") {
     return;
@@ -830,25 +848,40 @@ async function playQuestionAudio(
     await audioContext.resume();
   }
 
-  await playTone(audioContext, getNoteFrequency(question.baseNote), 0.35);
+  await playTone(
+    audioContext,
+    getNoteFrequency(question.baseNote),
+    0.35,
+    masterVolume,
+  );
   await wait(140);
-  await playTone(audioContext, getNoteFrequency(question.targetNote), 0.35);
+  await playTone(
+    audioContext,
+    getNoteFrequency(question.targetNote),
+    0.35,
+    masterVolume,
+  );
 }
 
 function playTone(
   audioContext: AudioContext,
   frequency: number,
   durationSeconds: number,
+  masterVolume: number,
 ): Promise<void> {
   return new Promise((resolve) => {
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     const now = audioContext.currentTime;
+    const peakGain = Math.max(
+      0.0001,
+      (Math.min(100, Math.max(0, masterVolume)) / 100) * 0.15,
+    );
 
     oscillator.type = "sine";
     oscillator.frequency.value = frequency;
     gainNode.gain.setValueAtTime(0.0001, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(peakGain, now + 0.02);
     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + durationSeconds);
 
     oscillator.connect(gainNode);
@@ -857,6 +890,115 @@ function playTone(
     oscillator.stop(now + durationSeconds);
     oscillator.onended = () => resolve();
   });
+}
+
+async function playFeedbackEffect(
+  audioContextRef: React.MutableRefObject<AudioContext | null>,
+  masterVolume: number,
+  soundEffectsEnabled: boolean,
+  isCorrect: boolean,
+): Promise<void> {
+  if (!soundEffectsEnabled || typeof window === "undefined") {
+    return;
+  }
+
+  const AudioContextClass =
+    window.AudioContext ||
+    (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext;
+
+  if (!AudioContextClass) {
+    return;
+  }
+
+  const audioContext = audioContextRef.current ?? new AudioContextClass();
+  audioContextRef.current = audioContext;
+
+  if (audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
+
+  await playTone(
+    audioContext,
+    isCorrect ? 880 : 220,
+    0.08,
+    Math.max(12, Math.round(masterVolume * 0.5)),
+  );
+}
+
+function KeyboardAnswerPad(props: {
+  answerChoices: NoteClass[];
+  onAnswer: (note: NoteClass) => void;
+  showLabels: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: "8px",
+        gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+      }}
+    >
+      {props.answerChoices.map((choice) => (
+        <button
+          key={choice}
+          type="button"
+          aria-label={formatKeyboardNoteLabel(choice)}
+          onClick={() => props.onAnswer(choice)}
+          style={getKeyboardKeyStyle(choice)}
+        >
+          {props.showLabels ? formatKeyboardNoteLabel(choice) : ""}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function getKeyboardKeyStyle(note: NoteClass): CSSProperties {
+  const blackKey = isBlackKey(note);
+
+  return {
+    minHeight: blackKey ? "84px" : "112px",
+    padding: "12px 8px",
+    borderRadius: "16px",
+    border: blackKey ? "1px solid #111827" : "1px solid #d1d5db",
+    background: blackKey
+      ? "linear-gradient(180deg, #374151 0%, #111827 100%)"
+      : "linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%)",
+    color: blackKey ? "#f9fafb" : "#111827",
+    fontWeight: 700,
+    cursor: "pointer",
+    boxShadow: blackKey
+      ? "0 10px 20px rgba(17, 24, 39, 0.28)"
+      : "0 8px 18px rgba(15, 23, 42, 0.08)",
+  };
+}
+
+function formatKeyboardNoteLabel(note: NoteClass): string {
+  switch (note) {
+    case "C#":
+      return "C# / Db";
+    case "D#":
+      return "D# / Eb";
+    case "F#":
+      return "F# / Gb";
+    case "G#":
+      return "G# / Ab";
+    case "A#":
+      return "A# / Bb";
+    default:
+      return note;
+  }
+}
+
+function isBlackKey(note: NoteClass): boolean {
+  return (
+    note === "C#" ||
+    note === "D#" ||
+    note === "F#" ||
+    note === "G#" ||
+    note === "A#"
+  );
 }
 
 function wait(durationMs: number): Promise<void> {
