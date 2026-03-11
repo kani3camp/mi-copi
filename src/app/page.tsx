@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { formatDateTimeLabel } from "../features/training/model/format";
 import { getHomeTrainingSummaryForCurrentUser } from "../features/training/server/getHomeTrainingSummary";
 
 export default async function HomePage() {
@@ -53,7 +54,8 @@ export default async function HomePage() {
                     <Link href={`/sessions/${session.id}`}>
                       {session.mode} / session score {Math.round(session.sessionScore)} /
                       accuracy {Math.round(session.accuracyRate * 100)}% / questions{" "}
-                      {session.answeredQuestionCount} / {session.createdAt}
+                      {session.answeredQuestionCount} /{" "}
+                      {formatDateTimeLabel(session.createdAt)}
                     </Link>
                   </li>
                 ))}

@@ -39,6 +39,7 @@ interface ActiveQuestionState {
 interface DistanceTrainClientProps {
   isAuthenticated: boolean;
   initialConfig: DistanceTrainingConfig;
+  hasStoredConfig: boolean;
   persistLastUsedConfigAction: (config: DistanceTrainingConfig) => Promise<void>;
   saveResultsAction: (
     input: Parameters<typeof buildDistanceGuestSaveInput>[0],
@@ -48,6 +49,7 @@ interface DistanceTrainClientProps {
 export function DistanceTrainClient({
   isAuthenticated,
   initialConfig,
+  hasStoredConfig,
   persistLastUsedConfigAction,
   saveResultsAction,
 }: DistanceTrainClientProps) {
@@ -373,6 +375,10 @@ export function DistanceTrainClient({
           <div>
             <strong>Candidate answers:</strong> {answerChoices.join(", ")}
           </div>
+
+          {isAuthenticated && hasStoredConfig ? (
+            <div>前回設定を読み込み済みです。</div>
+          ) : null}
 
           {configError ? <div>{configError}</div> : null}
 

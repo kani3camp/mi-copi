@@ -20,6 +20,7 @@ interface RecentStatsSession {
 interface ModeStats {
   sessionCount: number;
   averageScore: number;
+  averageAccuracy: number;
 }
 
 export interface TrainingStats {
@@ -39,8 +40,8 @@ export async function getTrainingStatsForCurrentUser(): Promise<TrainingStats> {
       totalSessions: 0,
       totalSavedQuestionResults: 0,
       byMode: {
-        distance: { sessionCount: 0, averageScore: 0 },
-        keyboard: { sessionCount: 0, averageScore: 0 },
+        distance: { sessionCount: 0, averageScore: 0, averageAccuracy: 0 },
+        keyboard: { sessionCount: 0, averageScore: 0, averageAccuracy: 0 },
       },
       recentSessions: [],
     };
@@ -86,16 +87,21 @@ function buildModeStats(
   sessions: Array<{
     mode: TrainingMode;
     sessionScore: string;
+    accuracyRate: string;
   }>,
 ): Record<TrainingMode, ModeStats> {
-  const stats: Record<TrainingMode, { count: number; totalScore: number }> = {
-    distance: { count: 0, totalScore: 0 },
-    keyboard: { count: 0, totalScore: 0 },
+  const stats: Record<
+    TrainingMode,
+    { count: number; totalScore: number; totalAccuracy: number }
+  > = {
+    distance: { count: 0, totalScore: 0, totalAccuracy: 0 },
+    keyboard: { count: 0, totalScore: 0, totalAccuracy: 0 },
   };
 
   for (const session of sessions) {
     stats[session.mode].count += 1;
     stats[session.mode].totalScore += Number(session.sessionScore);
+    stats[session.mode].totalAccuracy += Number(session.accuracyRate);
   }
 
   return {
@@ -105,11 +111,19 @@ function buildModeStats(
         stats.distance.totalScore,
         stats.distance.count,
       ),
+      averageAccuracy: averageOrZero(
+        stats.distance.totalAccuracy,
+        stats.distance.count,
+      ),
     },
     keyboard: {
       sessionCount: stats.keyboard.count,
       averageScore: averageOrZero(
         stats.keyboard.totalScore,
+        stats.keyboard.count,
+      ),
+      averageAccuracy: averageOrZero(
+        stats.keyboard.totalAccuracy,
         stats.keyboard.count,
       ),
     },

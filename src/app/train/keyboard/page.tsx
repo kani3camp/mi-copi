@@ -36,6 +36,7 @@ export default async function KeyboardTrainPage() {
       initialConfig={
         lastUsedConfigs.lastKeyboardConfig ?? createDefaultKeyboardTrainingConfig()
       }
+      hasStoredConfig={Boolean(currentUser && lastUsedConfigs.lastKeyboardConfig)}
       persistLastUsedConfigAction={persistLastUsedConfigAction}
       saveResultsAction={saveResultsAction}
     />

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getTrainingStatsForCurrentUser } from "../../features/training/server/getTrainingStats";
+import { formatDateTimeLabel } from "../../features/training/model/format";
 
 export default async function StatsPage() {
   const stats = await getTrainingStatsForCurrentUser();
@@ -60,11 +61,19 @@ export default async function StatsPage() {
               {Math.round(stats.byMode.distance.averageScore)}
             </div>
             <div>
+              <strong>Distance avg accuracy:</strong>{" "}
+              {Math.round(stats.byMode.distance.averageAccuracy * 100)}%
+            </div>
+            <div>
               <strong>Keyboard sessions:</strong> {stats.byMode.keyboard.sessionCount}
             </div>
             <div>
               <strong>Keyboard avg score:</strong>{" "}
               {Math.round(stats.byMode.keyboard.averageScore)}
+            </div>
+            <div>
+              <strong>Keyboard avg accuracy:</strong>{" "}
+              {Math.round(stats.byMode.keyboard.averageAccuracy * 100)}%
             </div>
           </section>
 
@@ -85,7 +94,8 @@ export default async function StatsPage() {
                     <Link href={`/sessions/${session.id}`}>
                       {session.mode} / session score {Math.round(session.sessionScore)} /
                       questions {session.answeredQuestionCount} / accuracy{" "}
-                      {Math.round(session.accuracyRate * 100)}% / {session.createdAt}
+                      {Math.round(session.accuracyRate * 100)}% /{" "}
+                      {formatDateTimeLabel(session.createdAt)}
                     </Link>
                   </li>
                 ))}

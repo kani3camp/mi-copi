@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { formatDateTimeLabel } from "../../../features/training/model/format";
 import { getTrainingSessionDetailForCurrentUser } from "../../../features/training/server/getTrainingSessionDetail";
 
 interface TrainingSessionDetailPageProps {
@@ -49,10 +50,10 @@ export default async function TrainingSessionDetailPage({
           <strong>Mode:</strong> {detail.mode}
         </div>
         <div>
-          <strong>Created at:</strong> {detail.createdAt}
+          <strong>Created at:</strong> {formatDateTimeLabel(detail.createdAt)}
         </div>
         <div>
-          <strong>Ended at:</strong> {detail.endedAt}
+          <strong>Ended at:</strong> {formatDateTimeLabel(detail.endedAt)}
         </div>
         <div>
           <strong>Question count:</strong> {detail.answeredQuestionCount}
@@ -121,7 +122,11 @@ export default async function TrainingSessionDetailPage({
             <strong>Interval granularity:</strong>{" "}
             {detail.configSnapshot.intervalGranularity}
           </div>
-        ) : null}
+        ) : (
+          <div>
+            <strong>Keyboard answer style:</strong> note class
+          </div>
+        )}
       </section>
 
       <section

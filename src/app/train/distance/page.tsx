@@ -36,6 +36,7 @@ export default async function DistanceTrainPage() {
       initialConfig={
         lastUsedConfigs.lastDistanceConfig ?? createDefaultDistanceTrainingConfig()
       }
+      hasStoredConfig={Boolean(currentUser && lastUsedConfigs.lastDistanceConfig)}
       persistLastUsedConfigAction={persistLastUsedConfigAction}
       saveResultsAction={saveResultsAction}
     />

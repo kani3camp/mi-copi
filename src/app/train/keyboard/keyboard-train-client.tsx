@@ -40,6 +40,7 @@ interface ActiveQuestionState {
 interface KeyboardTrainClientProps {
   isAuthenticated: boolean;
   initialConfig: KeyboardTrainingConfig;
+  hasStoredConfig: boolean;
   persistLastUsedConfigAction: (config: KeyboardTrainingConfig) => Promise<void>;
   saveResultsAction: (
     input: Parameters<typeof buildKeyboardGuestSaveInput>[0],
@@ -49,6 +50,7 @@ interface KeyboardTrainClientProps {
 export function KeyboardTrainClient({
   isAuthenticated,
   initialConfig,
+  hasStoredConfig,
   persistLastUsedConfigAction,
   saveResultsAction,
 }: KeyboardTrainClientProps) {
@@ -374,6 +376,10 @@ export function KeyboardTrainClient({
           <div>
             <strong>Answer choices:</strong> {answerChoices.join(", ")}
           </div>
+
+          {isAuthenticated && hasStoredConfig ? (
+            <div>前回設定を読み込み済みです。</div>
+          ) : null}
 
           {configError ? <div>{configError}</div> : null}
 
