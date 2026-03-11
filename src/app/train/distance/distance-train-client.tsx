@@ -100,6 +100,7 @@ export function DistanceTrainClient({
   const [remainingTimeMs, setRemainingTimeMs] = useState<number | null>(null);
   const answerChoices = useMemo(() => getDistanceAnswerChoices(config), [config]);
   const summary = useMemo(() => buildDistanceGuestSummary(results), [results]);
+  const cannotSaveBecauseNoAnswers = phase === "result" && results.length === 0;
 
   useEffect(() => {
     if (phase !== "playing" || !activeQuestion) {
@@ -625,9 +626,24 @@ export function DistanceTrainClient({
             <>
               <button
                 type="button"
-                disabled={isSavePending || Boolean(saveResult?.ok) || !startedAt || results.length === 0}
+                disabled={
+                  isSavePending ||
+                  Boolean(saveResult?.ok) ||
+                  !startedAt ||
+                  !endedAt ||
+                  !finishReason ||
+                  results.length === 0
+                }
                 onClick={handleSaveResults}
-                style={buttonStyle("primary", isSavePending || Boolean(saveResult?.ok) || !startedAt || results.length === 0)}
+                style={buttonStyle(
+                  "primary",
+                  isSavePending ||
+                    Boolean(saveResult?.ok) ||
+                    !startedAt ||
+                    !endedAt ||
+                    !finishReason ||
+                    results.length === 0,
+                )}
               >
                 {saveResult?.ok
                   ? "Saved"
@@ -635,15 +651,32 @@ export function DistanceTrainClient({
                     ? "Saving..."
                     : "Save results"}
               </button>
-              <div style={saveResult?.ok ? noticeStyle("success") : saveResult ? noticeStyle("error") : noticeStyle("info")}>
+              <div
+                style={
+                  saveResult?.ok
+                    ? noticeStyle("success")
+                    : saveResult
+                      ? noticeStyle("error")
+                      : noticeStyle("info")
+                }
+              >
                 {saveResult?.ok ? (
-                  <div>
-                    Saved successfully. Session ID: <code>{saveResult.sessionId}</code>
+                  <div style={{ display: "grid", gap: "10px" }}>
+                    <div>
+                      Results saved successfully. Session ID: <code>{saveResult.sessionId}</code>
+                    </div>
+                    <div>
+                      <Link href={`/sessions/${saveResult.sessionId}`} style={navLinkStyle}>
+                        Open session detail
+                      </Link>
+                    </div>
                   </div>
                 ) : saveResult ? (
                   <div>
                     Save failed ({saveResult.code}): {saveResult.message}
                   </div>
+                ) : cannotSaveBecauseNoAnswers ? (
+                  <div>You cannot save this session because no answered questions were recorded.</div>
                 ) : (
                   <div>You are signed in. Save is manual in this slice.</div>
                 )}
@@ -655,7 +688,7 @@ export function DistanceTrainClient({
 
           {finishReason === "time_up" ? (
             <div style={noticeStyle("info")}>
-              Session ended because the time limit ran out. The unanswered question was discarded.
+              Session ended because time ran out. Any unanswered question in progress was discarded.
             </div>
           ) : null}
 

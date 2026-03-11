@@ -101,6 +101,7 @@ export function KeyboardTrainClient({
   const [remainingTimeMs, setRemainingTimeMs] = useState<number | null>(null);
   const answerChoices = useMemo(() => getKeyboardAnswerChoices(), []);
   const summary = useMemo(() => buildKeyboardGuestSummary(results), [results]);
+  const cannotSaveBecauseNoAnswers = phase === "result" && results.length === 0;
 
   useEffect(() => {
     if (phase !== "playing" || !activeQuestion) {
@@ -624,7 +625,7 @@ export function KeyboardTrainClient({
 
           {finishReason === "time_up" ? (
             <div style={noticeStyle("info")}>
-              Time limit reached. Any unanswered question in progress was discarded.
+              Session ended because time ran out. Any unanswered question in progress was discarded.
             </div>
           ) : null}
 
@@ -657,15 +658,32 @@ export function KeyboardTrainClient({
                     ? "Saving..."
                     : "Save results"}
               </button>
-              <div style={saveResult?.ok ? noticeStyle("success") : saveResult ? noticeStyle("error") : noticeStyle("info")}>
+              <div
+                style={
+                  saveResult?.ok
+                    ? noticeStyle("success")
+                    : saveResult
+                      ? noticeStyle("error")
+                      : noticeStyle("info")
+                }
+              >
                 {saveResult?.ok ? (
-                  <div>
-                    Saved successfully. Session ID: <code>{saveResult.sessionId}</code>
+                  <div style={{ display: "grid", gap: "10px" }}>
+                    <div>
+                      Results saved successfully. Session ID: <code>{saveResult.sessionId}</code>
+                    </div>
+                    <div>
+                      <Link href={`/sessions/${saveResult.sessionId}`} style={navLinkStyle}>
+                        Open session detail
+                      </Link>
+                    </div>
                   </div>
                 ) : saveResult ? (
                   <div>
                     Save failed ({saveResult.code}): {saveResult.message}
                   </div>
+                ) : cannotSaveBecauseNoAnswers ? (
+                  <div>You cannot save this session because no answered questions were recorded.</div>
                 ) : (
                   <div>You are signed in. Save is manual in this slice.</div>
                 )}
