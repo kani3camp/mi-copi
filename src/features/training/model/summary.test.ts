@@ -5,6 +5,7 @@ const { buildSessionSummaryFromResults } = await import(
   new URL("./summary.ts", import.meta.url).href
 );
 const {
+  buildDailyTrendSummaries,
   buildModeTrainingStats,
   buildRecentQuestionSummary,
   buildTrainingOverview,
@@ -13,6 +14,7 @@ const {
 const {
   formatAccuracyLabel,
   formatAvgErrorLabel,
+  formatDateLabel,
   formatDateTimeLabel,
   formatResponseTimeMsLabel,
   formatScoreLabel,
@@ -76,6 +78,10 @@ test("format helpers round and preserve fallback values for training results", (
 
 test("formatDateTimeLabel leaves invalid input untouched", () => {
   assert.equal(formatDateTimeLabel("not-a-date"), "not-a-date");
+});
+
+test("formatDateLabel leaves invalid input untouched", () => {
+  assert.equal(formatDateLabel("not-a-date"), "not-a-date");
 });
 
 test("stats aggregation derives overview, recent windows, and mode breakdowns", () => {
@@ -194,6 +200,51 @@ test("home headline aggregation uses latest session and recent session averages"
     recentAverageError: null,
     recentAverageResponseTimeMs: null,
   });
+});
+
+test("daily trend aggregation groups question results by answered date", () => {
+  const results = [
+    createAggregatableQuestion({
+      score: 90,
+      isCorrect: true,
+      errorSemitones: 0,
+      responseTimeMs: 900,
+      answeredAt: "2026-03-11T11:00:00.000Z",
+    }),
+    createAggregatableQuestion({
+      score: 60,
+      isCorrect: false,
+      errorSemitones: -2,
+      responseTimeMs: 1500,
+      answeredAt: "2026-03-11T02:00:00.000Z",
+    }),
+    createAggregatableQuestion({
+      score: 75,
+      isCorrect: true,
+      errorSemitones: 1,
+      responseTimeMs: 800,
+      answeredAt: "2026-03-10T22:00:00.000Z",
+    }),
+  ];
+
+  assert.deepEqual(buildDailyTrendSummaries(results), [
+    {
+      date: "2026-03-11",
+      questionCount: 2,
+      correctRate: 0.5,
+      averageScore: 75,
+      averageError: 1,
+      averageResponseTimeMs: 1200,
+    },
+    {
+      date: "2026-03-10",
+      questionCount: 1,
+      correctRate: 1,
+      averageScore: 75,
+      averageError: 1,
+      averageResponseTimeMs: 800,
+    },
+  ]);
 });
 
 function createQuestionResult(overrides: Record<string, unknown>) {

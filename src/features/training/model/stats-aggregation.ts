@@ -37,6 +37,15 @@ export interface RecentQuestionSummary {
   averageResponseTimeMs: number;
 }
 
+export interface DailyTrendSummary {
+  date: string;
+  questionCount: number;
+  correctRate: number;
+  averageScore: number;
+  averageError: number;
+  averageResponseTimeMs: number;
+}
+
 export interface ModeTrainingStats extends TrainingOverviewMetrics {
   sessionCount: number;
 }
@@ -157,8 +166,50 @@ export function buildRecentQuestionSummary(
   };
 }
 
+export function buildDailyTrendSummaries(
+  questionResultsInRecentOrder: AggregatableQuestionMetrics[],
+): DailyTrendSummary[] {
+  const byDate = new Map<string, AggregatableQuestionMetrics[]>();
+
+  for (const result of questionResultsInRecentOrder) {
+    const dateKey = toIsoDate(result.answeredAt);
+    const dateBucket = byDate.get(dateKey);
+
+    if (dateBucket) {
+      dateBucket.push(result);
+      continue;
+    }
+
+    byDate.set(dateKey, [result]);
+  }
+
+  return [...byDate.entries()]
+    .sort(([leftDate], [rightDate]) => rightDate.localeCompare(leftDate))
+    .map(([date, results]) => ({
+      date,
+      questionCount: results.length,
+      correctRate: ratioOrZero(
+        results.filter((result) => result.isCorrect).length,
+        results.length,
+      ),
+      averageScore: averageOrZero(
+        results.map((result) => toNumber(result.score)),
+      ),
+      averageError: averageOrZero(
+        results.map((result) => Math.abs(toNumber(result.errorSemitones))),
+      ),
+      averageResponseTimeMs: averageOrZero(
+        results.map((result) => toNumber(result.responseTimeMs)),
+      ),
+    }));
+}
+
 function toNumber(value: NumericLike): number {
   return Number(value);
+}
+
+function toIsoDate(value: string): string {
+  return new Date(value).toISOString().slice(0, 10);
 }
 
 function averageOrNull(values: number[]): number | null {

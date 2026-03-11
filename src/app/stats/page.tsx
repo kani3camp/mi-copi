@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   formatAccuracyLabel,
   formatAvgErrorLabel,
+  formatDateLabel,
   formatDateTimeLabel,
   formatResponseTimeMsLabel,
   formatScoreLabel,
@@ -202,6 +203,66 @@ export default async function StatsPage() {
                 </span>
               </div>
             </div>
+          </section>
+
+          <section style={cardStyle}>
+            <h2 style={sectionTitleStyle}>Daily trends</h2>
+            {stats.dailyTrends.length > 0 ? (
+              <div style={listStyle}>
+                {stats.dailyTrends.map((trend) => (
+                  <article key={trend.date} style={metricCardStyle}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "12px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <strong style={{ fontSize: "16px" }}>
+                        {formatDateLabel(trend.date)}
+                      </strong>
+                      <span style={subtleTextStyle}>
+                        {trend.questionCount} questions
+                      </span>
+                    </div>
+                    <div style={metricsGridStyle}>
+                      <div style={metricCardStyle}>
+                        <span style={metricLabelStyle}>Average score</span>
+                        <span style={metricValueStyle}>
+                          {formatScoreLabel(trend.averageScore)}
+                        </span>
+                      </div>
+                      <div style={metricCardStyle}>
+                        <span style={metricLabelStyle}>Correct rate</span>
+                        <span style={metricValueStyle}>
+                          {formatAccuracyLabel(trend.correctRate)}
+                        </span>
+                      </div>
+                      <div style={metricCardStyle}>
+                        <span style={metricLabelStyle}>Average error</span>
+                        <span style={metricValueStyle}>
+                          {formatAvgErrorLabel(trend.averageError)}
+                        </span>
+                      </div>
+                      <div style={metricCardStyle}>
+                        <span style={metricLabelStyle}>
+                          Average response time
+                        </span>
+                        <span style={compactMetricValueStyle}>
+                          {formatResponseTimeMsLabel(
+                            trend.averageResponseTimeMs,
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p style={subtleTextStyle}>No daily trend data yet.</p>
+            )}
           </section>
 
           <section style={cardStyle}>

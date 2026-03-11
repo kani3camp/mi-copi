@@ -4,6 +4,7 @@ import { getCurrentUserOrNull } from "../../../lib/auth/server";
 import { getDb } from "../../../lib/db/client";
 import { questionResults, trainingSessions } from "../../../lib/db/schema/app";
 import {
+  buildDailyTrendSummaries,
   buildModeTrainingStats,
   buildRecentQuestionSummary,
   buildTrainingOverview,
@@ -59,6 +60,14 @@ export interface TrainingStats {
       averageResponseTimeMs: number;
     };
   };
+  dailyTrends: Array<{
+    date: string;
+    questionCount: number;
+    correctRate: number;
+    averageScore: number;
+    averageError: number;
+    averageResponseTimeMs: number;
+  }>;
   recentSessions: RecentStatsSession[];
 }
 
@@ -114,6 +123,7 @@ export async function getTrainingStatsForCurrentUser(): Promise<TrainingStats> {
           averageResponseTimeMs: 0,
         },
       },
+      dailyTrends: [],
       recentSessions: [],
     };
   }
@@ -181,6 +191,7 @@ export async function getTrainingStatsForCurrentUser(): Promise<TrainingStats> {
       recent10: buildRecentQuestionSummary(normalizedQuestionResults, 10),
       recent30: buildRecentQuestionSummary(normalizedQuestionResults, 30),
     },
+    dailyTrends: buildDailyTrendSummaries(normalizedQuestionResults),
     recentSessions: allSessions.slice(0, 10).map((session) => ({
       id: session.id,
       mode: session.mode,

@@ -16,6 +16,20 @@ export function formatDateTimeLabel(value: string): string {
   }).format(parsedDate);
 }
 
+export function formatDateLabel(value: string): string {
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(parsedDate);
+}
+
 export function formatScoreLabel(value: number | string): string {
   return Math.round(Number(value)).toString();
 }
