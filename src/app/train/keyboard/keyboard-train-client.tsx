@@ -66,6 +66,19 @@ interface ActiveQuestionState {
   playNonce: number;
 }
 
+const WHITE_KEY_NOTES: NoteClass[] = ["C", "D", "E", "F", "G", "A", "B"];
+
+const BLACK_KEY_LAYOUT: Array<{
+  note: NoteClass;
+  left: string;
+}> = [
+  { note: "C#", left: "calc(14.2857% - 5.4%)" },
+  { note: "D#", left: "calc(28.5714% - 5.4%)" },
+  { note: "F#", left: "calc(57.1428% - 5.4%)" },
+  { note: "G#", left: "calc(71.4285% - 5.4%)" },
+  { note: "A#", left: "calc(85.7142% - 5.4%)" },
+];
+
 interface KeyboardTrainClientProps {
   isAuthenticated: boolean;
   initialConfig: KeyboardTrainingConfig;
@@ -641,10 +654,11 @@ export function KeyboardTrainClient({
             </div>
             <div style={keyValueCardStyle}>
               <strong>Correct note:</strong>{" "}
-              {feedbackResult.question.targetNote}
+              {formatKeyboardNoteLabel(feedbackResult.question.targetNote)}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Your answer:</strong> {feedbackResult.answeredNote}
+              <strong>Your answer:</strong>{" "}
+              {formatKeyboardNoteLabel(feedbackResult.answeredNote)}
             </div>
             <div style={keyValueCardStyle}>
               <strong>Error:</strong> {Math.abs(feedbackResult.errorSemitones)}
@@ -657,6 +671,12 @@ export function KeyboardTrainClient({
               <strong>Score:</strong> {formatScoreLabel(feedbackResult.score)}
             </div>
           </div>
+          <FeedbackKeyboardView
+            answeredNote={feedbackResult.answeredNote}
+            correctNote={feedbackResult.question.targetNote}
+            isCorrect={feedbackResult.isCorrect}
+            showLabels={settings.keyboardNoteLabelsVisible}
+          />
           <button
             type="button"
             onClick={handleContinue}
@@ -931,47 +951,205 @@ function KeyboardAnswerPad(props: {
   onAnswer: (note: NoteClass) => void;
   showLabels: boolean;
 }) {
+  const enabledNotes = new Set(props.answerChoices);
+
   return (
-    <div
-      style={{
-        display: "grid",
-        gap: "8px",
-        gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
-      }}
-    >
-      {props.answerChoices.map((choice) => (
-        <button
-          key={choice}
-          type="button"
-          aria-label={formatKeyboardNoteLabel(choice)}
-          onClick={() => props.onAnswer(choice)}
-          style={getKeyboardKeyStyle(choice)}
-        >
-          {props.showLabels ? formatKeyboardNoteLabel(choice) : ""}
-        </button>
-      ))}
+    <div style={pianoSectionStyle}>
+      <div style={pianoShellStyle}>
+        <div style={whiteKeyRowStyle}>
+          {WHITE_KEY_NOTES.map((note) => (
+            <button
+              key={note}
+              type="button"
+              aria-label={formatKeyboardNoteLabel(note)}
+              disabled={!enabledNotes.has(note)}
+              onClick={() => props.onAnswer(note)}
+              style={getKeyboardKeyStyle(note, {
+                disabled: !enabledNotes.has(note),
+                interactive: true,
+              })}
+            >
+              {props.showLabels ? <KeyLabel note={note} /> : null}
+            </button>
+          ))}
+        </div>
+        {BLACK_KEY_LAYOUT.map(({ left, note }) => (
+          <button
+            key={note}
+            type="button"
+            aria-label={formatKeyboardNoteLabel(note)}
+            disabled={!enabledNotes.has(note)}
+            onClick={() => props.onAnswer(note)}
+            style={getKeyboardKeyStyle(note, {
+              disabled: !enabledNotes.has(note),
+              interactive: true,
+              left,
+              position: "absolute",
+            })}
+          >
+            {props.showLabels ? <KeyLabel note={note} compact /> : null}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
-function getKeyboardKeyStyle(note: NoteClass): CSSProperties {
+function FeedbackKeyboardView(props: {
+  answeredNote: NoteClass;
+  correctNote: NoteClass;
+  isCorrect: boolean;
+  showLabels: boolean;
+}) {
+  return (
+    <div style={pianoSectionStyle}>
+      <div style={pianoShellStyle}>
+        <div style={whiteKeyRowStyle}>
+          {WHITE_KEY_NOTES.map((note) => (
+            <div
+              key={note}
+              aria-hidden="true"
+              style={getKeyboardKeyStyle(note, {
+                interactive: false,
+                highlight: getKeyboardHighlightTone(
+                  note,
+                  props.correctNote,
+                  props.answeredNote,
+                ),
+              })}
+            >
+              {props.showLabels ? <KeyLabel note={note} /> : null}
+            </div>
+          ))}
+        </div>
+        {BLACK_KEY_LAYOUT.map(({ left, note }) => (
+          <div
+            key={note}
+            aria-hidden="true"
+            style={getKeyboardKeyStyle(note, {
+              interactive: false,
+              left,
+              position: "absolute",
+              highlight: getKeyboardHighlightTone(
+                note,
+                props.correctNote,
+                props.answeredNote,
+              ),
+            })}
+          >
+            {props.showLabels ? <KeyLabel note={note} compact /> : null}
+          </div>
+        ))}
+      </div>
+      <div style={feedbackLegendStyle}>
+        <span style={legendItemStyle("#166534", "#dcfce7")}>
+          {props.isCorrect ? "Correct key" : "Correct key"}
+        </span>
+        {props.isCorrect ? null : (
+          <span style={legendItemStyle("#9a3412", "#ffedd5")}>Your answer</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function getKeyboardKeyStyle(
+  note: NoteClass,
+  options: {
+    disabled?: boolean;
+    highlight?: "idle" | "correct" | "answered" | "both";
+    interactive: boolean;
+    left?: string;
+    position?: "relative" | "absolute";
+  },
+): CSSProperties {
   const blackKey = isBlackKey(note);
+  const highlight = options.highlight ?? "idle";
+  const isCorrect = highlight === "correct" || highlight === "both";
+  const isAnswered = highlight === "answered";
+  const background = blackKey
+    ? isCorrect
+      ? "linear-gradient(180deg, #34d399 0%, #065f46 100%)"
+      : isAnswered
+        ? "linear-gradient(180deg, #fb923c 0%, #9a3412 100%)"
+        : "linear-gradient(180deg, #374151 0%, #111827 100%)"
+    : isCorrect
+      ? "linear-gradient(180deg, #ffffff 0%, #dcfce7 100%)"
+      : isAnswered
+        ? "linear-gradient(180deg, #ffffff 0%, #ffedd5 100%)"
+        : "linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%)";
+  const border = blackKey
+    ? isCorrect
+      ? "2px solid #34d399"
+      : isAnswered
+        ? "2px solid #fdba74"
+        : "1px solid #111827"
+    : isCorrect
+      ? "2px solid #16a34a"
+      : isAnswered
+        ? "2px solid #f97316"
+        : "1px solid #d1d5db";
 
   return {
-    minHeight: blackKey ? "84px" : "112px",
-    padding: "12px 8px",
-    borderRadius: "16px",
-    border: blackKey ? "1px solid #111827" : "1px solid #d1d5db",
-    background: blackKey
-      ? "linear-gradient(180deg, #374151 0%, #111827 100%)"
-      : "linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%)",
+    position: options.position ?? "relative",
+    left: options.left,
+    top: options.position === "absolute" ? 0 : undefined,
+    width: blackKey ? "10.8%" : undefined,
+    minHeight: blackKey
+      ? "clamp(110px, 24vw, 148px)"
+      : "clamp(176px, 42vw, 240px)",
+    padding: blackKey ? "14px 4px 10px" : "18px 6px 14px",
+    borderRadius: blackKey ? "0 0 14px 14px" : "0 0 18px 18px",
+    border,
+    background,
     color: blackKey ? "#f9fafb" : "#111827",
     fontWeight: 700,
-    cursor: "pointer",
+    fontSize: blackKey ? "11px" : "13px",
+    lineHeight: 1.1,
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "center",
+    textAlign: "center",
+    cursor: options.interactive && !options.disabled ? "pointer" : "default",
+    opacity: options.disabled ? 0.5 : 1,
     boxShadow: blackKey
-      ? "0 10px 20px rgba(17, 24, 39, 0.28)"
-      : "0 8px 18px rgba(15, 23, 42, 0.08)",
+      ? isCorrect
+        ? "0 12px 24px rgba(5, 150, 105, 0.34)"
+        : isAnswered
+          ? "0 12px 24px rgba(234, 88, 12, 0.3)"
+          : "0 10px 20px rgba(17, 24, 39, 0.28)"
+      : isCorrect
+        ? "0 10px 24px rgba(34, 197, 94, 0.18)"
+        : isAnswered
+          ? "0 10px 24px rgba(249, 115, 22, 0.18)"
+          : "0 8px 18px rgba(15, 23, 42, 0.08)",
+    transform:
+      options.interactive && !options.disabled ? "translateY(0)" : undefined,
+    touchAction: "manipulation",
+    zIndex: blackKey ? 2 : 1,
   };
+}
+
+function KeyLabel(props: { note: NoteClass; compact?: boolean }) {
+  if (isBlackKey(props.note)) {
+    const [sharp, flat] = formatKeyboardNoteLabel(props.note).split(" / ");
+
+    return (
+      <span
+        style={{
+          display: "grid",
+          gap: "2px",
+          justifyItems: "center",
+          fontSize: props.compact ? "10px" : "11px",
+        }}
+      >
+        <span>{sharp}</span>
+        <span style={{ opacity: 0.82 }}>{flat}</span>
+      </span>
+    );
+  }
+
+  return <span>{props.note}</span>;
 }
 
 function formatKeyboardNoteLabel(note: NoteClass): string {
@@ -991,6 +1169,26 @@ function formatKeyboardNoteLabel(note: NoteClass): string {
   }
 }
 
+function getKeyboardHighlightTone(
+  note: NoteClass,
+  correctNote: NoteClass,
+  answeredNote: NoteClass,
+): "idle" | "correct" | "answered" | "both" {
+  if (note === correctNote && note === answeredNote) {
+    return "both";
+  }
+
+  if (note === correctNote) {
+    return "correct";
+  }
+
+  if (note === answeredNote) {
+    return "answered";
+  }
+
+  return "idle";
+}
+
 function isBlackKey(note: NoteClass): boolean {
   return (
     note === "C#" ||
@@ -999,6 +1197,49 @@ function isBlackKey(note: NoteClass): boolean {
     note === "G#" ||
     note === "A#"
   );
+}
+
+const pianoSectionStyle: CSSProperties = {
+  display: "grid",
+  gap: "12px",
+};
+
+const pianoShellStyle: CSSProperties = {
+  position: "relative",
+  overflow: "hidden",
+  padding: "12px 10px 16px",
+  borderRadius: "22px",
+  border: "1px solid #d6ccbb",
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(245,241,232,0.96) 100%)",
+  boxShadow:
+    "inset 0 1px 0 rgba(255,255,255,0.9), 0 16px 32px rgba(15, 23, 42, 0.08)",
+};
+
+const whiteKeyRowStyle: CSSProperties = {
+  display: "grid",
+  gap: "0",
+  gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+};
+
+const feedbackLegendStyle: CSSProperties = {
+  display: "flex",
+  gap: "8px",
+  flexWrap: "wrap",
+};
+
+function legendItemStyle(color: string, background: string): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "6px 10px",
+    borderRadius: "999px",
+    background,
+    color,
+    fontSize: "12px",
+    fontWeight: 700,
+  };
 }
 
 function wait(durationMs: number): Promise<void> {
