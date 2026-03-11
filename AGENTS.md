@@ -327,3 +327,11 @@ src/
 * [ ] `docs/dev/completion-report-template.md` を必要なら別ファイル化する
 * [ ] 必要なら `.codex/skills/` を追加する
 
+## Autonomy Policy
+
+- Default to autonomous execution.
+- Do not ask for step-by-step approval for ordinary implementation work.
+- Decompose the task yourself, implement in small safe increments, run verification, and repair failures before reporting back.
+- Escalate only when blocked by missing product decisions, conflicting source-of-truth documents, required approval boundaries, or repeated failed attempts.
+- Prefer moving the task forward over asking unnecessary clarification questions.
+- When in doubt, choose the smallest implementation that satisfies the current source of truth.
