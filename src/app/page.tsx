@@ -2,8 +2,11 @@ import Link from "next/link";
 
 import {
   formatAccuracyLabel,
+  formatAvgErrorLabel,
   formatDateTimeLabel,
+  formatResponseTimeMsLabel,
   formatScoreLabel,
+  formatTrainingModeLabel,
 } from "../features/training/model/format";
 import { getHomeTrainingSummaryForCurrentUser } from "../features/training/server/getHomeTrainingSummary";
 import {
@@ -26,6 +29,7 @@ import {
 
 export default async function HomePage() {
   const summary = await getHomeTrainingSummaryForCurrentUser();
+  const compactMetricValueStyle = { ...metricValueStyle, fontSize: "22px" };
 
   return (
     <main style={pageShellStyle}>
@@ -69,6 +73,48 @@ export default async function HomePage() {
                   {summary.totalSavedQuestionResults}
                 </span>
               </div>
+              <div style={metricCardStyle}>
+                <span style={metricLabelStyle}>Last training time</span>
+                <span style={compactMetricValueStyle}>
+                  {summary.lastTrainingTime
+                    ? formatDateTimeLabel(summary.lastTrainingTime)
+                    : "-"}
+                </span>
+              </div>
+              <div style={metricCardStyle}>
+                <span style={metricLabelStyle}>Last used mode</span>
+                <span style={metricValueStyle}>
+                  {summary.lastUsedMode
+                    ? formatTrainingModeLabel(summary.lastUsedMode)
+                    : "-"}
+                </span>
+              </div>
+              <div style={metricCardStyle}>
+                <span style={metricLabelStyle}>Latest session score</span>
+                <span style={metricValueStyle}>
+                  {summary.latestSessionScore === null
+                    ? "-"
+                    : formatScoreLabel(summary.latestSessionScore)}
+                </span>
+              </div>
+              <div style={metricCardStyle}>
+                <span style={metricLabelStyle}>Recent average error</span>
+                <span style={metricValueStyle}>
+                  {summary.recentAverageError === null
+                    ? "-"
+                    : formatAvgErrorLabel(summary.recentAverageError)}
+                </span>
+              </div>
+              <div style={metricCardStyle}>
+                <span style={metricLabelStyle}>Recent avg response time</span>
+                <span style={compactMetricValueStyle}>
+                  {summary.recentAverageResponseTimeMs === null
+                    ? "-"
+                    : formatResponseTimeMsLabel(
+                        summary.recentAverageResponseTimeMs,
+                      )}
+                </span>
+              </div>
             </div>
 
             {summary.recentSessions.length > 0 ? (
@@ -80,7 +126,7 @@ export default async function HomePage() {
                       style={listLinkStyle}
                     >
                       <strong style={{ fontSize: "16px" }}>
-                        {session.mode}
+                        {formatTrainingModeLabel(session.mode)}
                       </strong>
                       <span style={subtleTextStyle}>
                         Session score {formatScoreLabel(session.sessionScore)} /
@@ -88,7 +134,7 @@ export default async function HomePage() {
                         questions {session.answeredQuestionCount}
                       </span>
                       <span style={subtleTextStyle}>
-                        Created {formatDateTimeLabel(session.createdAt)}
+                        Completed {formatDateTimeLabel(session.endedAt)}
                       </span>
                     </Link>
                   </li>

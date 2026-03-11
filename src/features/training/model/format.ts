@@ -1,3 +1,5 @@
+import type { TrainingMode } from "./types";
+
 export function formatDateTimeLabel(value: string): string {
   const parsedDate = new Date(value);
 
@@ -41,4 +43,12 @@ export function formatResponseTimeMsLabel(value: number | string): string {
   }
 
   return `${Math.round(parsed)} ms`;
+}
+
+export function formatTrainingModeLabel(value: TrainingMode): string {
+  if (value === "distance") {
+    return "Distance";
+  }
+
+  return "Keyboard";
 }
