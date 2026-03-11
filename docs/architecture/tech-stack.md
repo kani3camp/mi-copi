@@ -31,8 +31,9 @@
 - Add or update tests when logic changes.
 - Keep CI centered on lint, typecheck, and test.
 - Avoid speculative abstractions until repeated use makes them necessary.
+- Default local verification commands are `npm run lint`, `npm run typecheck`, and `npm run test`.
 
 ## Open Points
 
-- TODO: confirm the CI provider and the exact default commands for lint, typecheck, and test once the app scaffold exists.
+- TODO: confirm the CI provider.
 - TODO: confirm whether Better Auth integration will use only server wrappers or a mix of official client helpers where required by the library.

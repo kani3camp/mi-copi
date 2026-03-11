@@ -7,9 +7,7 @@ type AppDb = ReturnType<typeof drizzle<typeof schema>>;
 type SqlClient = ReturnType<typeof postgres>;
 
 declare global {
-  // eslint-disable-next-line no-var
   var __miCopiDb: AppDb | undefined;
-  // eslint-disable-next-line no-var
   var __miCopiSql: SqlClient | undefined;
 }
 
