@@ -34,7 +34,8 @@ export default async function StatsPage() {
       <header style={pageHeroStyle}>
         <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>Stats</h1>
         <p style={subtleTextStyle}>
-          保存済み session を mode ごとにざっくり見渡すための最小ページです。
+          保存済み question / session を、全体・mode
+          別・直近・日次の切り口で見渡す MVP stats です。
         </p>
         <div style={navRowStyle}>
           <Link href="/" style={navLinkStyle}>
@@ -207,6 +208,10 @@ export default async function StatsPage() {
 
           <section style={cardStyle}>
             <h2 style={sectionTitleStyle}>Daily trends</h2>
+            <p style={subtleTextStyle}>
+              回答日の単位で平均値をまとめています。スコア、誤差、回答時間、正答率の流れを
+              ざっくり追えます。
+            </p>
             {stats.dailyTrends.length > 0 ? (
               <div style={listStyle}>
                 {stats.dailyTrends.map((trend) => (
