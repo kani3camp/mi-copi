@@ -69,7 +69,7 @@ export function toQuestionResultInsert(
   userId: string,
 ): QuestionResultInsertShape {
   return {
-    sessionId,
+    trainingSessionId: sessionId,
     userId,
     questionIndex: result.questionIndex,
     presentedAt: result.presentedAt,

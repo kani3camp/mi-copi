@@ -47,8 +47,7 @@ export interface PersistedTrainingSessionInsert
 }
 
 export interface PersistedQuestionResultInsert
-  extends Omit<QuestionResultInsertShape, "sessionId"> {
-  trainingSessionId: string;
+  extends QuestionResultInsertShape {
   createdAt: string;
 }
 
@@ -186,7 +185,7 @@ function buildQuestionResultInsertRows(
   createdAt: string,
 ): PersistedQuestionResultInsert[] {
   return inserts.map((insert) => ({
-    trainingSessionId: insert.sessionId,
+    trainingSessionId: insert.trainingSessionId,
     userId: insert.userId,
     questionIndex: insert.questionIndex,
     presentedAt: insert.presentedAt,

@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   check,
@@ -40,7 +40,7 @@ export const sessionEndConditionTypeEnum = pgEnum("session_end_condition_type", 
 
 export const userSettings = pgTable("user_settings", {
   userId: authUserId("user_id")
-    .references(() => authUsers.id)
+    .references(() => authUsers.id, { onDelete: "cascade" })
     .primaryKey()
     .notNull(),
   lastDistanceConfig: jsonb("last_distance_config")
@@ -49,8 +49,13 @@ export const userSettings = pgTable("user_settings", {
   lastKeyboardConfig: jsonb("last_keyboard_config")
     .$type<KeyboardTrainingConfig>()
     .notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 export const trainingSessions = pgTable(
@@ -58,7 +63,7 @@ export const trainingSessions = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey().notNull(),
     userId: authUserId("user_id")
-      .references(() => authUsers.id)
+      .references(() => authUsers.id, { onDelete: "cascade" })
       .notNull(),
     mode: trainingModeEnum("mode")
       .$type<TrainingMode>()
@@ -92,7 +97,9 @@ export const trainingSessions = pgTable(
     }).notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     endedAt: timestamp("ended_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("training_sessions_user_id_idx").on(table.userId),
@@ -162,10 +169,10 @@ export const questionResults = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey().notNull(),
     trainingSessionId: uuid("training_session_id")
-      .references(() => trainingSessions.id)
+      .references(() => trainingSessions.id, { onDelete: "cascade" })
       .notNull(),
     userId: authUserId("user_id")
-      .references(() => authUsers.id)
+      .references(() => authUsers.id, { onDelete: "cascade" })
       .notNull(),
     questionIndex: integer("question_index").notNull(),
     presentedAt: timestamp("presented_at", { withTimezone: true }).notNull(),
@@ -208,7 +215,9 @@ export const questionResults = pgTable(
     scoreFormulaVersion: scoreFormulaVersionEnum("score_formula_version")
       .default("v1")
       .notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("question_results_training_session_id_idx").on(table.trainingSessionId),
@@ -243,6 +252,35 @@ export const questionResults = pgTable(
     ),
   ],
 );
+
+export const userSettingsRelations = relations(userSettings, ({ one }) => ({
+  user: one(authUsers, {
+    fields: [userSettings.userId],
+    references: [authUsers.id],
+  }),
+}));
+
+export const trainingSessionRelations = relations(
+  trainingSessions,
+  ({ many, one }) => ({
+    user: one(authUsers, {
+      fields: [trainingSessions.userId],
+      references: [authUsers.id],
+    }),
+    questionResults: many(questionResults),
+  }),
+);
+
+export const questionResultRelations = relations(questionResults, ({ one }) => ({
+  trainingSession: one(trainingSessions, {
+    fields: [questionResults.trainingSessionId],
+    references: [trainingSessions.id],
+  }),
+  user: one(authUsers, {
+    fields: [questionResults.userId],
+    references: [authUsers.id],
+  }),
+}));
 
 export type UserSettingsRow = typeof userSettings.$inferSelect;
 export type NewUserSettingsRow = typeof userSettings.$inferInsert;

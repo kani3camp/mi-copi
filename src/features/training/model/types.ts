@@ -188,7 +188,7 @@ export interface TrainingSessionInsertShape extends PlannedSessionInsertFields {
 }
 
 export interface QuestionResultInsertShape {
-  sessionId: string;
+  trainingSessionId: string;
   userId: string;
   questionIndex: number;
   presentedAt: string;
@@ -225,6 +225,53 @@ export interface SaveTrainingSessionInput {
 export interface UserSettings {
   lastDistanceConfig: DistanceTrainingConfig;
   lastKeyboardConfig: KeyboardTrainingConfig;
+}
+
+export interface PersistedUserSettings extends UserSettings {
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PersistedTrainingSessionSummary extends SessionSummaryMetrics {
+  id: string;
+  userId: string;
+  mode: TrainingMode;
+  startedAt: string;
+  endedAt: string;
+  createdAt: string;
+  finishReason: SessionFinishReason;
+  endConditionType: SessionEndConditionType;
+  plannedTimeLimitSeconds: number | null;
+  scoreFormulaVersion: ScoreFormulaVersion;
+  configSnapshot: TrainingConfigSnapshot;
+}
+
+export interface PersistedQuestionResult {
+  id: string;
+  trainingSessionId: string;
+  userId: string;
+  questionIndex: number;
+  presentedAt: string;
+  answeredAt: string;
+  mode: TrainingMode;
+  baseNoteName: NoteClass;
+  baseMidi: number;
+  targetNoteName: NoteClass;
+  targetMidi: number;
+  answerNoteName: NoteClass;
+  answerMidi: number;
+  targetIntervalSemitones: number;
+  answerIntervalSemitones: number;
+  direction: QuestionDirection;
+  isCorrect: boolean;
+  errorSemitones: number;
+  responseTimeMs: number;
+  replayBaseCount: number;
+  replayTargetCount: number;
+  score: number;
+  scoreFormulaVersion: ScoreFormulaVersion;
+  createdAt: string;
 }
 
 export interface StatsOverview {
