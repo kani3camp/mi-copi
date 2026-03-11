@@ -4,6 +4,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import {
+  formatAccuracyLabel,
+  formatAvgErrorLabel,
+  formatDateTimeLabel,
+  formatResponseTimeMsLabel,
+  formatScoreLabel,
+} from "../../../features/training/model/format";
+import {
   buildKeyboardGuestSummary,
   createDefaultKeyboardTrainingConfig,
   evaluateKeyboardAnswer,
@@ -275,7 +282,7 @@ export function KeyboardTrainClient({
         </div>
         {startedAt ? (
           <div>
-            <strong>Started at:</strong> {startedAt}
+            <strong>Started at:</strong> {formatDateTimeLabel(startedAt)}
           </div>
         ) : null}
         <div>
@@ -461,10 +468,11 @@ export function KeyboardTrainClient({
             <strong>Error:</strong> {Math.abs(feedbackResult.errorSemitones)}
           </div>
           <div>
-            <strong>Response time:</strong> {feedbackResult.responseTimeMs} ms
+            <strong>Response time:</strong>{" "}
+            {formatResponseTimeMsLabel(feedbackResult.responseTimeMs)}
           </div>
           <div>
-            <strong>Score:</strong> {feedbackResult.score}
+            <strong>Score:</strong> {formatScoreLabel(feedbackResult.score)}
           </div>
           <button type="button" onClick={handleContinue}>
             {lastAnsweredWasFinal ? "Show result" : "Next question"}
@@ -490,16 +498,17 @@ export function KeyboardTrainClient({
             <strong>Correct:</strong> {summary.correctCount}
           </div>
           <div>
-            <strong>Accuracy:</strong> {Math.round(summary.accuracyRate * 100)}%
+            <strong>Accuracy:</strong> {formatAccuracyLabel(summary.accuracyRate)}
           </div>
           <div>
-            <strong>Average error:</strong> {summary.avgErrorAbs}
+            <strong>Avg error:</strong> {formatAvgErrorLabel(summary.avgErrorAbs)}
           </div>
           <div>
-            <strong>Average response time:</strong> {summary.avgResponseTimeMs} ms
+            <strong>Avg response time:</strong>{" "}
+            {formatResponseTimeMsLabel(summary.avgResponseTimeMs)}
           </div>
           <div>
-            <strong>Session score:</strong> {summary.sessionScore}
+            <strong>Session score:</strong> {formatScoreLabel(summary.sessionScore)}
           </div>
 
           {isAuthenticated ? (
@@ -515,26 +524,27 @@ export function KeyboardTrainClient({
                     ? "Saving..."
                     : "Save results"}
               </button>
-              <pre
+              <div
                 style={{
                   margin: 0,
                   padding: "12px",
                   border: "1px solid #d4d4d8",
                   borderRadius: "8px",
-                  overflowX: "auto",
                   background: "#fafafa",
-                  fontSize: "12px",
                 }}
               >
-                {JSON.stringify(
-                  saveResult ?? {
-                    ok: null,
-                    hint: "You are signed in. Save is manual in this slice.",
-                  },
-                  null,
-                  2,
+                {saveResult?.ok ? (
+                  <div>
+                    Saved successfully. Session ID: <code>{saveResult.sessionId}</code>
+                  </div>
+                ) : saveResult ? (
+                  <div>
+                    Save failed ({saveResult.code}): {saveResult.message}
+                  </div>
+                ) : (
+                  <div>You are signed in. Save is manual in this slice.</div>
                 )}
-              </pre>
+              </div>
             </>
           ) : (
             <div>Guest session only. This result is not saved.</div>

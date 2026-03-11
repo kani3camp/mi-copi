@@ -1,6 +1,10 @@
 import Link from "next/link";
 
-import { formatDateTimeLabel } from "../features/training/model/format";
+import {
+  formatAccuracyLabel,
+  formatDateTimeLabel,
+  formatScoreLabel,
+} from "../features/training/model/format";
 import { getHomeTrainingSummaryForCurrentUser } from "../features/training/server/getHomeTrainingSummary";
 
 export default async function HomePage() {
@@ -20,13 +24,24 @@ export default async function HomePage() {
       <p style={{ margin: 0 }}>
         MVP の最小導線です。guest の distance / keyboard vertical slice と auth test に入れます。
       </p>
-      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-        <Link href="/train/distance">Start distance guest slice</Link>
-        <Link href="/train/keyboard">Start keyboard guest slice</Link>
-        <Link href="/stats">Open stats</Link>
-        <Link href="/settings">Open settings</Link>
-        <Link href="/auth-test">Open auth test</Link>
-      </div>
+      <section
+        style={{
+          display: "grid",
+          gap: "8px",
+          padding: "16px",
+          border: "1px solid #d4d4d8",
+          borderRadius: "12px",
+        }}
+      >
+        <h2 style={{ margin: 0 }}>Navigation</h2>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <Link href="/train/distance">Train: distance</Link>
+          <Link href="/train/keyboard">Train: keyboard</Link>
+          <Link href="/stats">Stats</Link>
+          <Link href="/settings">Settings</Link>
+          <Link href="/auth-test">Auth test</Link>
+        </div>
+      </section>
 
       <section
         style={{
@@ -53,9 +68,9 @@ export default async function HomePage() {
                 {summary.recentSessions.map((session) => (
                   <li key={session.id}>
                     <Link href={`/sessions/${session.id}`}>
-                      {session.mode} / session score {Math.round(session.sessionScore)} /
-                      accuracy {Math.round(session.accuracyRate * 100)}% / questions{" "}
-                      {session.answeredQuestionCount} /{" "}
+                      {session.mode} / session score {formatScoreLabel(session.sessionScore)} /
+                      accuracy {formatAccuracyLabel(session.accuracyRate)} / questions{" "}
+                      {session.answeredQuestionCount} / created{" "}
                       {formatDateTimeLabel(session.createdAt)}
                     </Link>
                   </li>

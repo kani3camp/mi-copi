@@ -1,27 +1,50 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { formatDateTimeLabel } from "../../features/training/model/format";
 import { getSettingsPageDataForCurrentUser } from "../../features/training/server/getSettingsPageData";
 import { resetLastUsedTrainingConfigForCurrentUser } from "../../features/training/server/lastUsedTrainingConfig";
 
-export default async function SettingsPage() {
+interface SettingsPageProps {
+  searchParams?: Promise<{
+    reset?: string;
+    error?: string;
+  }>;
+}
+
+export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const data = await getSettingsPageDataForCurrentUser();
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const resetTarget = resolvedSearchParams?.reset;
+  const resetError = resolvedSearchParams?.error;
 
   async function resetDistanceAction() {
     "use server";
 
-    await resetLastUsedTrainingConfigForCurrentUser("distance");
-    revalidatePath("/settings");
-    revalidatePath("/train/distance");
+    try {
+      await resetLastUsedTrainingConfigForCurrentUser("distance");
+      revalidatePath("/settings");
+      revalidatePath("/train/distance");
+    } catch {
+      redirect("/settings?error=distance");
+    }
+
+    redirect("/settings?reset=distance");
   }
 
   async function resetKeyboardAction() {
     "use server";
 
-    await resetLastUsedTrainingConfigForCurrentUser("keyboard");
-    revalidatePath("/settings");
-    revalidatePath("/train/keyboard");
+    try {
+      await resetLastUsedTrainingConfigForCurrentUser("keyboard");
+      revalidatePath("/settings");
+      revalidatePath("/train/keyboard");
+    } catch {
+      redirect("/settings?error=keyboard");
+    }
+
+    redirect("/settings?reset=keyboard");
   }
 
   return (
@@ -42,6 +65,36 @@ export default async function SettingsPage() {
           <Link href="/train/keyboard">Open keyboard train</Link>
         </div>
       </header>
+
+      {resetTarget ? (
+        <section
+          style={{
+            padding: "12px 16px",
+            border: "1px solid #86efac",
+            borderRadius: "12px",
+            background: "#f0fdf4",
+          }}
+        >
+          {resetTarget === "distance"
+            ? "Distance config was reset to defaults."
+            : "Keyboard config was reset to defaults."}
+        </section>
+      ) : null}
+
+      {resetError ? (
+        <section
+          style={{
+            padding: "12px 16px",
+            border: "1px solid #fca5a5",
+            borderRadius: "12px",
+            background: "#fef2f2",
+          }}
+        >
+          {resetError === "distance"
+            ? "Failed to reset distance config. Please try again."
+            : "Failed to reset keyboard config. Please try again."}
+        </section>
+      ) : null}
 
       {data.isAuthenticated ? (
         <>

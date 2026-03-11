@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { formatDateTimeLabel } from "../../../features/training/model/format";
+import {
+  formatAccuracyLabel,
+  formatAvgErrorLabel,
+  formatDateTimeLabel,
+  formatResponseTimeMsLabel,
+  formatScoreLabel,
+} from "../../../features/training/model/format";
 import { getTrainingSessionDetailForCurrentUser } from "../../../features/training/server/getTrainingSessionDetail";
 
 interface TrainingSessionDetailPageProps {
@@ -34,6 +40,7 @@ export default async function TrainingSessionDetailPage({
         <h1 style={{ margin: 0 }}>Session detail</h1>
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <Link href="/">Back home</Link>
+          <Link href="/stats">Open stats</Link>
         </div>
       </header>
 
@@ -62,16 +69,17 @@ export default async function TrainingSessionDetailPage({
           <strong>Correct:</strong> {detail.correctQuestionCount}
         </div>
         <div>
-          <strong>Accuracy:</strong> {Math.round(detail.accuracyRate * 100)}%
+          <strong>Accuracy:</strong> {formatAccuracyLabel(detail.accuracyRate)}
         </div>
         <div>
-          <strong>Avg error:</strong> {detail.avgErrorAbs}
+          <strong>Avg error:</strong> {formatAvgErrorLabel(detail.avgErrorAbs)}
         </div>
         <div>
-          <strong>Avg response time:</strong> {detail.avgResponseTimeMs} ms
+          <strong>Avg response time:</strong>{" "}
+          {formatResponseTimeMsLabel(detail.avgResponseTimeMs)}
         </div>
         <div>
-          <strong>Session score:</strong> {detail.sessionScore}
+          <strong>Session score:</strong> {formatScoreLabel(detail.sessionScore)}
         </div>
       </section>
 
@@ -145,8 +153,10 @@ export default async function TrainingSessionDetailPage({
               <li key={result.id}>
                 #{result.questionIndex + 1} / {result.baseNoteName} -&gt;{" "}
                 {result.targetNoteName} / answer {result.answerNoteName} /{" "}
-                {result.isCorrect ? "correct" : `error ${Math.abs(result.errorSemitones)}`} /{" "}
-                {result.responseTimeMs} ms
+                {result.isCorrect
+                  ? "correct"
+                  : `error ${formatAvgErrorLabel(Math.abs(result.errorSemitones))}`}{" "}
+                / {formatResponseTimeMsLabel(result.responseTimeMs)}
               </li>
             ))}
           </ul>
