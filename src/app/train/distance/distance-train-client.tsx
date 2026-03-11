@@ -25,6 +25,10 @@ import {
   formatSignedSemitoneLabel,
   getIntervalLabel,
 } from "../../../features/training/model/interval-notation";
+import {
+  hasTrainingResultSavePayload,
+  shouldAutoSaveTrainingResult,
+} from "../../../features/training/model/result-save";
 import type {
   DistanceTrainingConfig,
   Question,
@@ -104,6 +108,7 @@ export function DistanceTrainClient({
     useState<SaveTrainingSessionResult | null>(null);
   const [isSavePending, startSaveTransition] = useTransition();
   const persistedConfigSessionRef = useRef<string | null>(null);
+  const autoSaveAttemptedSessionRef = useRef<string | null>(null);
   const playbackIdRef = useRef(0);
   const playedNonceRef = useRef<number | null>(null);
   const playbackLockRef = useRef(false);
@@ -121,6 +126,14 @@ export function DistanceTrainClient({
   const cannotSaveBecauseNoAnswers = phase === "result" && results.length === 0;
   const saveFailureMessage =
     saveResult && !saveResult.ok ? getSaveFailureMessage(saveResult) : null;
+  const saveContext = {
+    isAuthenticated,
+    startedAt,
+    endedAt,
+    finishReason,
+    resultsCount: results.length,
+  };
+  const canSaveResult = hasTrainingResultSavePayload(saveContext);
   const intervalNotationStyle = settings.intervalNotationStyle;
   const formatIntervalName = (semitones: number) =>
     getIntervalLabel(semitones, intervalNotationStyle);
@@ -229,6 +242,46 @@ export function DistanceTrainClient({
     };
   }, [config.endCondition, phase, startedAt]);
 
+  useEffect(() => {
+    const autoSaveContext = {
+      isAuthenticated,
+      startedAt,
+      endedAt,
+      finishReason,
+      resultsCount: results.length,
+      attemptedSessionId: autoSaveAttemptedSessionRef.current,
+      isSavePending,
+      hasSavedResult: Boolean(saveResult?.ok),
+    };
+
+    if (!shouldAutoSaveTrainingResult(autoSaveContext)) {
+      return;
+    }
+
+    autoSaveAttemptedSessionRef.current = autoSaveContext.startedAt;
+
+    startSaveTransition(async () => {
+      const result = await saveResultsAction({
+        config,
+        startedAt: autoSaveContext.startedAt,
+        endedAt: autoSaveContext.endedAt,
+        finishReason: autoSaveContext.finishReason,
+        results,
+      });
+      setSaveResult(result);
+    });
+  }, [
+    config,
+    endedAt,
+    finishReason,
+    isAuthenticated,
+    isSavePending,
+    results,
+    saveResult?.ok,
+    saveResultsAction,
+    startedAt,
+  ]);
+
   function handleStart() {
     const validationError = validateDistanceTrainingConfig(config);
 
@@ -243,6 +296,7 @@ export function DistanceTrainClient({
     setAudioError(null);
     setSaveResult(null);
     persistedConfigSessionRef.current = null;
+    autoSaveAttemptedSessionRef.current = null;
     timeoutHandledRef.current = false;
     setStartedAt(nextStartedAt);
     setEndedAt(null);
@@ -388,28 +442,31 @@ export function DistanceTrainClient({
     setAudioError(null);
     setSaveResult(null);
     persistedConfigSessionRef.current = null;
+    autoSaveAttemptedSessionRef.current = null;
     sessionDeadlineAtRef.current = null;
     timeoutHandledRef.current = false;
     setRemainingTimeMs(null);
   }
 
   function handleSaveResults() {
-    if (
-      !startedAt ||
-      !endedAt ||
-      !finishReason ||
-      results.length === 0 ||
-      saveResult?.ok
-    ) {
+    const retrySaveContext = {
+      isAuthenticated,
+      startedAt,
+      endedAt,
+      finishReason,
+      resultsCount: results.length,
+    };
+
+    if (!hasTrainingResultSavePayload(retrySaveContext) || saveResult?.ok) {
       return;
     }
 
     startSaveTransition(async () => {
       const result = await saveResultsAction({
         config,
-        startedAt,
-        endedAt,
-        finishReason,
+        startedAt: retrySaveContext.startedAt,
+        endedAt: retrySaveContext.endedAt,
+        finishReason: retrySaveContext.finishReason,
         results,
       });
       setSaveResult(result);
@@ -468,7 +525,7 @@ export function DistanceTrainClient({
         </div>
         <p style={subtleTextStyle}>
           {isAuthenticated
-            ? "You can save from the result screen."
+            ? "Authenticated results save automatically when you reach the result screen."
             : "Guest mode keeps results only in client state and does not save."}
         </p>
         {audioError ? (
@@ -825,73 +882,70 @@ export function DistanceTrainClient({
           ) : null}
 
           {isAuthenticated ? (
-            <>
-              <button
-                type="button"
-                disabled={
-                  isSavePending ||
-                  Boolean(saveResult?.ok) ||
-                  !startedAt ||
-                  !endedAt ||
-                  !finishReason ||
-                  results.length === 0
-                }
-                onClick={handleSaveResults}
-                style={buttonStyle(
-                  "primary",
-                  isSavePending ||
-                    Boolean(saveResult?.ok) ||
-                    !startedAt ||
-                    !endedAt ||
-                    !finishReason ||
-                    results.length === 0,
-                )}
-              >
-                {saveResult?.ok
-                  ? "Saved"
-                  : isSavePending
-                    ? "Saving..."
-                    : "Save results"}
-              </button>
-              <div
-                style={
-                  saveResult?.ok
-                    ? noticeStyle("success")
-                    : saveResult
-                      ? noticeStyle("error")
-                      : noticeStyle("info")
-                }
-              >
-                {saveResult?.ok ? (
-                  <div style={{ display: "grid", gap: "10px" }}>
+            !cannotSaveBecauseNoAnswers ? (
+              <>
+                <div
+                  style={
+                    saveResult?.ok
+                      ? noticeStyle("success")
+                      : saveResult
+                        ? noticeStyle("error")
+                        : canSaveResult
+                          ? noticeStyle("info")
+                          : noticeStyle("error")
+                  }
+                >
+                  {saveResult?.ok ? (
+                    <div style={{ display: "grid", gap: "10px" }}>
+                      <div>
+                        Results saved automatically. Session ID:{" "}
+                        <code>{saveResult.sessionId}</code>
+                      </div>
+                      <div style={navRowStyle}>
+                        <Link
+                          href={`/sessions/${saveResult.sessionId}`}
+                          style={navLinkStyle}
+                        >
+                          Open session detail
+                        </Link>
+                        <Link href="/stats" style={navLinkStyle}>
+                          Go to stats
+                        </Link>
+                      </div>
+                    </div>
+                  ) : saveResult ? (
+                    <div style={{ display: "grid", gap: "6px" }}>
+                      <div>{saveFailureMessage}</div>
+                      <div style={subtleTextStyle}>
+                        Details: {saveResult.code} / {saveResult.message}
+                      </div>
+                    </div>
+                  ) : canSaveResult ? (
                     <div>
-                      Results saved successfully. Session ID:{" "}
-                      <code>{saveResult.sessionId}</code>
+                      {isSavePending
+                        ? "Saving result automatically..."
+                        : "Preparing automatic save..."}
                     </div>
-                    <div style={navRowStyle}>
-                      <Link
-                        href={`/sessions/${saveResult.sessionId}`}
-                        style={navLinkStyle}
-                      >
-                        Open session detail
-                      </Link>
-                      <Link href="/stats" style={navLinkStyle}>
-                        Go to stats
-                      </Link>
+                  ) : (
+                    <div>
+                      This result could not be saved because the session data
+                      was incomplete.
                     </div>
-                  </div>
-                ) : saveResult ? (
-                  <div style={{ display: "grid", gap: "6px" }}>
-                    <div>{saveFailureMessage}</div>
-                    <div style={subtleTextStyle}>
-                      Details: {saveResult.code} / {saveResult.message}
-                    </div>
-                  </div>
-                ) : (
-                  <div>You are signed in. Save is manual in this slice.</div>
-                )}
-              </div>
-            </>
+                  )}
+                </div>
+
+                {saveResult && !saveResult.ok && canSaveResult ? (
+                  <button
+                    type="button"
+                    disabled={isSavePending}
+                    onClick={handleSaveResults}
+                    style={buttonStyle("primary", isSavePending)}
+                  >
+                    {isSavePending ? "Retrying..." : "Retry save"}
+                  </button>
+                ) : null}
+              </>
+            ) : null
           ) : (
             <div style={noticeStyle("info")}>
               Guest session only. This result is not saved.
