@@ -45,8 +45,15 @@ export function getIntervalLabel(
 
 export function formatSignedSemitoneLabel(value: number): string {
   if (value === 0) {
-    return "0 semitones";
+    return "0 semitones (exact)";
   }
 
-  return `${value > 0 ? "+" : ""}${value} semitones`;
+  const absolute = Math.abs(value);
+  const magnitude = Number.isInteger(absolute)
+    ? absolute.toString()
+    : absolute.toFixed(1);
+  const unit = absolute === 1 ? "semitone" : "semitones";
+  const direction = value > 0 ? "higher" : "lower";
+
+  return `${value > 0 ? "+" : "-"}${magnitude} ${unit} (${direction})`;
 }

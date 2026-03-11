@@ -16,6 +16,8 @@ export interface TrainingSessionDetailQuestionResult {
   baseNoteName: NoteClass;
   targetNoteName: NoteClass;
   answerNoteName: NoteClass;
+  targetIntervalSemitones: number;
+  answerIntervalSemitones: number;
   direction: QuestionDirection;
   isCorrect: boolean;
   errorSemitones: number;
@@ -81,6 +83,8 @@ export async function getTrainingSessionDetailForCurrentUser(
       baseNoteName: questionResults.baseNoteName,
       targetNoteName: questionResults.targetNoteName,
       answerNoteName: questionResults.answerNoteName,
+      targetIntervalSemitones: questionResults.targetIntervalSemitones,
+      answerIntervalSemitones: questionResults.answerIntervalSemitones,
       direction: questionResults.direction,
       isCorrect: questionResults.isCorrect,
       errorSemitones: questionResults.errorSemitones,
@@ -113,6 +117,8 @@ export async function getTrainingSessionDetailForCurrentUser(
       baseNoteName: result.baseNoteName,
       targetNoteName: result.targetNoteName,
       answerNoteName: result.answerNoteName,
+      targetIntervalSemitones: Number(result.targetIntervalSemitones),
+      answerIntervalSemitones: Number(result.answerIntervalSemitones),
       direction: result.direction,
       isCorrect: result.isCorrect,
       errorSemitones: Number(result.errorSemitones),

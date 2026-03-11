@@ -112,9 +112,13 @@ export function DistanceTrainClient({
     [config],
   );
   const summary = useMemo(() => buildDistanceGuestSummary(results), [results]);
+  const recentResults = useMemo(() => results.slice(-3).reverse(), [results]);
   const cannotSaveBecauseNoAnswers = phase === "result" && results.length === 0;
   const saveFailureMessage =
     saveResult && !saveResult.ok ? getSaveFailureMessage(saveResult) : null;
+  const intervalNotationStyle = settings.intervalNotationStyle;
+  const formatIntervalName = (semitones: number) =>
+    getIntervalLabel(semitones, intervalNotationStyle);
 
   useEffect(() => {
     if (phase !== "playing" || !activeQuestion) {
@@ -560,9 +564,7 @@ export function DistanceTrainClient({
           <div>
             <strong>Candidate answers:</strong>{" "}
             {answerChoiceValues
-              .map((choice) =>
-                getIntervalLabel(choice, settings.intervalNotationStyle),
-              )
+              .map((choice) => formatIntervalName(choice))
               .join(", ")}
           </div>
 
@@ -618,15 +620,19 @@ export function DistanceTrainClient({
                   Replay
                 </button>
               </div>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <div style={answerButtonGridStyle}>
                 {answerChoiceValues.map((choice) => (
                   <button
                     key={choice}
                     type="button"
                     onClick={() => handleAnswer(choice)}
-                    style={buttonStyle("secondary")}
+                    style={{
+                      ...buttonStyle("secondary"),
+                      width: "100%",
+                      textAlign: "left",
+                    }}
                   >
-                    {getIntervalLabel(choice, settings.intervalNotationStyle)}
+                    {formatIntervalName(choice)}
                   </button>
                 ))}
               </div>
@@ -638,35 +644,50 @@ export function DistanceTrainClient({
       {phase === "feedback" && feedbackResult ? (
         <section style={cardStyle}>
           <h2 style={sectionTitleStyle}>Feedback</h2>
+          <div
+            style={feedbackStatusBannerStyle(
+              feedbackResult.isCorrect ? "success" : "error",
+            )}
+          >
+            <strong>
+              {feedbackResult.isCorrect ? "Correct" : "Incorrect"}
+            </strong>
+            <span>
+              {feedbackResult.question.direction === "up"
+                ? "Upward interval"
+                : "Downward interval"}
+            </span>
+          </div>
+          <div style={feedbackIntervalGridStyle}>
+            <div style={feedbackIntervalCardStyle}>
+              <span style={feedbackCardLabelStyle}>Correct interval</span>
+              <strong style={feedbackCardValueStyle}>
+                {formatIntervalName(feedbackResult.question.distanceSemitones)}
+              </strong>
+            </div>
+            <div style={feedbackIntervalCardStyle}>
+              <span style={feedbackCardLabelStyle}>Your answer</span>
+              <strong style={feedbackCardValueStyle}>
+                {formatIntervalName(feedbackResult.answeredDistanceSemitones)}
+              </strong>
+            </div>
+          </div>
           <div style={keyValueGridStyle}>
             <div style={keyValueCardStyle}>
-              <strong>Result:</strong>{" "}
-              {feedbackResult.isCorrect ? "Correct" : "Incorrect"}
+              <strong>Signed error</strong>
+              <span>
+                {formatSignedSemitoneLabel(feedbackResult.errorSemitones)}
+              </span>
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Correct interval:</strong>{" "}
-              {getIntervalLabel(
-                feedbackResult.question.distanceSemitones,
-                settings.intervalNotationStyle,
-              )}
+              <strong>Response time</strong>
+              <span>
+                {formatResponseTimeMsLabel(feedbackResult.responseTimeMs)}
+              </span>
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Your answer:</strong>{" "}
-              {getIntervalLabel(
-                feedbackResult.answeredDistanceSemitones,
-                settings.intervalNotationStyle,
-              )}
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>Error:</strong>{" "}
-              {formatSignedSemitoneLabel(feedbackResult.errorSemitones)}
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>Response time:</strong>{" "}
-              {formatResponseTimeMsLabel(feedbackResult.responseTimeMs)}
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>Score:</strong> {formatScoreLabel(feedbackResult.score)}
+              <strong>Score</strong>
+              <span>{formatScoreLabel(feedbackResult.score)}</span>
             </div>
           </div>
           <button
@@ -714,6 +735,35 @@ export function DistanceTrainClient({
               <span>{formatScoreLabel(summary.sessionScore)}</span>
             </div>
           </div>
+
+          {recentResults.length > 0 ? (
+            <div style={{ display: "grid", gap: "10px" }}>
+              <h3 style={{ ...sectionTitleStyle, fontSize: "18px" }}>
+                Recent answers
+              </h3>
+              <div style={{ display: "grid", gap: "10px" }}>
+                {recentResults.map((result) => (
+                  <div key={result.answeredAt} style={keyValueCardStyle}>
+                    <strong>
+                      Question {result.question.questionIndex + 1}
+                    </strong>
+                    <span>
+                      Correct:{" "}
+                      {formatIntervalName(result.question.distanceSemitones)}
+                    </span>
+                    <span>
+                      Answered:{" "}
+                      {formatIntervalName(result.answeredDistanceSemitones)}
+                    </span>
+                    <span>
+                      {formatSignedSemitoneLabel(result.errorSemitones)} /{" "}
+                      {formatResponseTimeMsLabel(result.responseTimeMs)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           {isAuthenticated ? (
             <>
@@ -974,4 +1024,42 @@ function getSaveFailureMessage(
   }
 
   return "We couldn't save this result. Please try again.";
+}
+
+const answerButtonGridStyle = {
+  display: "grid",
+  gap: "8px",
+  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+};
+
+const feedbackIntervalGridStyle = {
+  display: "grid",
+  gap: "10px",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+};
+
+const feedbackIntervalCardStyle = {
+  ...keyValueCardStyle,
+  gap: "8px",
+  padding: "16px",
+};
+
+const feedbackCardLabelStyle = {
+  fontSize: "12px",
+  fontWeight: 700,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase" as const,
+};
+
+const feedbackCardValueStyle = {
+  fontSize: "24px",
+  lineHeight: 1.25,
+};
+
+function feedbackStatusBannerStyle(kind: "success" | "error") {
+  return {
+    ...noticeStyle(kind),
+    display: "grid",
+    gap: "4px",
+  };
 }

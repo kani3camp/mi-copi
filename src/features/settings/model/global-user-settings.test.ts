@@ -8,7 +8,7 @@ const {
   parseGlobalUserSettings,
   serializeGlobalUserSettings,
 } = await import(new URL("./global-user-settings.ts", import.meta.url).href);
-const { getIntervalLabel } = await import(
+const { formatSignedSemitoneLabel, getIntervalLabel } = await import(
   new URL("../../training/model/interval-notation.ts", import.meta.url).href
 );
 
@@ -59,4 +59,10 @@ test("interval labels switch between Japanese, abbreviation, and mixed styles", 
   assert.equal(getIntervalLabel(6, "ja"), "増4度 / 減5度");
   assert.equal(getIntervalLabel(6, "abbr"), "A4 / d5");
   assert.equal(getIntervalLabel(6, "mixed"), "増4度 / 減5度 (A4 / d5)");
+});
+
+test("signed semitone labels keep direction explicit", () => {
+  assert.equal(formatSignedSemitoneLabel(0), "0 semitones (exact)");
+  assert.equal(formatSignedSemitoneLabel(1), "+1 semitone (higher)");
+  assert.equal(formatSignedSemitoneLabel(-2), "-2 semitones (lower)");
 });

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { getGlobalUserSettingsForCurrentUser } from "../../../features/settings/server/global-user-settings";
 import {
   formatAccuracyLabel,
   formatAvgErrorLabel,
@@ -8,6 +9,10 @@ import {
   formatResponseTimeMsLabel,
   formatScoreLabel,
 } from "../../../features/training/model/format";
+import {
+  formatSignedSemitoneLabel,
+  getIntervalLabel,
+} from "../../../features/training/model/interval-notation";
 import { getTrainingSessionDetailForCurrentUser } from "../../../features/training/server/getTrainingSessionDetail";
 import {
   cardStyle,
@@ -32,11 +37,16 @@ export default async function TrainingSessionDetailPage({
   params,
 }: TrainingSessionDetailPageProps) {
   const { sessionId } = await params;
-  const detail = await getTrainingSessionDetailForCurrentUser(sessionId);
+  const [detail, globalSettings] = await Promise.all([
+    getTrainingSessionDetailForCurrentUser(sessionId),
+    getGlobalUserSettingsForCurrentUser(),
+  ]);
 
   if (!detail) {
     notFound();
   }
+
+  const intervalNotationStyle = globalSettings.settings.intervalNotationStyle;
 
   return (
     <main style={pageShellStyle}>
@@ -156,16 +166,42 @@ export default async function TrainingSessionDetailPage({
                 }}
               >
                 <strong>Question #{result.questionIndex + 1}</strong>
-                <span style={subtleTextStyle}>
-                  {result.baseNoteName} -&gt; {result.targetNoteName} / answer{" "}
-                  {result.answerNoteName}
-                </span>
-                <span style={subtleTextStyle}>
-                  {result.isCorrect
-                    ? "Correct"
-                    : `Error ${formatAvgErrorLabel(Math.abs(result.errorSemitones))}`}{" "}
-                  / {formatResponseTimeMsLabel(result.responseTimeMs)}
-                </span>
+                {detail.mode === "distance" ? (
+                  <>
+                    <span style={subtleTextStyle}>
+                      Correct:{" "}
+                      {getIntervalLabel(
+                        result.targetIntervalSemitones,
+                        intervalNotationStyle,
+                      )}
+                    </span>
+                    <span style={subtleTextStyle}>
+                      Answered:{" "}
+                      {getIntervalLabel(
+                        result.answerIntervalSemitones,
+                        intervalNotationStyle,
+                      )}
+                    </span>
+                    <span style={subtleTextStyle}>
+                      {result.isCorrect ? "Correct" : "Incorrect"} /{" "}
+                      {formatSignedSemitoneLabel(result.errorSemitones)} /{" "}
+                      {formatResponseTimeMsLabel(result.responseTimeMs)}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span style={subtleTextStyle}>
+                      {result.baseNoteName} -&gt; {result.targetNoteName} /
+                      answer {result.answerNoteName}
+                    </span>
+                    <span style={subtleTextStyle}>
+                      {result.isCorrect
+                        ? "Correct"
+                        : `Error ${formatAvgErrorLabel(Math.abs(result.errorSemitones))}`}{" "}
+                      / {formatResponseTimeMsLabel(result.responseTimeMs)}
+                    </span>
+                  </>
+                )}
               </li>
             ))}
           </ul>
