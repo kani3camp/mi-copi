@@ -5,6 +5,19 @@ import { redirect } from "next/navigation";
 import { formatDateTimeLabel } from "../../features/training/model/format";
 import { getSettingsPageDataForCurrentUser } from "../../features/training/server/getSettingsPageData";
 import { resetLastUsedTrainingConfigForCurrentUser } from "../../features/training/server/lastUsedTrainingConfig";
+import {
+  buttonStyle,
+  cardStyle,
+  keyValueCardStyle,
+  keyValueGridStyle,
+  navLinkStyle,
+  navRowStyle,
+  noticeStyle,
+  pageHeroStyle,
+  pageShellStyle,
+  sectionTitleStyle,
+  subtleTextStyle,
+} from "../ui/polish";
 
 interface SettingsPageProps {
   searchParams?: Promise<{
@@ -49,32 +62,28 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
   return (
     <main
-      style={{
-        maxWidth: "900px",
-        margin: "0 auto",
-        padding: "40px 20px",
-        display: "grid",
-        gap: "16px",
-      }}
+      style={pageShellStyle}
     >
-      <header style={{ display: "grid", gap: "8px" }}>
-        <h1 style={{ margin: 0 }}>Settings</h1>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <Link href="/">Back home</Link>
-          <Link href="/train/distance">Open distance train</Link>
-          <Link href="/train/keyboard">Open keyboard train</Link>
+      <header style={pageHeroStyle}>
+        <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>Settings</h1>
+        <p style={subtleTextStyle}>
+          保存済みの last-used config を確認し、必要なら mode ごとに既定値へ戻せます。
+        </p>
+        <div style={navRowStyle}>
+          <Link href="/" style={navLinkStyle}>
+            Back home
+          </Link>
+          <Link href="/train/distance" style={navLinkStyle}>
+            Open distance train
+          </Link>
+          <Link href="/train/keyboard" style={navLinkStyle}>
+            Open keyboard train
+          </Link>
         </div>
       </header>
 
       {resetTarget ? (
-        <section
-          style={{
-            padding: "12px 16px",
-            border: "1px solid #86efac",
-            borderRadius: "12px",
-            background: "#f0fdf4",
-          }}
-        >
+        <section style={noticeStyle("success")}>
           {resetTarget === "distance"
             ? "Distance config was reset to defaults."
             : "Keyboard config was reset to defaults."}
@@ -82,14 +91,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       ) : null}
 
       {resetError ? (
-        <section
-          style={{
-            padding: "12px 16px",
-            border: "1px solid #fca5a5",
-            borderRadius: "12px",
-            background: "#fef2f2",
-          }}
-        >
+        <section style={noticeStyle("error")}>
           {resetError === "distance"
             ? "Failed to reset distance config. Please try again."
             : "Failed to reset keyboard config. Please try again."}
@@ -98,97 +100,79 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
       {data.isAuthenticated ? (
         <>
-          <section
-            style={{
-              display: "grid",
-              gap: "8px",
-              padding: "16px",
-              border: "1px solid #d4d4d8",
-              borderRadius: "12px",
-            }}
-          >
-            <div>
-              <strong>Login status:</strong> signed in
-            </div>
-            <div>
-              <strong>Name:</strong> {data.user?.name ?? "unknown"}
-            </div>
-            <div>
-              <strong>Email:</strong> {data.user?.email ?? "unknown"}
-            </div>
-            <div>
-              <strong>Last updated:</strong>{" "}
-              {data.updatedAt ? formatDateTimeLabel(data.updatedAt) : "not saved yet"}
+          <section style={cardStyle}>
+            <h2 style={sectionTitleStyle}>Account overview</h2>
+            <div style={keyValueGridStyle}>
+              <div style={keyValueCardStyle}>
+                <strong>Login status</strong>
+                <span>signed in</span>
+              </div>
+              <div style={keyValueCardStyle}>
+                <strong>Name</strong>
+                <span>{data.user?.name ?? "unknown"}</span>
+              </div>
+              <div style={keyValueCardStyle}>
+                <strong>Email</strong>
+                <span>{data.user?.email ?? "unknown"}</span>
+              </div>
+              <div style={keyValueCardStyle}>
+                <strong>Last updated</strong>
+                <span>{data.updatedAt ? formatDateTimeLabel(data.updatedAt) : "not saved yet"}</span>
+              </div>
             </div>
           </section>
 
-          <section
-            style={{
-              display: "grid",
-              gap: "8px",
-              padding: "16px",
-              border: "1px solid #d4d4d8",
-              borderRadius: "12px",
-            }}
-          >
-            <h2 style={{ margin: 0 }}>Last-used distance config</h2>
+          <section style={cardStyle}>
+            <h2 style={sectionTitleStyle}>Last-used distance config</h2>
             {data.lastDistanceConfig ? (
               <>
                 <ConfigSnapshotView config={data.lastDistanceConfig} />
                 <form action={resetDistanceAction}>
-                  <button type="submit">Reset distance to defaults</button>
+                  <button type="submit" style={buttonStyle()}>
+                    Reset distance to defaults
+                  </button>
                 </form>
               </>
             ) : (
               <>
-                <div>No saved distance config yet.</div>
+                <p style={subtleTextStyle}>No saved distance config yet.</p>
                 <form action={resetDistanceAction}>
-                  <button type="submit">Reset distance to defaults</button>
+                  <button type="submit" style={buttonStyle()}>
+                    Reset distance to defaults
+                  </button>
                 </form>
               </>
             )}
           </section>
 
-          <section
-            style={{
-              display: "grid",
-              gap: "8px",
-              padding: "16px",
-              border: "1px solid #d4d4d8",
-              borderRadius: "12px",
-            }}
-          >
-            <h2 style={{ margin: 0 }}>Last-used keyboard config</h2>
+          <section style={cardStyle}>
+            <h2 style={sectionTitleStyle}>Last-used keyboard config</h2>
             {data.lastKeyboardConfig ? (
               <>
                 <ConfigSnapshotView config={data.lastKeyboardConfig} />
                 <form action={resetKeyboardAction}>
-                  <button type="submit">Reset keyboard to defaults</button>
+                  <button type="submit" style={buttonStyle()}>
+                    Reset keyboard to defaults
+                  </button>
                 </form>
               </>
             ) : (
               <>
-                <div>No saved keyboard config yet.</div>
+                <p style={subtleTextStyle}>No saved keyboard config yet.</p>
                 <form action={resetKeyboardAction}>
-                  <button type="submit">Reset keyboard to defaults</button>
+                  <button type="submit" style={buttonStyle()}>
+                    Reset keyboard to defaults
+                  </button>
                 </form>
               </>
             )}
           </section>
         </>
       ) : (
-        <section
-          style={{
-            display: "grid",
-            gap: "8px",
-            padding: "16px",
-            border: "1px solid #d4d4d8",
-            borderRadius: "12px",
-          }}
-        >
-          <div>
+        <section style={cardStyle}>
+          <p style={subtleTextStyle}>
             You are using guest mode. Saved settings become available after sign-in.
-          </div>
+          </p>
         </section>
       )}
     </main>
@@ -222,40 +206,40 @@ function ConfigSnapshotView(props: {
   const { config } = props;
 
   return (
-    <>
-      <div>
+    <div style={keyValueGridStyle}>
+      <div style={keyValueCardStyle}>
         <strong>Mode:</strong> {config.mode}
       </div>
-      <div>
+      <div style={keyValueCardStyle}>
         <strong>Interval range:</strong> {config.intervalRange.minSemitones} -{" "}
         {config.intervalRange.maxSemitones}
       </div>
-      <div>
+      <div style={keyValueCardStyle}>
         <strong>Direction:</strong> {config.directionMode}
       </div>
-      <div>
+      <div style={keyValueCardStyle}>
         <strong>Base note mode:</strong> {config.baseNoteMode}
       </div>
-      <div>
+      <div style={keyValueCardStyle}>
         <strong>Fixed base note:</strong> {config.fixedBaseNote ?? "none"}
       </div>
-      <div>
+      <div style={keyValueCardStyle}>
         <strong>Include unison:</strong> {config.includeUnison ? "yes" : "no"}
       </div>
-      <div>
+      <div style={keyValueCardStyle}>
         <strong>Include octave:</strong> {config.includeOctave ? "yes" : "no"}
       </div>
-      <div>
+      <div style={keyValueCardStyle}>
         <strong>End condition:</strong>{" "}
         {config.endCondition.type === "question_count"
           ? `question_count (${config.endCondition.questionCount})`
           : `time_limit (${config.endCondition.timeLimitMinutes} min)`}
       </div>
       {"intervalGranularity" in config && config.intervalGranularity ? (
-        <div>
+        <div style={keyValueCardStyle}>
           <strong>Interval granularity:</strong> {config.intervalGranularity}
         </div>
       ) : null}
-    </>
+    </div>
   );
 }

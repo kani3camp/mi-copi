@@ -6,82 +6,96 @@ import {
   formatScoreLabel,
 } from "../features/training/model/format";
 import { getHomeTrainingSummaryForCurrentUser } from "../features/training/server/getHomeTrainingSummary";
+import {
+  cardStyle,
+  listLinkStyle,
+  listStyle,
+  metricCardStyle,
+  metricLabelStyle,
+  metricValueStyle,
+  metricsGridStyle,
+  navLinkStyle,
+  navRowStyle,
+  pageHeroStyle,
+  pageShellStyle,
+  pageSubtitleStyle,
+  pageTitleStyle,
+  sectionTitleStyle,
+  subtleTextStyle,
+} from "./ui/polish";
 
 export default async function HomePage() {
   const summary = await getHomeTrainingSummaryForCurrentUser();
 
   return (
     <main
-      style={{
-        maxWidth: "720px",
-        margin: "0 auto",
-        padding: "40px 20px",
-        display: "grid",
-        gap: "16px",
-      }}
+      style={pageShellStyle}
     >
-      <h1 style={{ margin: 0 }}>ミーコピ</h1>
-      <p style={{ margin: 0 }}>
-        MVP の最小導線です。guest の distance / keyboard vertical slice と auth test に入れます。
-      </p>
-      <section
-        style={{
-          display: "grid",
-          gap: "8px",
-          padding: "16px",
-          border: "1px solid #d4d4d8",
-          borderRadius: "12px",
-        }}
-      >
-        <h2 style={{ margin: 0 }}>Navigation</h2>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <Link href="/train/distance">Train: distance</Link>
-          <Link href="/train/keyboard">Train: keyboard</Link>
-          <Link href="/stats">Stats</Link>
-          <Link href="/settings">Settings</Link>
-          <Link href="/auth-test">Auth test</Link>
+      <header style={pageHeroStyle}>
+        <h1 style={pageTitleStyle}>ミーコピ</h1>
+        <p style={pageSubtitleStyle}>
+          MVP の最小導線です。distance / keyboard の練習、保存結果の確認、設定確認までを軽く通せます。
+        </p>
+        <div style={navRowStyle}>
+          <Link href="/train/distance" style={navLinkStyle}>
+            Train: distance
+          </Link>
+          <Link href="/train/keyboard" style={navLinkStyle}>
+            Train: keyboard
+          </Link>
+          <Link href="/stats" style={navLinkStyle}>
+            Stats
+          </Link>
+          <Link href="/settings" style={navLinkStyle}>
+            Settings
+          </Link>
+          <Link href="/auth-test" style={navLinkStyle}>
+            Auth test
+          </Link>
         </div>
-      </section>
+      </header>
 
-      <section
-        style={{
-          display: "grid",
-          gap: "12px",
-          padding: "16px",
-          border: "1px solid #d4d4d8",
-          borderRadius: "12px",
-        }}
-      >
-        <h2 style={{ margin: 0 }}>Saved training summary</h2>
+      <section style={cardStyle}>
+        <h2 style={sectionTitleStyle}>Saved training summary</h2>
         {summary.isAuthenticated ? (
           <>
-            <div>
-              <strong>Total sessions:</strong> {summary.totalSessions}
-            </div>
-            <div>
-              <strong>Total saved question results:</strong>{" "}
-              {summary.totalSavedQuestionResults}
+            <div style={metricsGridStyle}>
+              <div style={metricCardStyle}>
+                <span style={metricLabelStyle}>Total sessions</span>
+                <span style={metricValueStyle}>{summary.totalSessions}</span>
+              </div>
+              <div style={metricCardStyle}>
+                <span style={metricLabelStyle}>Saved question results</span>
+                <span style={metricValueStyle}>{summary.totalSavedQuestionResults}</span>
+              </div>
             </div>
 
             {summary.recentSessions.length > 0 ? (
-              <ul style={{ margin: 0, paddingLeft: "20px" }}>
+              <ul style={listStyle}>
                 {summary.recentSessions.map((session) => (
                   <li key={session.id}>
-                    <Link href={`/sessions/${session.id}`}>
-                      {session.mode} / session score {formatScoreLabel(session.sessionScore)} /
-                      accuracy {formatAccuracyLabel(session.accuracyRate)} / questions{" "}
-                      {session.answeredQuestionCount} / created{" "}
-                      {formatDateTimeLabel(session.createdAt)}
+                    <Link href={`/sessions/${session.id}`} style={listLinkStyle}>
+                      <strong style={{ fontSize: "16px" }}>{session.mode}</strong>
+                      <span style={subtleTextStyle}>
+                        Session score {formatScoreLabel(session.sessionScore)} / accuracy{" "}
+                        {formatAccuracyLabel(session.accuracyRate)} / questions{" "}
+                        {session.answeredQuestionCount}
+                      </span>
+                      <span style={subtleTextStyle}>
+                        Created {formatDateTimeLabel(session.createdAt)}
+                      </span>
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <div>No saved sessions yet.</div>
+              <p style={subtleTextStyle}>No saved sessions yet.</p>
             )}
           </>
         ) : (
-          <div>Sign in to see saved training data. Guest sessions are not saved.</div>
+          <p style={subtleTextStyle}>
+            Sign in to see saved training data. Guest sessions are not saved.
+          </p>
         )}
       </section>
     </main>

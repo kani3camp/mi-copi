@@ -11,6 +11,20 @@ import {
   formatScoreLabel,
 } from "../../../features/training/model/format";
 import {
+  buttonStyle,
+  cardStyle,
+  keyValueCardStyle,
+  keyValueGridStyle,
+  noticeStyle,
+  pageHeroStyle,
+  pageShellStyle,
+  phaseBadgeStyle,
+  sectionTitleStyle,
+  subtleTextStyle,
+  navLinkStyle,
+  navRowStyle,
+} from "../../ui/polish";
+import {
   buildKeyboardGuestSummary,
   createDefaultKeyboardTrainingConfig,
   evaluateKeyboardAnswer,
@@ -246,65 +260,50 @@ export function KeyboardTrainClient({
 
   return (
     <main
-      style={{
-        maxWidth: "960px",
-        margin: "0 auto",
-        padding: "40px 20px",
-        display: "grid",
-        gap: "24px",
-      }}
+      style={pageShellStyle}
     >
-      <header style={{ display: "grid", gap: "8px" }}>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <h1 style={{ margin: 0 }}>Keyboard Train</h1>
-          <span>guest vertical slice</span>
+      <header style={pageHeroStyle}>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+          <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>Keyboard Train</h1>
+          <span style={phaseBadgeStyle(phase)}>{phase}</span>
         </div>
-        <p style={{ margin: 0 }}>
+        <p style={subtleTextStyle}>
           設定 → 出題 → 回答 → フィードバック → 結果までを keyboard モードで通せる最小実装です。
         </p>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <Link href="/">Back home</Link>
-          <Link href="/train/distance">Distance mode</Link>
+        <div style={navRowStyle}>
+          <Link href="/" style={navLinkStyle}>
+            Back home
+          </Link>
+          <Link href="/train/distance" style={navLinkStyle}>
+            Distance mode
+          </Link>
         </div>
       </header>
 
-      <section
-        style={{
-          display: "grid",
-          gap: "12px",
-          padding: "16px",
-          border: "1px solid #d4d4d8",
-          borderRadius: "12px",
-        }}
-      >
-        <div>
-          <strong>Phase:</strong> {phase}
-        </div>
+      <section style={cardStyle}>
+        <div style={keyValueGridStyle}>
+          <div style={keyValueCardStyle}>
+            <strong>Phase</strong>
+            <span>{phase}</span>
+          </div>
         {startedAt ? (
-          <div>
-            <strong>Started at:</strong> {formatDateTimeLabel(startedAt)}
+          <div style={keyValueCardStyle}>
+            <strong>Started at</strong>
+            <span>{formatDateTimeLabel(startedAt)}</span>
           </div>
         ) : null}
-        <div>
-          <strong>Persistence:</strong>{" "}
+        </div>
+        <p style={subtleTextStyle}>
           {isAuthenticated
             ? "You can save from the result screen."
             : "Guest mode keeps results only in client state and does not save."}
-        </div>
-        {audioError ? <div>{audioError}</div> : null}
+        </p>
+        {audioError ? <div style={noticeStyle("error")}>{audioError}</div> : null}
       </section>
 
       {phase === "config" ? (
-        <section
-          style={{
-            display: "grid",
-            gap: "16px",
-            padding: "16px",
-            border: "1px solid #d4d4d8",
-            borderRadius: "12px",
-          }}
-        >
-          <h2 style={{ margin: 0 }}>Config</h2>
+        <section style={cardStyle}>
+          <h2 style={sectionTitleStyle}>Config</h2>
           <label style={{ display: "grid", gap: "8px" }}>
             <span>Question count</span>
             <input
@@ -385,13 +384,13 @@ export function KeyboardTrainClient({
           </div>
 
           {isAuthenticated && hasStoredConfig ? (
-            <div>前回設定を読み込み済みです。</div>
+            <div style={noticeStyle("info")}>前回設定を読み込み済みです。</div>
           ) : null}
 
-          {configError ? <div>{configError}</div> : null}
+          {configError ? <div style={noticeStyle("error")}>{configError}</div> : null}
 
           <div>
-            <button type="button" onClick={handleStart}>
+            <button type="button" onClick={handleStart} style={buttonStyle("primary")}>
               Start
             </button>
           </div>
@@ -399,32 +398,26 @@ export function KeyboardTrainClient({
       ) : null}
 
       {(phase === "playing" || phase === "answering") && activeQuestion ? (
-        <section
-          style={{
-            display: "grid",
-            gap: "16px",
-            padding: "16px",
-            border: "1px solid #d4d4d8",
-            borderRadius: "12px",
-          }}
-        >
-          <h2 style={{ margin: 0 }}>Question {activeQuestion.question.questionIndex + 1}</h2>
-          <div>
+        <section style={cardStyle}>
+          <h2 style={sectionTitleStyle}>Question {activeQuestion.question.questionIndex + 1}</h2>
+          <p style={subtleTextStyle}>
             Hear the base tone and target tone, then answer the target note name.
-          </div>
-          <div>
+          </p>
+          <div style={keyValueGridStyle}>
+            <div style={keyValueCardStyle}>
             <strong>Direction:</strong> {activeQuestion.question.direction}
-          </div>
-          <div>
+            </div>
+            <div style={keyValueCardStyle}>
             <strong>Replay count:</strong> {activeQuestion.replayCount}
           </div>
+          </div>
 
-          {phase === "playing" ? <div>Playing question audio...</div> : null}
+          {phase === "playing" ? <div style={noticeStyle("info")}>Playing question audio...</div> : null}
 
           {phase === "answering" ? (
             <>
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                <button type="button" onClick={handleReplay}>
+                <button type="button" onClick={handleReplay} style={buttonStyle()}>
                   Replay
                 </button>
               </div>
@@ -434,6 +427,7 @@ export function KeyboardTrainClient({
                     key={choice}
                     type="button"
                     onClick={() => handleAnswer(choice)}
+                    style={buttonStyle("secondary")}
                   >
                     {choice}
                   </button>
@@ -445,70 +439,63 @@ export function KeyboardTrainClient({
       ) : null}
 
       {phase === "feedback" && feedbackResult ? (
-        <section
-          style={{
-            display: "grid",
-            gap: "12px",
-            padding: "16px",
-            border: "1px solid #d4d4d8",
-            borderRadius: "12px",
-          }}
-        >
-          <h2 style={{ margin: 0 }}>Feedback</h2>
-          <div>
+        <section style={cardStyle}>
+          <h2 style={sectionTitleStyle}>Feedback</h2>
+          <div style={keyValueGridStyle}>
+            <div style={keyValueCardStyle}>
             <strong>Result:</strong> {feedbackResult.isCorrect ? "Correct" : "Incorrect"}
-          </div>
-          <div>
+            </div>
+            <div style={keyValueCardStyle}>
             <strong>Correct note:</strong> {feedbackResult.question.targetNote}
-          </div>
-          <div>
+            </div>
+            <div style={keyValueCardStyle}>
             <strong>Your answer:</strong> {feedbackResult.answeredNote}
-          </div>
-          <div>
+            </div>
+            <div style={keyValueCardStyle}>
             <strong>Error:</strong> {Math.abs(feedbackResult.errorSemitones)}
-          </div>
-          <div>
+            </div>
+            <div style={keyValueCardStyle}>
             <strong>Response time:</strong>{" "}
             {formatResponseTimeMsLabel(feedbackResult.responseTimeMs)}
-          </div>
-          <div>
+            </div>
+            <div style={keyValueCardStyle}>
             <strong>Score:</strong> {formatScoreLabel(feedbackResult.score)}
           </div>
-          <button type="button" onClick={handleContinue}>
+          </div>
+          <button type="button" onClick={handleContinue} style={buttonStyle("primary")}>
             {lastAnsweredWasFinal ? "Show result" : "Next question"}
           </button>
         </section>
       ) : null}
 
       {phase === "result" ? (
-        <section
-          style={{
-            display: "grid",
-            gap: "12px",
-            padding: "16px",
-            border: "1px solid #d4d4d8",
-            borderRadius: "12px",
-          }}
-        >
-          <h2 style={{ margin: 0 }}>Result</h2>
-          <div>
-            <strong>Questions:</strong> {summary.questionCount}
-          </div>
-          <div>
-            <strong>Correct:</strong> {summary.correctCount}
-          </div>
-          <div>
-            <strong>Accuracy:</strong> {formatAccuracyLabel(summary.accuracyRate)}
-          </div>
-          <div>
-            <strong>Avg error:</strong> {formatAvgErrorLabel(summary.avgErrorAbs)}
-          </div>
-          <div>
-            <strong>Avg response time:</strong>{" "}
-            {formatResponseTimeMsLabel(summary.avgResponseTimeMs)}
-          </div>
-          <div>
-            <strong>Session score:</strong> {formatScoreLabel(summary.sessionScore)}
+        <section style={cardStyle}>
+          <h2 style={sectionTitleStyle}>Result</h2>
+          <div style={keyValueGridStyle}>
+            <div style={keyValueCardStyle}>
+              <strong>Questions</strong>
+              <span>{summary.questionCount}</span>
+            </div>
+            <div style={keyValueCardStyle}>
+              <strong>Correct</strong>
+              <span>{summary.correctCount}</span>
+            </div>
+            <div style={keyValueCardStyle}>
+              <strong>Accuracy</strong>
+              <span>{formatAccuracyLabel(summary.accuracyRate)}</span>
+            </div>
+            <div style={keyValueCardStyle}>
+              <strong>Avg error</strong>
+              <span>{formatAvgErrorLabel(summary.avgErrorAbs)}</span>
+            </div>
+            <div style={keyValueCardStyle}>
+              <strong>Avg response time</strong>
+              <span>{formatResponseTimeMsLabel(summary.avgResponseTimeMs)}</span>
+            </div>
+            <div style={keyValueCardStyle}>
+              <strong>Session score</strong>
+              <span>{formatScoreLabel(summary.sessionScore)}</span>
+            </div>
           </div>
 
           {isAuthenticated ? (
@@ -517,6 +504,7 @@ export function KeyboardTrainClient({
                 type="button"
                 disabled={isSavePending || Boolean(saveResult?.ok) || !startedAt || results.length === 0}
                 onClick={handleSaveResults}
+                style={buttonStyle("primary", isSavePending || Boolean(saveResult?.ok) || !startedAt || results.length === 0)}
               >
                 {saveResult?.ok
                   ? "Saved"
@@ -524,15 +512,7 @@ export function KeyboardTrainClient({
                     ? "Saving..."
                     : "Save results"}
               </button>
-              <div
-                style={{
-                  margin: 0,
-                  padding: "12px",
-                  border: "1px solid #d4d4d8",
-                  borderRadius: "8px",
-                  background: "#fafafa",
-                }}
-              >
+              <div style={saveResult?.ok ? noticeStyle("success") : saveResult ? noticeStyle("error") : noticeStyle("info")}>
                 {saveResult?.ok ? (
                   <div>
                     Saved successfully. Session ID: <code>{saveResult.sessionId}</code>
@@ -547,10 +527,10 @@ export function KeyboardTrainClient({
               </div>
             </>
           ) : (
-            <div>Guest session only. This result is not saved.</div>
+            <div style={noticeStyle("info")}>Guest session only. This result is not saved.</div>
           )}
 
-          <button type="button" onClick={handleReset}>
+          <button type="button" onClick={handleReset} style={buttonStyle()}>
             Start over
           </button>
         </section>

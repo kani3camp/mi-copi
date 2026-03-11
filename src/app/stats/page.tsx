@@ -6,120 +6,109 @@ import {
   formatDateTimeLabel,
   formatScoreLabel,
 } from "../../features/training/model/format";
+import {
+  cardStyle,
+  listLinkStyle,
+  listStyle,
+  metricCardStyle,
+  metricLabelStyle,
+  metricValueStyle,
+  metricsGridStyle,
+  navLinkStyle,
+  navRowStyle,
+  pageHeroStyle,
+  pageShellStyle,
+  sectionTitleStyle,
+  subtleTextStyle,
+} from "../ui/polish";
 
 export default async function StatsPage() {
   const stats = await getTrainingStatsForCurrentUser();
 
   return (
     <main
-      style={{
-        maxWidth: "900px",
-        margin: "0 auto",
-        padding: "40px 20px",
-        display: "grid",
-        gap: "16px",
-      }}
+      style={pageShellStyle}
     >
-      <header style={{ display: "grid", gap: "8px" }}>
-        <h1 style={{ margin: 0 }}>Stats</h1>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <Link href="/">Back home</Link>
+      <header style={pageHeroStyle}>
+        <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>Stats</h1>
+        <p style={subtleTextStyle}>
+          保存済み session を mode ごとにざっくり見渡すための最小ページです。
+        </p>
+        <div style={navRowStyle}>
+          <Link href="/" style={navLinkStyle}>
+            Back home
+          </Link>
         </div>
       </header>
 
       {stats.isAuthenticated ? (
         <>
-          <section
-            style={{
-              display: "grid",
-              gap: "8px",
-              padding: "16px",
-              border: "1px solid #d4d4d8",
-              borderRadius: "12px",
-            }}
-          >
-            <div>
-              <strong>Total sessions:</strong> {stats.totalSessions}
-            </div>
-            <div>
-              <strong>Total saved question results:</strong>{" "}
-              {stats.totalSavedQuestionResults}
+          <section style={cardStyle}>
+            <h2 style={sectionTitleStyle}>Overview</h2>
+            <div style={metricsGridStyle}>
+              <div style={metricCardStyle}>
+                <span style={metricLabelStyle}>Total sessions</span>
+                <span style={metricValueStyle}>{stats.totalSessions}</span>
+              </div>
+              <div style={metricCardStyle}>
+                <span style={metricLabelStyle}>Saved question results</span>
+                <span style={metricValueStyle}>{stats.totalSavedQuestionResults}</span>
+              </div>
             </div>
           </section>
 
-          <section
-            style={{
-              display: "grid",
-              gap: "8px",
-              padding: "16px",
-              border: "1px solid #d4d4d8",
-              borderRadius: "12px",
-            }}
-          >
-            <h2 style={{ margin: 0 }}>By mode</h2>
-            <div>
-              <strong>Distance sessions:</strong> {stats.byMode.distance.sessionCount}
-            </div>
-            <div>
-              <strong>Distance avg score:</strong>{" "}
-              {formatScoreLabel(stats.byMode.distance.averageScore)}
-            </div>
-            <div>
-              <strong>Distance avg accuracy:</strong>{" "}
-              {formatAccuracyLabel(stats.byMode.distance.averageAccuracy)}
-            </div>
-            <div>
-              <strong>Keyboard sessions:</strong> {stats.byMode.keyboard.sessionCount}
-            </div>
-            <div>
-              <strong>Keyboard avg score:</strong>{" "}
-              {formatScoreLabel(stats.byMode.keyboard.averageScore)}
-            </div>
-            <div>
-              <strong>Keyboard avg accuracy:</strong>{" "}
-              {formatAccuracyLabel(stats.byMode.keyboard.averageAccuracy)}
+          <section style={cardStyle}>
+            <h2 style={sectionTitleStyle}>By mode</h2>
+            <div style={metricsGridStyle}>
+              <div style={metricCardStyle}>
+                <span style={metricLabelStyle}>Distance sessions</span>
+                <span style={metricValueStyle}>{stats.byMode.distance.sessionCount}</span>
+                <span style={subtleTextStyle}>
+                  Avg score {formatScoreLabel(stats.byMode.distance.averageScore)} / avg
+                  accuracy {formatAccuracyLabel(stats.byMode.distance.averageAccuracy)}
+                </span>
+              </div>
+              <div style={metricCardStyle}>
+                <span style={metricLabelStyle}>Keyboard sessions</span>
+                <span style={metricValueStyle}>{stats.byMode.keyboard.sessionCount}</span>
+                <span style={subtleTextStyle}>
+                  Avg score {formatScoreLabel(stats.byMode.keyboard.averageScore)} / avg
+                  accuracy {formatAccuracyLabel(stats.byMode.keyboard.averageAccuracy)}
+                </span>
+              </div>
             </div>
           </section>
 
-          <section
-            style={{
-              display: "grid",
-              gap: "12px",
-              padding: "16px",
-              border: "1px solid #d4d4d8",
-              borderRadius: "12px",
-            }}
-          >
-            <h2 style={{ margin: 0 }}>Recent sessions</h2>
+          <section style={cardStyle}>
+            <h2 style={sectionTitleStyle}>Recent sessions</h2>
             {stats.recentSessions.length > 0 ? (
-              <ul style={{ margin: 0, paddingLeft: "20px" }}>
+              <ul style={listStyle}>
                 {stats.recentSessions.map((session) => (
                   <li key={session.id}>
-                    <Link href={`/sessions/${session.id}`}>
-                      {session.mode} / session score {formatScoreLabel(session.sessionScore)} /
-                      questions {session.answeredQuestionCount} / accuracy{" "}
-                      {formatAccuracyLabel(session.accuracyRate)} / created{" "}
-                      {formatDateTimeLabel(session.createdAt)}
+                    <Link href={`/sessions/${session.id}`} style={listLinkStyle}>
+                      <strong style={{ fontSize: "16px" }}>{session.mode}</strong>
+                      <span style={subtleTextStyle}>
+                        Session score {formatScoreLabel(session.sessionScore)} / questions{" "}
+                        {session.answeredQuestionCount} / accuracy{" "}
+                        {formatAccuracyLabel(session.accuracyRate)}
+                      </span>
+                      <span style={subtleTextStyle}>
+                        Created {formatDateTimeLabel(session.createdAt)}
+                      </span>
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <div>No saved sessions yet.</div>
+              <p style={subtleTextStyle}>No saved sessions yet.</p>
             )}
           </section>
         </>
       ) : (
-        <section
-          style={{
-            display: "grid",
-            gap: "8px",
-            padding: "16px",
-            border: "1px solid #d4d4d8",
-            borderRadius: "12px",
-          }}
-        >
-          <div>Sign in to see saved training stats. Guest sessions are not saved.</div>
+        <section style={cardStyle}>
+          <p style={subtleTextStyle}>
+            Sign in to see saved training stats. Guest sessions are not saved.
+          </p>
         </section>
       )}
     </main>
