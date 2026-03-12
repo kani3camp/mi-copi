@@ -325,13 +325,13 @@ export default async function StatsPage() {
                   label="音程ごとの問題数"
                   items={stats.intervalPerformance.map((interval) => ({
                     key: interval.intervalSemitones,
-                    label: getIntervalLabel(
+                    label: getCompactIntervalChartLabel(
                       interval.intervalSemitones,
-                      intervalNotationStyle,
                     ),
                     assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} ${interval.questionCount} 問`,
                     value: `${interval.questionCount}問`,
                   }))}
+                  denseLabels
                 />
               </div>
             ) : (
