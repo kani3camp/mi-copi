@@ -27,6 +27,11 @@ import {
   formatScoreLabel,
 } from "../../../features/training/model/format";
 import {
+  formatDirectionModeLabel,
+  formatQuestionDirectionLabel,
+  formatSignedSemitoneLabel,
+} from "../../../features/training/model/interval-notation";
+import {
   type buildKeyboardGuestSaveInput,
   buildKeyboardGuestSummary,
   evaluateKeyboardAnswer,
@@ -717,8 +722,10 @@ export function KeyboardTrainClient({
                     }))
                   }
                 >
-                  <option value="mixed">上下混在</option>
-                  <option value="up_only">上行のみ</option>
+                  <option value="mixed">{formatDirectionModeLabel("mixed")}</option>
+                  <option value="up_only">
+                    {formatDirectionModeLabel("up_only")}
+                  </option>
                 </select>
               </Field>
 
@@ -877,19 +884,31 @@ export function KeyboardTrainClient({
           {phase === "answering" ? (
             <div className="ui-stack-md">
               <div className="ui-sticky-actions">
-                <div className="ui-stack-sm">
-                  <strong>再生コントロール</strong>
-                  <span className="ui-muted">
-                    再生中の追加タップは無視されます。
-                  </span>
-                </div>
-                <div className="ui-action-row">
-                  <Button type="button" onClick={handleReplayBase} block>
-                    基準音をもう一度聞く
-                  </Button>
-                  <Button type="button" onClick={handleReplayTarget} block>
-                    問題音をもう一度聞く
-                  </Button>
+                <div className="ui-replay-panel">
+                  <div className="ui-stack-sm">
+                    <strong>もう一度聞く</strong>
+                    <span className="ui-muted">再生中の追加タップは無効です。</span>
+                  </div>
+                  <div className="ui-replay-panel__row">
+                    <Button
+                      type="button"
+                      onClick={handleReplayBase}
+                      className="ui-icon-button"
+                      aria-label="基準音をもう一度聞く"
+                    >
+                      <PlaybackIcon />
+                      <span className="ui-icon-button__label">基準音</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleReplayTarget}
+                      className="ui-icon-button"
+                      aria-label="問題音をもう一度聞く"
+                    >
+                      <PlaybackIcon />
+                      <span className="ui-icon-button__label">問題音</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
               <KeyboardAnswerPad
@@ -922,7 +941,7 @@ export function KeyboardTrainClient({
             />
             <KeyValueCard
               label="誤差"
-              value={Math.abs(feedbackResult.errorSemitones)}
+              value={formatSignedSemitoneLabel(feedbackResult.errorSemitones)}
             />
             <KeyValueCard
               label="回答時間"
@@ -1628,12 +1647,6 @@ function formatPhaseLabel(phase: KeyboardTrainPhase): string {
   }
 }
 
-function formatQuestionDirectionLabel(
-  direction: Question["direction"],
-): string {
-  return direction === "up" ? "上行" : "下行";
-}
-
 function formatFinishReasonLabel(
   finishReason: SessionFinishReason | null,
 ): string {
@@ -1647,4 +1660,23 @@ function formatFinishReasonLabel(
     default:
       return "不明";
   }
+}
+
+function PlaybackIcon() {
+  return (
+    <span className="ui-icon-button__icon" aria-hidden="true">
+      <svg viewBox="0 0 20 20" width="20" height="20" fill="none">
+        <path
+          d="M4 7.5a1 1 0 0 1 1.6-.8l7 5a1 1 0 0 1 0 1.6l-7 5A1 1 0 0 1 4 17.5v-10Z"
+          fill="currentColor"
+        />
+        <path
+          d="M14.5 5.5a5.5 5.5 0 0 1 0 9"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+      </svg>
+    </span>
+  );
 }

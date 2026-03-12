@@ -8,7 +8,12 @@ const {
   parseGlobalUserSettings,
   serializeGlobalUserSettings,
 } = await import(new URL("./global-user-settings.ts", import.meta.url).href);
-const { formatSignedSemitoneLabel, getIntervalLabel } = await import(
+const {
+  formatDirectionModeLabel,
+  formatQuestionDirectionLabel,
+  formatSignedSemitoneLabel,
+  getIntervalLabel,
+} = await import(
   new URL("../../training/model/interval-notation.ts", import.meta.url).href
 );
 
@@ -62,7 +67,14 @@ test("interval labels switch between Japanese, abbreviation, and mixed styles", 
 });
 
 test("signed semitone labels keep direction explicit", () => {
-  assert.equal(formatSignedSemitoneLabel(0), "0 semitones (exact)");
-  assert.equal(formatSignedSemitoneLabel(1), "+1 semitone (higher)");
-  assert.equal(formatSignedSemitoneLabel(-2), "-2 semitones (lower)");
+  assert.equal(formatSignedSemitoneLabel(0), "0半音（ぴったり）");
+  assert.equal(formatSignedSemitoneLabel(1), "+1半音（高い）");
+  assert.equal(formatSignedSemitoneLabel(-2), "-2半音（低い）");
+});
+
+test("direction labels use the user-facing Japanese wording", () => {
+  assert.equal(formatQuestionDirectionLabel("up"), "上方向");
+  assert.equal(formatQuestionDirectionLabel("down"), "下方向");
+  assert.equal(formatDirectionModeLabel("up_only"), "上方向のみ");
+  assert.equal(formatDirectionModeLabel("mixed"), "上下");
 });

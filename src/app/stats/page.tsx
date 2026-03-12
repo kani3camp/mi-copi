@@ -250,15 +250,15 @@ export default async function StatsPage() {
             <Surface>
               <SectionHeader
                 title="上下方向の比較"
-                description="上行と下行で、正答率や反応速度に偏りがないかを確認できます。"
+                description="上方向と下方向で、正答率や反応速度に偏りがないかを確認できます。"
               />
               <MetricGrid>
                 <DirectionPerformanceCard
-                  label="上行"
+                  label="上方向"
                   stats={stats.directionPerformance.up}
                 />
                 <DirectionPerformanceCard
-                  label="下行"
+                  label="下方向"
                   stats={stats.directionPerformance.down}
                 />
               </MetricGrid>

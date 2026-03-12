@@ -348,6 +348,7 @@ a {
     color var(--motion-base) var(--motion-easing),
     opacity var(--motion-base) var(--motion-easing);
   touch-action: manipulation;
+  box-shadow: 0 10px 18px rgba(23, 32, 25, 0.06);
 }
 
 .ui-button:hover {
@@ -374,8 +375,12 @@ a {
 }
 
 .ui-button--secondary {
-  background: rgba(255, 255, 255, 0.86);
-  border-color: var(--color-border);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(248, 250, 247, 0.96) 100%
+  );
+  border-color: rgba(153, 169, 156, 0.55);
   color: var(--color-text);
 }
 
@@ -487,7 +492,13 @@ a {
 .ui-kv-value {
   font-size: 15px;
   line-height: 1.55;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.ui-kv-card {
+  background: rgba(250, 251, 249, 0.92);
+  border-color: rgba(208, 214, 207, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
 .ui-kv-card--dense {
@@ -750,6 +761,38 @@ a {
   grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
 }
 
+.ui-replay-panel {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ui-replay-panel__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.ui-icon-button {
+  min-height: 56px;
+  padding: 12px 10px;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.2;
+}
+
+.ui-icon-button__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.ui-icon-button__label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .ui-sticky-actions {
   display: grid;
   gap: var(--space-3);
@@ -867,6 +910,10 @@ a {
     bottom: 12px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: center;
+  }
+
+  .ui-replay-panel__row {
+    max-width: 360px;
   }
 
   .ui-auth-choice-grid {

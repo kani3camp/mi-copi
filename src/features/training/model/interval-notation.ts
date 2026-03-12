@@ -1,3 +1,4 @@
+import type { DirectionMode, QuestionDirection } from "./types";
 import type { IntervalNotationStyle } from "../../settings/model/global-user-settings";
 
 const INTERVAL_LABELS: Record<
@@ -29,7 +30,7 @@ export function getIntervalLabel(
   const entry = INTERVAL_LABELS[semitones];
 
   if (!entry) {
-    return `${semitones} semitones`;
+    return `${semitones}半音`;
   }
 
   if (style === "ja") {
@@ -45,15 +46,24 @@ export function getIntervalLabel(
 
 export function formatSignedSemitoneLabel(value: number): string {
   if (value === 0) {
-    return "0 semitones (exact)";
+    return "0半音（ぴったり）";
   }
 
   const absolute = Math.abs(value);
   const magnitude = Number.isInteger(absolute)
     ? absolute.toString()
     : absolute.toFixed(1);
-  const unit = absolute === 1 ? "semitone" : "semitones";
-  const direction = value > 0 ? "higher" : "lower";
+  const direction = value > 0 ? "高い" : "低い";
 
-  return `${value > 0 ? "+" : "-"}${magnitude} ${unit} (${direction})`;
+  return `${value > 0 ? "+" : "-"}${magnitude}半音（${direction}）`;
+}
+
+export function formatQuestionDirectionLabel(
+  direction: QuestionDirection,
+): string {
+  return direction === "up" ? "上方向" : "下方向";
+}
+
+export function formatDirectionModeLabel(mode: DirectionMode): string {
+  return mode === "up_only" ? "上方向のみ" : "上下";
 }

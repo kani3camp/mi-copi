@@ -10,6 +10,7 @@ import {
   formatScoreLabel,
 } from "../../../features/training/model/format";
 import {
+  formatDirectionModeLabel,
   formatSignedSemitoneLabel,
   getIntervalLabel,
 } from "../../../features/training/model/interval-notation";
@@ -109,11 +110,7 @@ export default async function TrainingSessionDetailPage({
           />
           <KeyValueCard
             label="出題方向"
-            value={
-              detail.configSnapshot.directionMode === "up_only"
-                ? "上行のみ"
-                : "上下混在"
-            }
+            value={formatDirectionModeLabel(detail.configSnapshot.directionMode)}
           />
           <KeyValueCard
             label="基準音モード"

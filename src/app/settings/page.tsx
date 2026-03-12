@@ -4,6 +4,7 @@ import {
   formatDateTimeLabel,
   formatDurationSecondsLabel,
 } from "../../features/training/model/format";
+import { formatDirectionModeLabel } from "../../features/training/model/interval-notation";
 import type { TrainingConfigSnapshot } from "../../features/training/model/types";
 import { getSettingsPageDataForCurrentUser } from "../../features/training/server/getSettingsPageData";
 import { resetLastUsedTrainingConfigForCurrentUser } from "../../features/training/server/lastUsedTrainingConfig";
@@ -197,7 +198,7 @@ function ConfigSnapshotView(props: { config: TrainingConfigSnapshot }) {
       <KeyValueCard
         className="ui-kv-card--dense"
         label="出題方向"
-        value={config.directionMode === "up_only" ? "上行のみ" : "上下混在"}
+        value={formatDirectionModeLabel(config.directionMode)}
       />
       <KeyValueCard
         className="ui-kv-card--dense"
