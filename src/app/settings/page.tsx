@@ -66,20 +66,19 @@ export default async function SettingsPage({
   return (
     <main style={pageShellStyle}>
       <header style={pageHeroStyle}>
-        <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>Settings</h1>
+        <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>設定</h1>
         <p style={subtleTextStyle}>
-          グローバル設定の変更と、保存済み last-used config の確認 /
-          リセットを行えます。
+          全体設定の変更と、保存済みの前回設定の確認 / リセットを行えます。
         </p>
         <div style={navRowStyle}>
           <Link href="/" style={navLinkStyle}>
-            Back home
+            ホームへ戻る
           </Link>
           <Link href="/train/distance" style={navLinkStyle}>
-            Open distance train
+            距離モードへ
           </Link>
           <Link href="/train/keyboard" style={navLinkStyle}>
-            Open keyboard train
+            鍵盤モードへ
           </Link>
         </div>
       </header>
@@ -87,16 +86,16 @@ export default async function SettingsPage({
       {resetTarget ? (
         <section style={noticeStyle("success")}>
           {resetTarget === "distance"
-            ? "Distance config was reset to defaults."
-            : "Keyboard config was reset to defaults."}
+            ? "距離モードの設定を初期値に戻しました。"
+            : "鍵盤モードの設定を初期値に戻しました。"}
         </section>
       ) : null}
 
       {resetError ? (
         <section style={noticeStyle("error")}>
           {resetError === "distance"
-            ? "Failed to reset distance config. Please try again."
-            : "Failed to reset keyboard config. Please try again."}
+            ? "距離モードの設定をリセットできませんでした。もう一度お試しください。"
+            : "鍵盤モードの設定をリセットできませんでした。もう一度お試しください。"}
         </section>
       ) : null}
 
@@ -105,48 +104,50 @@ export default async function SettingsPage({
       {data.isAuthenticated ? (
         <>
           <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>Account overview</h2>
+            <h2 style={sectionTitleStyle}>アカウント概要</h2>
             <div style={keyValueGridStyle}>
               <div style={keyValueCardStyle}>
-                <strong>Login status</strong>
-                <span>signed in</span>
+                <strong>ログイン状態</strong>
+                <span>サインイン中</span>
               </div>
               <div style={keyValueCardStyle}>
-                <strong>Name</strong>
-                <span>{data.user?.name ?? "unknown"}</span>
+                <strong>名前</strong>
+                <span>{data.user?.name ?? "不明"}</span>
               </div>
               <div style={keyValueCardStyle}>
-                <strong>Email</strong>
-                <span>{data.user?.email ?? "unknown"}</span>
+                <strong>メールアドレス</strong>
+                <span>{data.user?.email ?? "不明"}</span>
               </div>
               <div style={keyValueCardStyle}>
-                <strong>Last updated</strong>
+                <strong>最終更新</strong>
                 <span>
                   {data.updatedAt
                     ? formatDateTimeLabel(data.updatedAt)
-                    : "not saved yet"}
+                    : "まだ保存されていません"}
                 </span>
               </div>
             </div>
           </section>
 
           <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>Last-used distance config</h2>
+            <h2 style={sectionTitleStyle}>前回の距離モード設定</h2>
             {data.lastDistanceConfig ? (
               <>
                 <ConfigSnapshotView config={data.lastDistanceConfig} />
                 <form action={resetDistanceAction}>
                   <button type="submit" style={buttonStyle()}>
-                    Reset distance to defaults
+                    距離モードを初期値に戻す
                   </button>
                 </form>
               </>
             ) : (
               <>
-                <p style={subtleTextStyle}>No saved distance config yet.</p>
+                <p style={subtleTextStyle}>
+                  距離モードの保存済み設定はまだありません。
+                </p>
                 <form action={resetDistanceAction}>
                   <button type="submit" style={buttonStyle()}>
-                    Reset distance to defaults
+                    距離モードを初期値に戻す
                   </button>
                 </form>
               </>
@@ -154,22 +155,24 @@ export default async function SettingsPage({
           </section>
 
           <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>Last-used keyboard config</h2>
+            <h2 style={sectionTitleStyle}>前回の鍵盤モード設定</h2>
             {data.lastKeyboardConfig ? (
               <>
                 <ConfigSnapshotView config={data.lastKeyboardConfig} />
                 <form action={resetKeyboardAction}>
                   <button type="submit" style={buttonStyle()}>
-                    Reset keyboard to defaults
+                    鍵盤モードを初期値に戻す
                   </button>
                 </form>
               </>
             ) : (
               <>
-                <p style={subtleTextStyle}>No saved keyboard config yet.</p>
+                <p style={subtleTextStyle}>
+                  鍵盤モードの保存済み設定はまだありません。
+                </p>
                 <form action={resetKeyboardAction}>
                   <button type="submit" style={buttonStyle()}>
-                    Reset keyboard to defaults
+                    鍵盤モードを初期値に戻す
                   </button>
                 </form>
               </>
@@ -179,8 +182,7 @@ export default async function SettingsPage({
       ) : (
         <section style={cardStyle}>
           <p style={subtleTextStyle}>
-            You are using guest mode. Saved settings become available after
-            sign-in.
+            ゲスト利用中です。保存済み設定はログイン後に利用できるようになります。
           </p>
         </section>
       )}
@@ -217,38 +219,47 @@ function ConfigSnapshotView(props: {
   return (
     <div style={keyValueGridStyle}>
       <div style={keyValueCardStyle}>
-        <strong>Mode:</strong> {config.mode}
+        <strong>モード:</strong> {formatConfigModeLabel(config.mode)}
       </div>
       <div style={keyValueCardStyle}>
-        <strong>Interval range:</strong> {config.intervalRange.minSemitones} -{" "}
+        <strong>音程範囲:</strong> {config.intervalRange.minSemitones} -{" "}
         {config.intervalRange.maxSemitones}
       </div>
       <div style={keyValueCardStyle}>
-        <strong>Direction:</strong> {config.directionMode}
+        <strong>出題方向:</strong>{" "}
+        {config.directionMode === "up_only" ? "上行のみ" : "上下混在"}
       </div>
       <div style={keyValueCardStyle}>
-        <strong>Base note mode:</strong> {config.baseNoteMode}
+        <strong>基準音モード:</strong>{" "}
+        {config.baseNoteMode === "fixed" ? "固定" : "ランダム"}
       </div>
       <div style={keyValueCardStyle}>
-        <strong>Fixed base note:</strong> {config.fixedBaseNote ?? "none"}
+        <strong>固定する基準音:</strong> {config.fixedBaseNote ?? "なし"}
       </div>
       <div style={keyValueCardStyle}>
-        <strong>Include unison:</strong> {config.includeUnison ? "yes" : "no"}
+        <strong>同音を含める:</strong>{" "}
+        {config.includeUnison ? "はい" : "いいえ"}
       </div>
       <div style={keyValueCardStyle}>
-        <strong>Include octave:</strong> {config.includeOctave ? "yes" : "no"}
+        <strong>オクターブを含める:</strong>{" "}
+        {config.includeOctave ? "はい" : "いいえ"}
       </div>
       <div style={keyValueCardStyle}>
-        <strong>End condition:</strong>{" "}
+        <strong>終了条件:</strong>{" "}
         {config.endCondition.type === "question_count"
-          ? `question_count (${config.endCondition.questionCount})`
-          : `time_limit (${config.endCondition.timeLimitMinutes} min)`}
+          ? `問題数 (${config.endCondition.questionCount})`
+          : `制限時間 (${config.endCondition.timeLimitMinutes} 分)`}
       </div>
       {"intervalGranularity" in config && config.intervalGranularity ? (
         <div style={keyValueCardStyle}>
-          <strong>Interval granularity:</strong> {config.intervalGranularity}
+          <strong>音程表記の粒度:</strong>{" "}
+          {config.intervalGranularity === "simple" ? "シンプル" : "増減あり"}
         </div>
       ) : null}
     </div>
   );
+}
+
+function formatConfigModeLabel(value: "distance" | "keyboard"): string {
+  return value === "distance" ? "距離モード" : "鍵盤モード";
 }

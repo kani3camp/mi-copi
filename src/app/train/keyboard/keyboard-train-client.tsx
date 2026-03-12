@@ -41,8 +41,13 @@ import type {
 } from "../../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
 import {
+  actionRowStyle,
   buttonStyle,
   cardStyle,
+  checkboxFieldStyle,
+  compactFieldGridStyle,
+  controlStyle,
+  formFieldStyle,
   keyValueCardStyle,
   keyValueGridStyle,
   navLinkStyle,
@@ -57,6 +62,7 @@ import {
 
 type KeyboardTrainPhase =
   | "config"
+  | "preparing"
   | "playing"
   | "answering"
   | "feedback"
@@ -85,6 +91,21 @@ const BLACK_KEY_LAYOUT: Array<{
   { note: "F#", left: "calc(57.1428% - 5.4%)" },
   { note: "G#", left: "calc(71.4285% - 5.4%)" },
   { note: "A#", left: "calc(85.7142% - 5.4%)" },
+];
+
+const NOTE_CLASS_OPTIONS: NoteClass[] = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
 ];
 
 interface KeyboardTrainClientProps {
@@ -171,7 +192,7 @@ export function KeyboardTrainClient({
       .catch(() => {
         if (!cancelled) {
           setAudioError(
-            "Audio playback failed. You can still answer and continue.",
+            "音声の再生に失敗しました。回答と続行はそのまま行えます。",
           );
         }
       })
@@ -215,6 +236,7 @@ export function KeyboardTrainClient({
     if (
       !startedAt ||
       phase === "config" ||
+      phase === "preparing" ||
       phase === "result" ||
       config.endCondition.type !== "time_limit" ||
       sessionDeadlineAtRef.current === null
@@ -252,6 +274,14 @@ export function KeyboardTrainClient({
       window.clearInterval(intervalId);
     };
   }, [config.endCondition, phase, startedAt]);
+
+  useEffect(() => {
+    if (phase !== "preparing" || !activeQuestion) {
+      return;
+    }
+
+    setPhase("playing");
+  }, [activeQuestion, phase]);
 
   useEffect(() => {
     const autoSaveContext = {
@@ -326,7 +356,7 @@ export function KeyboardTrainClient({
         : null,
     );
     setActiveQuestion(createActiveQuestion(config, 0, playbackIdRef));
-    setPhase("playing");
+    setPhase("preparing");
   }
 
   function handleReplayBase() {
@@ -340,7 +370,7 @@ export function KeyboardTrainClient({
       playbackKind: "base",
       playNonce: nextPlaybackNonce(playbackIdRef),
     });
-    setPhase("playing");
+    setPhase("preparing");
   }
 
   function handleReplayTarget() {
@@ -407,7 +437,7 @@ export function KeyboardTrainClient({
       settings.masterVolume,
       playbackLockRef,
     ).catch(() => {
-      setAudioError("Audio playback failed. You can still continue.");
+      setAudioError("音声の再生に失敗しました。そのまま続行できます。");
     });
   }
 
@@ -489,27 +519,23 @@ export function KeyboardTrainClient({
       <header style={pageHeroStyle}>
         <div
           style={{
-            display: "flex",
-            gap: "12px",
-            alignItems: "center",
-            flexWrap: "wrap",
+            display: "grid",
+            gap: "10px",
           }}
         >
-          <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>
-            Keyboard Train
-          </h1>
-          <span style={phaseBadgeStyle(phase)}>{phase}</span>
+          <h1 style={{ ...sectionTitleStyle, fontSize: "34px" }}>鍵盤モード</h1>
+          <span style={phaseBadgeStyle(phase)}>{formatPhaseLabel(phase)}</span>
         </div>
         <p style={subtleTextStyle}>
-          設定 → 出題 → 回答 → フィードバック → 結果までを keyboard
-          モードで通せる最小実装です。
+          設定から結果表示まで、鍵盤モードの MVP セッションを 1
+          画面内で進められます。
         </p>
         <div style={navRowStyle}>
           <Link href="/" style={navLinkStyle}>
-            Back home
+            ホームへ戻る
           </Link>
           <Link href="/train/distance" style={navLinkStyle}>
-            Distance mode
+            距離モードへ
           </Link>
         </div>
       </header>
@@ -517,27 +543,27 @@ export function KeyboardTrainClient({
       <section style={cardStyle}>
         <div style={keyValueGridStyle}>
           <div style={keyValueCardStyle}>
-            <strong>Phase</strong>
-            <span>{phase}</span>
+            <strong>進行状態</strong>
+            <span>{formatPhaseLabel(phase)}</span>
           </div>
           {startedAt ? (
             <div style={keyValueCardStyle}>
-              <strong>Started at</strong>
+              <strong>開始時刻</strong>
               <span>{formatDateTimeLabel(startedAt)}</span>
             </div>
           ) : null}
           {config.endCondition.type === "time_limit" &&
           remainingTimeMs !== null ? (
             <div style={keyValueCardStyle}>
-              <strong>Time remaining</strong>
+              <strong>残り時間</strong>
               <span>{formatRemainingTimeLabel(remainingTimeMs)}</span>
             </div>
           ) : null}
         </div>
         <p style={subtleTextStyle}>
           {isAuthenticated
-            ? "Authenticated results save automatically when you reach the result screen."
-            : "Guest mode keeps results only in client state and does not save."}
+            ? "ログイン中は、結果画面に進むとセッション結果を自動保存します。"
+            : "ゲストでは結果を画面内にのみ保持し、保存は行いません。"}
         </p>
         {audioError ? (
           <div style={noticeStyle("error")}>{audioError}</div>
@@ -546,10 +572,11 @@ export function KeyboardTrainClient({
 
       {phase === "config" ? (
         <section style={cardStyle}>
-          <h2 style={sectionTitleStyle}>Config</h2>
-          <label style={{ display: "grid", gap: "8px" }}>
-            <span>End condition</span>
+          <h2 style={sectionTitleStyle}>出題設定</h2>
+          <label style={formFieldStyle}>
+            <span>終了条件</span>
             <select
+              style={controlStyle}
               value={config.endCondition.type}
               onChange={(event) =>
                 setConfig((current) => ({
@@ -561,15 +588,16 @@ export function KeyboardTrainClient({
                 }))
               }
             >
-              <option value="question_count">question_count</option>
-              <option value="time_limit">time_limit</option>
+              <option value="question_count">問題数</option>
+              <option value="time_limit">制限時間</option>
             </select>
           </label>
 
           {config.endCondition.type === "question_count" ? (
-            <label style={{ display: "grid", gap: "8px" }}>
-              <span>Question count</span>
+            <label style={formFieldStyle}>
+              <span>問題数</span>
               <input
+                style={controlStyle}
                 type="number"
                 min={1}
                 max={20}
@@ -586,9 +614,10 @@ export function KeyboardTrainClient({
               />
             </label>
           ) : (
-            <label style={{ display: "grid", gap: "8px" }}>
-              <span>Time limit (minutes)</span>
+            <label style={formFieldStyle}>
+              <span>制限時間（分）</span>
               <input
+                style={controlStyle}
                 type="number"
                 min={1}
                 max={30}
@@ -606,16 +635,11 @@ export function KeyboardTrainClient({
             </label>
           )}
 
-          <div
-            style={{
-              display: "grid",
-              gap: "12px",
-              gridTemplateColumns: "1fr 1fr",
-            }}
-          >
-            <label style={{ display: "grid", gap: "8px" }}>
-              <span>Min semitones</span>
+          <div style={compactFieldGridStyle}>
+            <label style={formFieldStyle}>
+              <span>最小半音数</span>
               <input
+                style={controlStyle}
                 type="number"
                 min={0}
                 max={12}
@@ -632,9 +656,10 @@ export function KeyboardTrainClient({
               />
             </label>
 
-            <label style={{ display: "grid", gap: "8px" }}>
-              <span>Max semitones</span>
+            <label style={formFieldStyle}>
+              <span>最大半音数</span>
               <input
+                style={controlStyle}
                 type="number"
                 min={1}
                 max={12}
@@ -652,9 +677,10 @@ export function KeyboardTrainClient({
             </label>
           </div>
 
-          <label style={{ display: "grid", gap: "8px" }}>
-            <span>Direction</span>
+          <label style={formFieldStyle}>
+            <span>出題方向</span>
             <select
+              style={controlStyle}
               value={config.directionMode}
               onChange={(event) =>
                 setConfig((current) => ({
@@ -664,18 +690,102 @@ export function KeyboardTrainClient({
                 }))
               }
             >
-              <option value="mixed">mixed</option>
-              <option value="up_only">up_only</option>
+              <option value="mixed">上下混在</option>
+              <option value="up_only">上行のみ</option>
             </select>
           </label>
 
-          <div>
-            <strong>Answer choices:</strong>{" "}
+          <label style={formFieldStyle}>
+            <span>基準音モード</span>
+            <select
+              style={controlStyle}
+              value={config.baseNoteMode}
+              onChange={(event) =>
+                setConfig((current) => ({
+                  ...current,
+                  baseNoteMode: event.target
+                    .value as KeyboardTrainingConfig["baseNoteMode"],
+                  fixedBaseNote:
+                    event.target.value === "fixed"
+                      ? (current.fixedBaseNote ?? "C")
+                      : null,
+                }))
+              }
+            >
+              <option value="random">ランダム</option>
+              <option value="fixed">固定</option>
+            </select>
+          </label>
+
+          {config.baseNoteMode === "fixed" ? (
+            <label style={formFieldStyle}>
+              <span>固定する基準音</span>
+              <select
+                style={controlStyle}
+                value={config.fixedBaseNote ?? "C"}
+                onChange={(event) =>
+                  setConfig((current) => ({
+                    ...current,
+                    fixedBaseNote: event.target.value as NoteClass,
+                  }))
+                }
+              >
+                {NOTE_CLASS_OPTIONS.map((note) => (
+                  <option key={note} value={note}>
+                    {note}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          <label style={checkboxFieldStyle}>
+            <input
+              style={{
+                width: "20px",
+                height: "20px",
+                margin: 0,
+                flexShrink: 0,
+              }}
+              type="checkbox"
+              checked={config.includeUnison}
+              onChange={(event) =>
+                setConfig((current) => ({
+                  ...current,
+                  includeUnison: event.target.checked,
+                }))
+              }
+            />
+            <span>同音を含める</span>
+          </label>
+
+          <label style={checkboxFieldStyle}>
+            <input
+              style={{
+                width: "20px",
+                height: "20px",
+                margin: 0,
+                flexShrink: 0,
+              }}
+              type="checkbox"
+              checked={config.includeOctave}
+              onChange={(event) =>
+                setConfig((current) => ({
+                  ...current,
+                  includeOctave: event.target.checked,
+                }))
+              }
+            />
+            <span>オクターブを含める</span>
+          </label>
+
+          <div style={keyValueCardStyle}>
+            <strong>回答候補:</strong>{" "}
             {settings.keyboardNoteLabelsVisible
               ? answerChoices
                   .map((choice) => formatKeyboardNoteLabel(choice))
                   .join(", ")
-              : "Labels are hidden on the keyboard UI."}
+              : "鍵盤上の音名ラベルは非表示です。"}
           </div>
 
           {isAuthenticated && hasStoredConfig ? (
@@ -686,14 +796,30 @@ export function KeyboardTrainClient({
             <div style={noticeStyle("error")}>{configError}</div>
           ) : null}
 
-          <div>
+          <div style={actionRowStyle}>
             <button
               type="button"
               onClick={handleStart}
-              style={buttonStyle("primary")}
+              style={{
+                ...buttonStyle("primary"),
+                width: "100%",
+                maxWidth: "240px",
+              }}
             >
-              Start
+              開始
             </button>
+          </div>
+        </section>
+      ) : null}
+
+      {phase === "preparing" && activeQuestion ? (
+        <section style={cardStyle}>
+          <h2 style={sectionTitleStyle}>準備中</h2>
+          <p style={subtleTextStyle}>
+            次の問題を準備して、基準音と問題音の再生に入ります。
+          </p>
+          <div style={noticeStyle("info")}>
+            問題 {activeQuestion.question.questionIndex + 1} を準備しています...
           </div>
         </section>
       ) : null}
@@ -701,21 +827,23 @@ export function KeyboardTrainClient({
       {(phase === "playing" || phase === "answering") && activeQuestion ? (
         <section style={cardStyle}>
           <h2 style={sectionTitleStyle}>
-            Question {activeQuestion.question.questionIndex + 1}
+            問題 {activeQuestion.question.questionIndex + 1}
           </h2>
           <p style={subtleTextStyle}>
-            Hear the base tone and target tone, then answer the target note
-            name.
+            基準音と問題音を聞いて、鍵盤上の音名で回答してください。
           </p>
           <div style={keyValueGridStyle}>
             <div style={keyValueCardStyle}>
-              <strong>Direction:</strong> {activeQuestion.question.direction}
+              <strong>方向:</strong>{" "}
+              {formatQuestionDirectionLabel(activeQuestion.question.direction)}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Base replay:</strong> {activeQuestion.replayBaseCount}
+              <strong>基準音の再生回数:</strong>{" "}
+              {activeQuestion.replayBaseCount}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Target replay:</strong> {activeQuestion.replayTargetCount}
+              <strong>問題音の再生回数:</strong>{" "}
+              {activeQuestion.replayTargetCount}
             </div>
           </div>
 
@@ -727,20 +855,20 @@ export function KeyboardTrainClient({
 
           {phase === "answering" ? (
             <>
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <div style={actionRowStyle}>
                 <button
                   type="button"
                   onClick={handleReplayBase}
-                  style={buttonStyle()}
+                  style={{ ...buttonStyle(), flex: "1 1 180px" }}
                 >
-                  Replay base tone
+                  基準音をもう一度聞く
                 </button>
                 <button
                   type="button"
                   onClick={handleReplayTarget}
-                  style={buttonStyle()}
+                  style={{ ...buttonStyle(), flex: "1 1 180px" }}
                 >
-                  Replay target tone
+                  問題音をもう一度聞く
                 </button>
               </div>
               <KeyboardAnswerPad
@@ -755,29 +883,29 @@ export function KeyboardTrainClient({
 
       {phase === "feedback" && feedbackResult ? (
         <section style={cardStyle}>
-          <h2 style={sectionTitleStyle}>Feedback</h2>
+          <h2 style={sectionTitleStyle}>フィードバック</h2>
           <div style={keyValueGridStyle}>
             <div style={keyValueCardStyle}>
-              <strong>Result:</strong>{" "}
-              {feedbackResult.isCorrect ? "Correct" : "Incorrect"}
+              <strong>結果:</strong>{" "}
+              {feedbackResult.isCorrect ? "正解" : "不正解"}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Correct note:</strong>{" "}
+              <strong>正解の音:</strong>{" "}
               {formatKeyboardNoteLabel(feedbackResult.question.targetNote)}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Your answer:</strong>{" "}
+              <strong>あなたの回答:</strong>{" "}
               {formatKeyboardNoteLabel(feedbackResult.answeredNote)}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Error:</strong> {Math.abs(feedbackResult.errorSemitones)}
+              <strong>誤差:</strong> {Math.abs(feedbackResult.errorSemitones)}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Response time:</strong>{" "}
+              <strong>回答時間:</strong>{" "}
               {formatResponseTimeMsLabel(feedbackResult.responseTimeMs)}
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Score:</strong> {formatScoreLabel(feedbackResult.score)}
+              <strong>スコア:</strong> {formatScoreLabel(feedbackResult.score)}
             </div>
           </div>
           <FeedbackKeyboardView
@@ -786,70 +914,70 @@ export function KeyboardTrainClient({
             isCorrect={feedbackResult.isCorrect}
             showLabels={settings.keyboardNoteLabelsVisible}
           />
-          <button
-            type="button"
-            onClick={handleReplayCorrectTarget}
-            style={buttonStyle()}
-          >
-            Replay correct target tone
-          </button>
-          <button
-            type="button"
-            onClick={handleContinue}
-            style={buttonStyle("primary")}
-          >
-            {lastAnsweredWasFinal ? "Show result" : "Next question"}
-          </button>
+          <div style={actionRowStyle}>
+            <button
+              type="button"
+              onClick={handleReplayCorrectTarget}
+              style={{ ...buttonStyle(), flex: "1 1 180px" }}
+            >
+              正解の音をもう一度聞く
+            </button>
+            <button
+              type="button"
+              onClick={handleContinue}
+              style={{ ...buttonStyle("primary"), flex: "1 1 180px" }}
+            >
+              {lastAnsweredWasFinal ? "結果を見る" : "次の問題へ"}
+            </button>
+          </div>
         </section>
       ) : null}
 
       {phase === "result" ? (
         <section style={cardStyle}>
-          <h2 style={sectionTitleStyle}>Result</h2>
+          <h2 style={sectionTitleStyle}>結果</h2>
           <div style={keyValueGridStyle}>
             <div style={keyValueCardStyle}>
-              <strong>Questions</strong>
+              <strong>回答数</strong>
               <span>{summary.questionCount}</span>
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Finish reason</strong>
-              <span>{finishReason ?? "unknown"}</span>
+              <strong>終了理由</strong>
+              <span>{formatFinishReasonLabel(finishReason)}</span>
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Correct</strong>
+              <strong>正解数</strong>
               <span>{summary.correctCount}</span>
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Accuracy</strong>
+              <strong>正答率</strong>
               <span>{formatAccuracyLabel(summary.accuracyRate)}</span>
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Avg error</strong>
+              <strong>平均誤差</strong>
               <span>{formatAvgErrorLabel(summary.avgErrorAbs)}</span>
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Avg response time</strong>
+              <strong>平均回答時間</strong>
               <span>
                 {formatResponseTimeMsLabel(summary.avgResponseTimeMs)}
               </span>
             </div>
             <div style={keyValueCardStyle}>
-              <strong>Session score</strong>
+              <strong>セッションスコア</strong>
               <span>{formatScoreLabel(summary.sessionScore)}</span>
             </div>
           </div>
 
           {finishReason === "time_up" ? (
             <div style={noticeStyle("info")}>
-              Session ended because time ran out. Any unanswered question in
-              progress was discarded.
+              制限時間に達したため終了しました。進行中で未回答の問題は集計から除外されています。
             </div>
           ) : null}
 
           {cannotSaveBecauseNoAnswers ? (
             <div style={noticeStyle("info")}>
-              No answered questions were recorded, so this session cannot be
-              saved. Try starting a new session with more time.
+              回答済みの問題がないため、このセッションは保存できません。時間に余裕を持ってもう一度お試しください。
             </div>
           ) : null}
 
@@ -870,7 +998,7 @@ export function KeyboardTrainClient({
                   {saveResult?.ok ? (
                     <div style={{ display: "grid", gap: "10px" }}>
                       <div>
-                        Results saved automatically. Session ID:{" "}
+                        結果を自動保存しました。セッション ID:{" "}
                         <code>{saveResult.sessionId}</code>
                       </div>
                       <div style={navRowStyle}>
@@ -878,10 +1006,10 @@ export function KeyboardTrainClient({
                           href={`/sessions/${saveResult.sessionId}`}
                           style={navLinkStyle}
                         >
-                          Open session detail
+                          セッション詳細を見る
                         </Link>
                         <Link href="/stats" style={navLinkStyle}>
-                          Go to stats
+                          統計を見る
                         </Link>
                       </div>
                     </div>
@@ -889,44 +1017,65 @@ export function KeyboardTrainClient({
                     <div style={{ display: "grid", gap: "6px" }}>
                       <div>{saveFailureMessage}</div>
                       <div style={subtleTextStyle}>
-                        Details: {saveResult.code} / {saveResult.message}
+                        詳細: {saveResult.code} / {saveResult.message}
                       </div>
                     </div>
                   ) : canSaveResult ? (
                     <div>
                       {isSavePending
-                        ? "Saving result automatically..."
-                        : "Preparing automatic save..."}
+                        ? "結果を自動保存しています..."
+                        : "保存の準備をしています..."}
                     </div>
                   ) : (
-                    <div>
-                      This result could not be saved because the session data
-                      was incomplete.
-                    </div>
+                    <div>セッション情報が不足しているため保存できません。</div>
                   )}
                 </div>
 
                 {saveResult && !saveResult.ok && canSaveResult ? (
-                  <button
-                    type="button"
-                    disabled={isSavePending}
-                    onClick={handleSaveResults}
-                    style={buttonStyle("primary", isSavePending)}
-                  >
-                    {isSavePending ? "Retrying..." : "Retry save"}
-                  </button>
+                  <div style={actionRowStyle}>
+                    <button
+                      type="button"
+                      disabled={isSavePending}
+                      onClick={handleSaveResults}
+                      style={{
+                        ...buttonStyle("primary", isSavePending),
+                        flex: "1 1 180px",
+                      }}
+                    >
+                      {isSavePending ? "再試行中..." : "保存を再試行"}
+                    </button>
+                  </div>
                 ) : null}
               </>
             ) : null
           ) : (
-            <div style={noticeStyle("info")}>
-              Guest session only. This result is not saved.
+            <div style={{ display: "grid", gap: "12px" }}>
+              <div style={noticeStyle("info")}>
+                ゲスト利用のため、この結果は保存されません。
+              </div>
+              <p style={subtleTextStyle}>
+                ログインすると、次回以降のセッションから結果保存と統計
+                を使えます。この結果は後から保存されません。
+              </p>
+              <div style={navRowStyle}>
+                <Link href="/login" style={navLinkStyle}>
+                  今後の保存用にログイン
+                </Link>
+              </div>
             </div>
           )}
 
-          <button type="button" onClick={handleReset} style={buttonStyle()}>
-            {cannotSaveBecauseNoAnswers ? "Start a new session" : "Start over"}
-          </button>
+          <div style={actionRowStyle}>
+            <button
+              type="button"
+              onClick={handleReset}
+              style={{ ...buttonStyle(), flex: "1 1 180px" }}
+            >
+              {cannotSaveBecauseNoAnswers
+                ? "新しいセッションを始める"
+                : "最初からやり直す"}
+            </button>
+          </div>
         </section>
       ) : null}
     </main>
@@ -1038,11 +1187,11 @@ async function playFeedbackEffect(
 function getPlaybackStatusLabel(playbackKind: PlaybackKind): string {
   switch (playbackKind) {
     case "base":
-      return "Playing base tone...";
+      return "基準音を再生しています...";
     case "target":
-      return "Playing target tone...";
+      return "問題音を再生しています...";
     default:
-      return "Playing base tone then target tone...";
+      return "基準音のあとに問題音を再生しています...";
   }
 }
 
@@ -1193,11 +1342,11 @@ function FeedbackKeyboardView(props: {
         ))}
       </div>
       <div style={feedbackLegendStyle}>
-        <span style={legendItemStyle("#166534", "#dcfce7")}>
-          {props.isCorrect ? "Correct key" : "Correct key"}
-        </span>
+        <span style={legendItemStyle("#166534", "#dcfce7")}>正解の鍵盤</span>
         {props.isCorrect ? null : (
-          <span style={legendItemStyle("#9a3412", "#ffedd5")}>Your answer</span>
+          <span style={legendItemStyle("#9a3412", "#ffedd5")}>
+            あなたの回答
+          </span>
         )}
       </div>
     </div>
@@ -1421,12 +1570,50 @@ function getSaveFailureMessage(
   result: Extract<SaveTrainingSessionResult, { ok: false }>,
 ): string {
   if (result.code === "UNAUTHORIZED") {
-    return "Your sign-in session is no longer available. Please sign in again and retry.";
+    return "ログイン状態を確認できませんでした。再度ログインしてからお試しください。";
   }
 
   if (result.code === "INVALID_INPUT") {
-    return "This result could not be saved because the session data was incomplete.";
+    return "セッション情報が不足しているため、この結果は保存できませんでした。";
   }
 
-  return "We couldn't save this result. Please try again.";
+  return "結果を保存できませんでした。もう一度お試しください。";
+}
+
+function formatPhaseLabel(phase: KeyboardTrainPhase): string {
+  switch (phase) {
+    case "config":
+      return "設定";
+    case "preparing":
+      return "準備中";
+    case "playing":
+      return "再生中";
+    case "answering":
+      return "回答中";
+    case "feedback":
+      return "フィードバック";
+    case "result":
+      return "結果";
+  }
+}
+
+function formatQuestionDirectionLabel(
+  direction: Question["direction"],
+): string {
+  return direction === "up" ? "上行" : "下行";
+}
+
+function formatFinishReasonLabel(
+  finishReason: SessionFinishReason | null,
+): string {
+  switch (finishReason) {
+    case "target_reached":
+      return "目標数に到達";
+    case "time_up":
+      return "時間切れ";
+    case "manual_end":
+      return "手動終了";
+    default:
+      return "不明";
+  }
 }

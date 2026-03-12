@@ -28,13 +28,13 @@ export function GlobalSettingsSection() {
 
   return (
     <section style={cardStyle}>
-      <h2 style={sectionTitleStyle}>Global settings</h2>
+      <h2 style={sectionTitleStyle}>全体設定</h2>
       <p style={subtleTextStyle}>
         音量、効果音、音程表記、鍵盤ラベル表示をここで変更できます。
       </p>
 
       <label style={fieldStyle}>
-        <span>Master volume</span>
+        <span>音量</span>
         <div style={{ display: "grid", gap: "6px" }}>
           <input
             type="range"
@@ -59,11 +59,11 @@ export function GlobalSettingsSection() {
             updateSettings({ soundEffectsEnabled: event.target.checked })
           }
         />
-        <span>Sound effects</span>
+        <span>効果音</span>
       </label>
 
       <label style={fieldStyle}>
-        <span>Interval notation style</span>
+        <span>音程表記スタイル</span>
         <select
           value={settings.intervalNotationStyle}
           onChange={(event) =>
@@ -75,9 +75,9 @@ export function GlobalSettingsSection() {
             })
           }
         >
-          <option value="ja">Japanese</option>
-          <option value="abbr">Abbreviation</option>
-          <option value="mixed">Mixed</option>
+          <option value="ja">日本語</option>
+          <option value="abbr">略称</option>
+          <option value="mixed">混在</option>
         </select>
       </label>
 
@@ -91,7 +91,7 @@ export function GlobalSettingsSection() {
             })
           }
         />
-        <span>Keyboard note labels</span>
+        <span>鍵盤の音名ラベル</span>
       </label>
 
       {isAuthenticated ? (
@@ -101,23 +101,23 @@ export function GlobalSettingsSection() {
               <div>{saveState.message ?? "Failed to save settings."}</div>
               <div>
                 <button type="button" onClick={retrySave} style={buttonStyle()}>
-                  Retry save
+                  保存を再試行
                 </button>
               </div>
             </div>
           </div>
         ) : saveState.status === "saving" ? (
-          <div style={noticeStyle("info")}>Saving latest settings...</div>
+          <div style={noticeStyle("info")}>最新の設定を保存しています...</div>
         ) : (
           <p style={subtleTextStyle}>
             {saveState.updatedAt
-              ? `Cloud saved at ${formatDateTimeLabel(saveState.updatedAt)}.`
-              : "Cloud settings are ready to save."}
+              ? `${formatDateTimeLabel(saveState.updatedAt)} にクラウドへ保存しました。`
+              : "クラウド設定を保存する準備ができています。"}
           </p>
         )
       ) : (
         <p style={subtleTextStyle}>
-          Guest mode keeps these settings in this browser only.
+          ゲストでは、これらの設定はこのブラウザにのみ保存されます。
         </p>
       )}
     </section>

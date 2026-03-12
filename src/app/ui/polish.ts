@@ -23,28 +23,28 @@ const palette = {
 
 export const pageShellStyle: CSSProperties = {
   width: "100%",
-  maxWidth: "1040px",
+  maxWidth: "960px",
   margin: "0 auto",
-  padding: "48px 24px 72px",
+  padding: "28px 16px 56px",
   display: "grid",
-  gap: "24px",
+  gap: "20px",
   color: palette.text,
 };
 
 export const pageHeroStyle: CSSProperties = {
   display: "grid",
-  gap: "12px",
-  padding: "28px",
+  gap: "10px",
+  padding: "22px 18px",
   background: `linear-gradient(135deg, ${palette.card} 0%, ${palette.cardMuted} 100%)`,
   border: `1px solid ${palette.border}`,
-  borderRadius: "24px",
-  boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
+  borderRadius: "22px",
+  boxShadow: "0 14px 30px rgba(15, 23, 42, 0.08)",
 };
 
 export const pageTitleStyle: CSSProperties = {
   margin: 0,
-  fontSize: "42px",
-  lineHeight: 1.05,
+  fontSize: "36px",
+  lineHeight: 1.08,
   letterSpacing: "-0.04em",
 };
 
@@ -56,24 +56,24 @@ export const pageSubtitleStyle: CSSProperties = {
 
 export const cardStyle: CSSProperties = {
   display: "grid",
-  gap: "14px",
-  padding: "20px",
+  gap: "12px",
+  padding: "18px 16px",
   background: palette.card,
   border: `1px solid ${palette.border}`,
-  borderRadius: "20px",
+  borderRadius: "18px",
   boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)",
 };
 
 export const sectionTitleStyle: CSSProperties = {
   margin: 0,
-  fontSize: "22px",
+  fontSize: "20px",
   lineHeight: 1.2,
   letterSpacing: "-0.02em",
 };
 
 export const navRowStyle: CSSProperties = {
   display: "flex",
-  gap: "12px",
+  gap: "10px",
   flexWrap: "wrap",
 };
 
@@ -81,6 +81,7 @@ export const navLinkStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  minHeight: "44px",
   padding: "10px 14px",
   borderRadius: "999px",
   border: `1px solid ${palette.border}`,
@@ -92,8 +93,8 @@ export const navLinkStyle: CSSProperties = {
 
 export const metricsGridStyle: CSSProperties = {
   display: "grid",
-  gap: "12px",
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+  gap: "10px",
+  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
 };
 
 export const metricCardStyle: CSSProperties = {
@@ -107,13 +108,13 @@ export const metricCardStyle: CSSProperties = {
 
 export const metricLabelStyle: CSSProperties = {
   color: palette.muted,
-  fontSize: "13px",
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
+  fontSize: "12px",
+  letterSpacing: "0.02em",
+  lineHeight: 1.5,
 };
 
 export const metricValueStyle: CSSProperties = {
-  fontSize: "28px",
+  fontSize: "24px",
   lineHeight: 1.1,
   fontWeight: 700,
   letterSpacing: "-0.03em",
@@ -147,16 +148,55 @@ export const subtleTextStyle: CSSProperties = {
 export const keyValueGridStyle: CSSProperties = {
   display: "grid",
   gap: "10px",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
 };
 
 export const keyValueCardStyle: CSSProperties = {
   display: "grid",
-  gap: "4px",
-  padding: "12px 14px",
+  gap: "6px",
+  padding: "14px",
   borderRadius: "12px",
   background: palette.cardMuted,
   border: `1px solid ${palette.border}`,
+};
+
+export const formFieldStyle: CSSProperties = {
+  display: "grid",
+  gap: "8px",
+};
+
+export const compactFieldGridStyle: CSSProperties = {
+  display: "grid",
+  gap: "10px",
+  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+};
+
+export const controlStyle: CSSProperties = {
+  width: "100%",
+  minHeight: "44px",
+  padding: "10px 12px",
+  borderRadius: "12px",
+  border: `1px solid ${palette.border}`,
+  background: palette.card,
+  color: palette.text,
+  fontSize: "16px",
+};
+
+export const checkboxFieldStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  alignItems: "center",
+  minHeight: "48px",
+  padding: "12px 14px",
+  borderRadius: "12px",
+  border: `1px solid ${palette.border}`,
+  background: palette.cardMuted,
+};
+
+export const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
 };
 
 export function buttonStyle(
@@ -165,6 +205,7 @@ export function buttonStyle(
 ): CSSProperties {
   if (kind === "primary") {
     return {
+      minHeight: "44px",
       padding: "11px 16px",
       borderRadius: "12px",
       border: `1px solid ${palette.accent}`,
@@ -173,10 +214,12 @@ export function buttonStyle(
       fontWeight: 700,
       cursor: disabled ? "not-allowed" : "pointer",
       opacity: disabled ? 0.7 : 1,
+      touchAction: "manipulation",
     };
   }
 
   return {
+    minHeight: "44px",
     padding: "11px 16px",
     borderRadius: "12px",
     border: `1px solid ${palette.border}`,
@@ -185,6 +228,7 @@ export function buttonStyle(
     fontWeight: 600,
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.7 : 1,
+    touchAction: "manipulation",
   };
 }
 
@@ -227,13 +271,13 @@ export function phaseBadgeStyle(phase: string): CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
+    minHeight: "34px",
     padding: "6px 10px",
     borderRadius: "999px",
     background: isActive ? palette.accentSoft : palette.cardMuted,
     color: isActive ? palette.accentText : palette.muted,
     fontWeight: 700,
-    fontSize: "12px",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
+    fontSize: "11px",
+    letterSpacing: "0.04em",
   };
 }

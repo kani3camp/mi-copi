@@ -52,109 +52,115 @@ export default async function TrainingSessionDetailPage({
     <main style={pageShellStyle}>
       <header style={pageHeroStyle}>
         <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>
-          Session detail
+          セッション詳細
         </h1>
         <p style={subtleTextStyle}>
-          保存済み session の概要、設定、question results を最小表示しています。
+          保存済みセッションの概要、設定、回答結果を確認できます。
         </p>
         <div style={navRowStyle}>
           <Link href="/" style={navLinkStyle}>
-            Back home
+            ホームへ戻る
           </Link>
           <Link href="/stats" style={navLinkStyle}>
-            Open stats
+            統計を見る
           </Link>
         </div>
       </header>
 
       <section style={cardStyle}>
-        <h2 style={sectionTitleStyle}>Summary</h2>
+        <h2 style={sectionTitleStyle}>概要</h2>
         <div style={keyValueGridStyle}>
           <div style={keyValueCardStyle}>
-            <strong>Mode:</strong> {detail.mode}
+            <strong>モード:</strong> {formatDetailModeLabel(detail.mode)}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Created at:</strong> {formatDateTimeLabel(detail.createdAt)}
+            <strong>作成日時:</strong> {formatDateTimeLabel(detail.createdAt)}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Ended at:</strong> {formatDateTimeLabel(detail.endedAt)}
+            <strong>終了日時:</strong> {formatDateTimeLabel(detail.endedAt)}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Question count:</strong> {detail.answeredQuestionCount}
+            <strong>問題数:</strong> {detail.answeredQuestionCount}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Correct:</strong> {detail.correctQuestionCount}
+            <strong>正解数:</strong> {detail.correctQuestionCount}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Accuracy:</strong>{" "}
-            {formatAccuracyLabel(detail.accuracyRate)}
+            <strong>正答率:</strong> {formatAccuracyLabel(detail.accuracyRate)}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Avg error:</strong>{" "}
-            {formatAvgErrorLabel(detail.avgErrorAbs)}
+            <strong>平均誤差:</strong> {formatAvgErrorLabel(detail.avgErrorAbs)}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Avg response time:</strong>{" "}
+            <strong>平均回答時間:</strong>{" "}
             {formatResponseTimeMsLabel(detail.avgResponseTimeMs)}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Session score:</strong>{" "}
+            <strong>セッションスコア:</strong>{" "}
             {formatScoreLabel(detail.sessionScore)}
           </div>
         </div>
       </section>
 
       <section style={cardStyle}>
-        <h2 style={sectionTitleStyle}>Config snapshot</h2>
+        <h2 style={sectionTitleStyle}>設定スナップショット</h2>
         <div style={keyValueGridStyle}>
           <div style={keyValueCardStyle}>
-            <strong>Mode:</strong> {detail.configSnapshot.mode}
+            <strong>モード:</strong>{" "}
+            {formatDetailModeLabel(detail.configSnapshot.mode)}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Interval range:</strong>{" "}
+            <strong>音程範囲:</strong>{" "}
             {detail.configSnapshot.intervalRange.minSemitones} -{" "}
             {detail.configSnapshot.intervalRange.maxSemitones}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Direction:</strong> {detail.configSnapshot.directionMode}
+            <strong>出題方向:</strong>{" "}
+            {detail.configSnapshot.directionMode === "up_only"
+              ? "上行のみ"
+              : "上下混在"}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Base note mode:</strong>{" "}
-            {detail.configSnapshot.baseNoteMode}
+            <strong>基準音モード:</strong>{" "}
+            {detail.configSnapshot.baseNoteMode === "fixed"
+              ? "固定"
+              : "ランダム"}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Fixed base note:</strong>{" "}
-            {detail.configSnapshot.fixedBaseNote ?? "none"}
+            <strong>固定する基準音:</strong>{" "}
+            {detail.configSnapshot.fixedBaseNote ?? "なし"}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Include unison:</strong>{" "}
-            {detail.configSnapshot.includeUnison ? "yes" : "no"}
+            <strong>同音を含める:</strong>{" "}
+            {detail.configSnapshot.includeUnison ? "はい" : "いいえ"}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>Include octave:</strong>{" "}
-            {detail.configSnapshot.includeOctave ? "yes" : "no"}
+            <strong>オクターブを含める:</strong>{" "}
+            {detail.configSnapshot.includeOctave ? "はい" : "いいえ"}
           </div>
           <div style={keyValueCardStyle}>
-            <strong>End condition:</strong>{" "}
+            <strong>終了条件:</strong>{" "}
             {detail.configSnapshot.endCondition.type === "question_count"
-              ? `question_count (${detail.configSnapshot.endCondition.questionCount})`
-              : `time_limit (${detail.configSnapshot.endCondition.timeLimitMinutes} min)`}
+              ? `問題数 (${detail.configSnapshot.endCondition.questionCount})`
+              : `制限時間 (${detail.configSnapshot.endCondition.timeLimitMinutes} 分)`}
           </div>
           {detail.configSnapshot.mode === "distance" ? (
             <div style={keyValueCardStyle}>
-              <strong>Interval granularity:</strong>{" "}
-              {detail.configSnapshot.intervalGranularity}
+              <strong>音程表記の粒度:</strong>{" "}
+              {detail.configSnapshot.intervalGranularity === "simple"
+                ? "シンプル"
+                : "増減あり"}
             </div>
           ) : (
             <div style={keyValueCardStyle}>
-              <strong>Keyboard answer style:</strong> note class
+              <strong>鍵盤の回答形式:</strong> 音名
             </div>
           )}
         </div>
       </section>
 
       <section style={cardStyle}>
-        <h2 style={sectionTitleStyle}>Question results</h2>
+        <h2 style={sectionTitleStyle}>回答結果</h2>
         {detail.results.length > 0 ? (
           <ul style={listStyle}>
             {detail.results.map((result) => (
@@ -165,25 +171,25 @@ export default async function TrainingSessionDetailPage({
                   gridTemplateColumns: "none",
                 }}
               >
-                <strong>Question #{result.questionIndex + 1}</strong>
+                <strong>問題 {result.questionIndex + 1}</strong>
                 {detail.mode === "distance" ? (
                   <>
                     <span style={subtleTextStyle}>
-                      Correct:{" "}
+                      正解:{" "}
                       {getIntervalLabel(
                         result.targetIntervalSemitones,
                         intervalNotationStyle,
                       )}
                     </span>
                     <span style={subtleTextStyle}>
-                      Answered:{" "}
+                      回答:{" "}
                       {getIntervalLabel(
                         result.answerIntervalSemitones,
                         intervalNotationStyle,
                       )}
                     </span>
                     <span style={subtleTextStyle}>
-                      {result.isCorrect ? "Correct" : "Incorrect"} /{" "}
+                      {result.isCorrect ? "正解" : "不正解"} /{" "}
                       {formatSignedSemitoneLabel(result.errorSemitones)} /{" "}
                       {formatResponseTimeMsLabel(result.responseTimeMs)}
                     </span>
@@ -191,13 +197,13 @@ export default async function TrainingSessionDetailPage({
                 ) : (
                   <>
                     <span style={subtleTextStyle}>
-                      {result.baseNoteName} -&gt; {result.targetNoteName} /
-                      answer {result.answerNoteName}
+                      {result.baseNoteName} -&gt; {result.targetNoteName} / 回答{" "}
+                      {result.answerNoteName}
                     </span>
                     <span style={subtleTextStyle}>
                       {result.isCorrect
-                        ? "Correct"
-                        : `Error ${formatAvgErrorLabel(Math.abs(result.errorSemitones))}`}{" "}
+                        ? "正解"
+                        : `誤差 ${formatAvgErrorLabel(Math.abs(result.errorSemitones))}`}{" "}
                       / {formatResponseTimeMsLabel(result.responseTimeMs)}
                     </span>
                   </>
@@ -206,9 +212,13 @@ export default async function TrainingSessionDetailPage({
             ))}
           </ul>
         ) : (
-          <p style={subtleTextStyle}>No question results found.</p>
+          <p style={subtleTextStyle}>回答結果はまだありません。</p>
         )}
       </section>
     </main>
   );
+}
+
+function formatDetailModeLabel(value: "distance" | "keyboard"): string {
+  return value === "distance" ? "距離モード" : "鍵盤モード";
 }

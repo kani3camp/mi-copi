@@ -87,7 +87,7 @@ export function GlobalUserSettingsProvider({
     setSaveState({
       status: "saved",
       updatedAt: null,
-      message: "Saved locally in this browser.",
+      message: "このブラウザに保存しました。",
     });
   }, [isAuthenticated]);
 
@@ -111,7 +111,7 @@ export function GlobalUserSettingsProvider({
         setSaveState({
           status: "saved",
           updatedAt: null,
-          message: "Saved locally in this browser.",
+          message: "このブラウザに保存しました。",
         });
         return nextSettings;
       }
@@ -187,7 +187,7 @@ export function GlobalUserSettingsProvider({
       setSaveState({
         status: "saved",
         updatedAt: result.updatedAt,
-        message: "Cloud settings saved.",
+        message: "クラウドに保存しました。",
       });
     }
 

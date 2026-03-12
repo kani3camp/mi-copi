@@ -9,6 +9,7 @@ import {
   formatTrainingModeLabel,
 } from "../features/training/model/format";
 import { getHomeTrainingSummaryForCurrentUser } from "../features/training/server/getHomeTrainingSummary";
+import { HomeSignOutButton } from "./home-sign-out-button";
 import {
   cardStyle,
   listLinkStyle,
@@ -30,7 +31,6 @@ import {
 export default async function HomePage() {
   const summary = await getHomeTrainingSummaryForCurrentUser();
   const compactMetricValueStyle = { ...metricValueStyle, fontSize: "22px" };
-  const accountLinkLabel = summary.isAuthenticated ? "Account" : "Sign in";
 
   return (
     <main style={pageShellStyle}>
@@ -42,27 +42,28 @@ export default async function HomePage() {
         </p>
         <div style={navRowStyle}>
           <Link href="/train/distance" style={navLinkStyle}>
-            Train: distance
+            距離モード
           </Link>
           <Link href="/train/keyboard" style={navLinkStyle}>
-            Train: keyboard
+            鍵盤モード
           </Link>
           {summary.isAuthenticated ? (
             <Link href="/stats" style={navLinkStyle}>
-              Stats
+              統計
             </Link>
           ) : null}
           <Link href="/settings" style={navLinkStyle}>
-            Settings
+            設定
           </Link>
-          <Link href="/auth-test" style={navLinkStyle}>
-            {accountLinkLabel}
+          <Link href="/login" style={navLinkStyle}>
+            {summary.isAuthenticated ? "アカウント" : "ログイン"}
           </Link>
+          {summary.isAuthenticated ? <HomeSignOutButton /> : null}
         </div>
       </header>
 
       <section style={cardStyle}>
-        <h2 style={sectionTitleStyle}>Saved training summary</h2>
+        <h2 style={sectionTitleStyle}>学習サマリー</h2>
         {summary.isAuthenticated ? (
           <>
             <p style={subtleTextStyle}>
@@ -70,7 +71,7 @@ export default async function HomePage() {
             </p>
             <div style={metricsGridStyle}>
               <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>Last training time</span>
+                <span style={metricLabelStyle}>最終学習日時</span>
                 <span style={compactMetricValueStyle}>
                   {summary.lastTrainingTime
                     ? formatDateTimeLabel(summary.lastTrainingTime)
@@ -78,7 +79,7 @@ export default async function HomePage() {
                 </span>
               </div>
               <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>Last used mode</span>
+                <span style={metricLabelStyle}>最後に使ったモード</span>
                 <span style={metricValueStyle}>
                   {summary.lastUsedMode
                     ? formatTrainingModeLabel(summary.lastUsedMode)
@@ -86,7 +87,7 @@ export default async function HomePage() {
                 </span>
               </div>
               <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>Latest session score</span>
+                <span style={metricLabelStyle}>直近セッションスコア</span>
                 <span style={metricValueStyle}>
                   {summary.latestSessionScore === null
                     ? "-"
@@ -94,7 +95,7 @@ export default async function HomePage() {
                 </span>
               </div>
               <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>Recent average error</span>
+                <span style={metricLabelStyle}>最近の平均誤差</span>
                 <span style={metricValueStyle}>
                   {summary.recentAverageError === null
                     ? "-"
@@ -102,7 +103,7 @@ export default async function HomePage() {
                 </span>
               </div>
               <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>Recent avg response time</span>
+                <span style={metricLabelStyle}>最近の平均回答時間</span>
                 <span style={compactMetricValueStyle}>
                   {summary.recentAverageResponseTimeMs === null
                     ? "-"
@@ -112,11 +113,11 @@ export default async function HomePage() {
                 </span>
               </div>
               <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>Total sessions</span>
+                <span style={metricLabelStyle}>累計セッション数</span>
                 <span style={metricValueStyle}>{summary.totalSessions}</span>
               </div>
               <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>Saved question results</span>
+                <span style={metricLabelStyle}>保存済み回答数</span>
                 <span style={metricValueStyle}>
                   {summary.totalSavedQuestionResults}
                 </span>
@@ -131,7 +132,7 @@ export default async function HomePage() {
                     fontSize: "18px",
                   }}
                 >
-                  Latest saved sessions
+                  最近の保存済みセッション
                 </h3>
                 <ul style={listStyle}>
                   {summary.recentSessions.map((session) => (
@@ -144,12 +145,12 @@ export default async function HomePage() {
                           {formatTrainingModeLabel(session.mode)}
                         </strong>
                         <span style={subtleTextStyle}>
-                          Session score {formatScoreLabel(session.sessionScore)}{" "}
-                          / accuracy {formatAccuracyLabel(session.accuracyRate)}{" "}
-                          / questions {session.answeredQuestionCount}
+                          スコア {formatScoreLabel(session.sessionScore)} /
+                          正答率 {formatAccuracyLabel(session.accuracyRate)} /
+                          問題数 {session.answeredQuestionCount}
                         </span>
                         <span style={subtleTextStyle}>
-                          Completed {formatDateTimeLabel(session.endedAt)}
+                          完了日時 {formatDateTimeLabel(session.endedAt)}
                         </span>
                       </Link>
                     </li>
@@ -157,27 +158,28 @@ export default async function HomePage() {
                 </ul>
               </>
             ) : (
-              <p style={subtleTextStyle}>No saved sessions yet.</p>
+              <p style={subtleTextStyle}>
+                保存済みセッションはまだありません。
+              </p>
             )}
           </>
         ) : (
           <>
             <p style={subtleTextStyle}>
-              Guest mode では練習はできますが、Home / Stats
-              の保存サマリーは表示されません。
+              ゲストでは練習できますが、ホームと統計の保存サマリーは表示されません。
             </p>
             <div style={navRowStyle}>
               <Link href="/train/distance" style={navLinkStyle}>
-                Start distance
+                距離モード
               </Link>
               <Link href="/train/keyboard" style={navLinkStyle}>
-                Start keyboard
+                鍵盤モード
               </Link>
-              <Link href="/auth-test" style={navLinkStyle}>
-                Sign in
+              <Link href="/login" style={navLinkStyle}>
+                ログイン
               </Link>
               <Link href="/settings" style={navLinkStyle}>
-                Settings
+                設定
               </Link>
             </div>
           </>
