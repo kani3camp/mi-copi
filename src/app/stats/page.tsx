@@ -321,15 +321,22 @@ export default async function StatsPage() {
                     }))}
                   />
                 </div>
-                <ChartCountRow
-                  label="音程ごとの問題数"
-                  items={stats.intervalPerformance.map((interval) => ({
-                    key: interval.intervalSemitones,
+                <MetricBarChart
+                  title="音程ごとの問題数"
+                  valueRangeLabel={formatRangeLabel(
+                    stats.intervalPerformance.map(
+                      (interval) => interval.questionCount,
+                    ),
+                    formatQuestionCountLabel,
+                  )}
+                  valueFormatter={formatQuestionCountLabel}
+                  points={stats.intervalPerformance.map((interval) => ({
+                    key: `${interval.intervalSemitones}-count`,
                     label: getCompactIntervalChartLabel(
                       interval.intervalSemitones,
                     ),
                     assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} ${interval.questionCount} 問`,
-                    value: `${interval.questionCount}問`,
+                    value: interval.questionCount,
                   }))}
                 />
               </div>
@@ -1021,4 +1028,8 @@ function createChartColumnsStyle(columnCount: number): CSSProperties {
   return {
     gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
   };
+}
+
+function formatQuestionCountLabel(value: number): string {
+  return `${value}問`;
 }
