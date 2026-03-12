@@ -1,3 +1,6 @@
+This file is the repository-level implementation sequence, not the current task file.
+Codex should derive the next concrete bundle at run time using Plan mode, while respecting this order and the current codebase state.
+
 # PR Plan
 
 Implementation should be split into small PRs. Each PR should have one main responsibility.

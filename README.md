@@ -1,10 +1,10 @@
 # mi-copi
 
 ## Source Of Truth
-
-- Task scope: `docs/tasks/active-task.md`
 - Product constraints and decisions: `docs/product/*.md`
+- Delivery rules and PR sequencing: `docs/delivery/*.md`
 - Execution policy: `AGENTS.md`
+- Persistent plan docs for long-running work only: `docs/plans/*.md`
 
 ## Verification
 

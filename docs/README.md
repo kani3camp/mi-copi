@@ -1,23 +1,21 @@
 # Docs Overview
 
-`docs/` contains the repository source of truth. The canonical reading order matches `AGENTS.md`.
+`docs/` contains the repository source of truth.
 
 ## Canonical Order
+1. `docs/product/current-constraints.md`
+2. `docs/product/decision-log.md`
+3. `docs/product/requirements.md`
+4. `docs/product/basic-design.md`
+5. `docs/product/tech-stack.md`
+6. `docs/delivery/acceptance-criteria.md`
+7. `docs/delivery/pr-plan.md`
+8. `AGENTS.md`
 
-1. `docs/tasks/active-task.md`
-   - Current task scope, in-scope/out-of-scope, and acceptance criteria.
-2. `docs/product/current-constraints.md`
-   - Fixed product, architecture, and AI-development constraints currently in force.
-3. `docs/product/decision-log.md`
-   - Decision history that resolves implementation ambiguity.
-4. `docs/product/requirements.md`
-   - Product goals, scope, and MVP behavior requirements.
-5. `docs/product/basic-design.md`
-   - Screen structure, routing, state transitions, and client/server responsibilities.
-6. `docs/product/tech-stack.md`
-   - Adopted technologies and the development quality strategy.
-7. `AGENTS.md`
-   - Execution policy, approval boundaries, verification, and reporting rules.
+## Plans
+- Non-trivial work should start with Codex Plan mode.
+- Only long-running or multi-session work should create a persistent plan under `docs/plans/*.md`.
+- `docs/tasks/active-task.md` is kept only for backward compatibility and is not canonical.
 
 ## Supporting Docs
 

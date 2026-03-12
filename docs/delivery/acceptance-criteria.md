@@ -2,6 +2,9 @@
 
 This file defines the completion template for implementation PRs.
 
+For non-trivial work, implementation should begin with a plan that states scope, out-of-scope items, likely touched files, verification, and whether human approval is needed.
+For multi-session work, persist that plan under `docs/plans/*.md`.
+
 ## Global Criteria
 
 - The PR matches the approved docs and does not expand scope.
