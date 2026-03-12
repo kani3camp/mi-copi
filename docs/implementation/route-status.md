@@ -60,7 +60,7 @@
 - Purpose: 鍵盤で target note を答えるトレーニング
 - Current behavior:
   - 距離モードと同じ phase 構成と終了条件を持つ
-  - 回答 UI は 12 音の on-screen keyboard
+  - 回答 UI は 12 音の on-screen keyboard で、回答中は基準音の鍵盤位置を視覚表示する
   - result 到達後の自動保存、失敗時 retry、last-used config 保存の扱いは距離モードと同じ
 
 ### `/sessions/[sessionId]`

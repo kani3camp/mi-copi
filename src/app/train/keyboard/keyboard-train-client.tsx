@@ -881,6 +881,7 @@ export function KeyboardTrainClient({
               </div>
               <KeyboardAnswerPad
                 answerChoices={answerChoices}
+                referenceNote={activeQuestion.question.baseNote}
                 onAnswer={handleAnswer}
                 showLabels={settings.keyboardNoteLabelsVisible}
               />
@@ -1254,6 +1255,7 @@ async function runGuardedPlayback(
 
 function KeyboardAnswerPad(props: {
   answerChoices: NoteClass[];
+  referenceNote: NoteClass;
   onAnswer: (note: NoteClass) => void;
   showLabels: boolean;
 }) {
@@ -1272,6 +1274,7 @@ function KeyboardAnswerPad(props: {
               onClick={() => props.onAnswer(note)}
               style={getKeyboardKeyStyle(note, {
                 disabled: !enabledNotes.has(note),
+                highlight: note === props.referenceNote ? "reference" : "idle",
                 interactive: true,
               })}
             >
@@ -1288,6 +1291,7 @@ function KeyboardAnswerPad(props: {
             onClick={() => props.onAnswer(note)}
             style={getKeyboardKeyStyle(note, {
               disabled: !enabledNotes.has(note),
+              highlight: note === props.referenceNote ? "reference" : "idle",
               interactive: true,
               left,
               position: "absolute",
@@ -1296,6 +1300,11 @@ function KeyboardAnswerPad(props: {
             {props.showLabels ? <KeyLabel note={note} compact /> : null}
           </button>
         ))}
+      </div>
+      <div style={feedbackLegendStyle}>
+        <span style={legendItemStyle("var(--color-primary)", "#e7f1ea")}>
+          基準音の位置
+        </span>
       </div>
     </div>
   );
@@ -1363,7 +1372,7 @@ function getKeyboardKeyStyle(
   note: NoteClass,
   options: {
     disabled?: boolean;
-    highlight?: "idle" | "correct" | "answered" | "both";
+    highlight?: "idle" | "reference" | "correct" | "answered" | "both";
     interactive: boolean;
     left?: string;
     position?: "relative" | "absolute";
@@ -1371,30 +1380,39 @@ function getKeyboardKeyStyle(
 ): CSSProperties {
   const blackKey = isBlackKey(note);
   const highlight = options.highlight ?? "idle";
+  const isReference = highlight === "reference";
   const isCorrect = highlight === "correct" || highlight === "both";
   const isAnswered = highlight === "answered";
   const background = blackKey
-    ? isCorrect
-      ? "linear-gradient(180deg, #34d399 0%, #065f46 100%)"
-      : isAnswered
-        ? "linear-gradient(180deg, #fb923c 0%, #9a3412 100%)"
-        : "linear-gradient(180deg, #374151 0%, #111827 100%)"
-    : isCorrect
-      ? "linear-gradient(180deg, #ffffff 0%, #dcfce7 100%)"
-      : isAnswered
-        ? "linear-gradient(180deg, #ffffff 0%, #ffedd5 100%)"
-        : "linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%)";
+    ? isReference
+      ? "linear-gradient(180deg, #6aa57a 0%, #2f5f3f 100%)"
+      : isCorrect
+        ? "linear-gradient(180deg, #34d399 0%, #065f46 100%)"
+        : isAnswered
+          ? "linear-gradient(180deg, #fb923c 0%, #9a3412 100%)"
+          : "linear-gradient(180deg, #374151 0%, #111827 100%)"
+    : isReference
+      ? "linear-gradient(180deg, #ffffff 0%, #e7f1ea 100%)"
+      : isCorrect
+        ? "linear-gradient(180deg, #ffffff 0%, #dcfce7 100%)"
+        : isAnswered
+          ? "linear-gradient(180deg, #ffffff 0%, #ffedd5 100%)"
+          : "linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%)";
   const border = blackKey
-    ? isCorrect
-      ? "2px solid #34d399"
-      : isAnswered
-        ? "2px solid #fdba74"
-        : "1px solid #111827"
-    : isCorrect
-      ? "2px solid #16a34a"
-      : isAnswered
-        ? "2px solid #f97316"
-        : "1px solid #d1d5db";
+    ? isReference
+      ? "2px solid #7db08b"
+      : isCorrect
+        ? "2px solid #34d399"
+        : isAnswered
+          ? "2px solid #fdba74"
+          : "1px solid #111827"
+    : isReference
+      ? "2px solid var(--color-primary)"
+      : isCorrect
+        ? "2px solid #16a34a"
+        : isAnswered
+          ? "2px solid #f97316"
+          : "1px solid #d1d5db";
 
   return {
     position: options.position ?? "relative",
@@ -1419,16 +1437,20 @@ function getKeyboardKeyStyle(
     cursor: options.interactive && !options.disabled ? "pointer" : "default",
     opacity: options.disabled ? 0.5 : 1,
     boxShadow: blackKey
-      ? isCorrect
-        ? "0 12px 24px rgba(5, 150, 105, 0.34)"
-        : isAnswered
-          ? "0 12px 24px rgba(234, 88, 12, 0.3)"
-          : "0 10px 20px rgba(17, 24, 39, 0.28)"
-      : isCorrect
-        ? "0 10px 24px rgba(34, 197, 94, 0.18)"
-        : isAnswered
-          ? "0 10px 24px rgba(249, 115, 22, 0.18)"
-          : "0 8px 18px rgba(15, 23, 42, 0.08)",
+      ? isReference
+        ? "0 12px 24px rgba(78, 143, 99, 0.26)"
+        : isCorrect
+          ? "0 12px 24px rgba(5, 150, 105, 0.34)"
+          : isAnswered
+            ? "0 12px 24px rgba(234, 88, 12, 0.3)"
+            : "0 10px 20px rgba(17, 24, 39, 0.28)"
+      : isReference
+        ? "0 10px 24px rgba(78, 143, 99, 0.16)"
+        : isCorrect
+          ? "0 10px 24px rgba(34, 197, 94, 0.18)"
+          : isAnswered
+            ? "0 10px 24px rgba(249, 115, 22, 0.18)"
+            : "0 8px 18px rgba(15, 23, 42, 0.08)",
     transform:
       options.interactive && !options.disabled ? "translateY(0)" : undefined,
     touchAction: "manipulation",
