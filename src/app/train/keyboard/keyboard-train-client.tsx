@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
 import { shouldApplyDeferredTrainingBootstrap } from "../../../features/training/model/bootstrap";
@@ -15,30 +16,17 @@ import {
 } from "../../../features/training/model/config";
 import { formatDateTimeLabel } from "../../../features/training/model/format";
 import { formatDirectionModeLabel } from "../../../features/training/model/interval-notation";
-import {
-  type buildKeyboardGuestSaveInput,
-  buildKeyboardGuestSummary,
-  evaluateKeyboardAnswer,
-  getKeyboardAnswerChoices,
-  getKeyboardQuestionCount,
-  type KeyboardGuestResult,
-  validateKeyboardTrainingConfig,
+import type {
+  buildKeyboardGuestSaveInput,
+  KeyboardGuestResult,
+  KeyboardGuestSummary,
 } from "../../../features/training/model/keyboard-guest";
-import {
-  createQuestionGeneratorState,
-  type QuestionGeneratorState,
-  takeNextQuestion,
-} from "../../../features/training/model/question-generator";
+import type { QuestionGeneratorState } from "../../../features/training/model/question-generator";
 import {
   canRetryTrainingResultSave,
   hasTrainingResultSavePayload,
   shouldAutoSaveTrainingResult,
 } from "../../../features/training/model/result-save";
-import {
-  getNextReplayCount,
-  resolvePostFeedbackProgress,
-  resolveTimeLimitExpiry,
-} from "../../../features/training/model/session-flow";
 import type {
   KeyboardTrainingConfig,
   NoteClass,
@@ -58,19 +46,28 @@ import {
   SectionHeader,
   Surface,
 } from "../../ui/primitives";
-import {
-  type PlaybackKind,
-  playFeedbackEffect,
-  playQuestionAudio,
-} from "../audio-playback";
+import type { PlaybackKind } from "../audio-playback";
 import { formatRemainingTimeLabel } from "../train-ui-shared";
 import { TrainingPageHero } from "../training-page-shell";
-import {
-  formatKeyboardNoteLabel,
-  KeyboardFeedbackPanel,
-  KeyboardQuestionPanel,
-  KeyboardResultPanel,
-} from "./keyboard-train-panels";
+import { formatKeyboardNoteLabel } from "./keyboard-note-label";
+
+const KeyboardQuestionPanel = dynamic(async () => {
+  const mod = await import("./keyboard-train-panels");
+
+  return mod.KeyboardQuestionPanel;
+});
+
+const KeyboardFeedbackPanel = dynamic(async () => {
+  const mod = await import("./keyboard-train-panels");
+
+  return mod.KeyboardFeedbackPanel;
+});
+
+const KeyboardResultPanel = dynamic(async () => {
+  const mod = await import("./keyboard-train-panels");
+
+  return mod.KeyboardResultPanel;
+});
 
 type KeyboardTrainPhase =
   | "config"
@@ -104,6 +101,8 @@ const NOTE_CLASS_OPTIONS: NoteClass[] = [
   "A#",
   "B",
 ];
+
+type KeyboardTrainRuntimeModule = typeof import("./keyboard-train-runtime");
 
 interface KeyboardTrainClientProps {
   isAuthenticated: boolean;
@@ -141,6 +140,7 @@ export function KeyboardTrainClient({
   const [activeQuestion, setActiveQuestion] =
     useState<ActiveQuestionState | null>(null);
   const [results, setResults] = useState<KeyboardGuestResult[]>([]);
+  const [summary, setSummary] = useState<KeyboardGuestSummary | null>(null);
   const [feedbackResult, setFeedbackResult] =
     useState<KeyboardGuestResult | null>(null);
   const [lastAnsweredWasFinal, setLastAnsweredWasFinal] = useState(false);
@@ -164,7 +164,15 @@ export function KeyboardTrainClient({
   const bootstrapRequestedRef = useRef(false);
   const phaseRef = useRef<KeyboardTrainPhase>("config");
   const startedAtRef = useRef<string | null>(null);
-  const plannedQuestionCount = getKeyboardQuestionCount(config);
+  const resultsRef = useRef<KeyboardGuestResult[]>([]);
+  const runtimeRef = useRef<KeyboardTrainRuntimeModule | null>(null);
+  const runtimePromiseRef = useRef<Promise<KeyboardTrainRuntimeModule> | null>(
+    null,
+  );
+  const plannedQuestionCount =
+    config.endCondition.type === "question_count"
+      ? config.endCondition.questionCount
+      : 0;
   const questionCountOptions =
     getQuestionCountSelectOptions(plannedQuestionCount);
   const timeLimitOptions =
@@ -174,8 +182,7 @@ export function KeyboardTrainClient({
           createDefaultTimeLimitEndCondition().timeLimitSeconds,
         );
   const [remainingTimeMs, setRemainingTimeMs] = useState<number | null>(null);
-  const answerChoices = useMemo(() => getKeyboardAnswerChoices(), []);
-  const summary = useMemo(() => buildKeyboardGuestSummary(results), [results]);
+  const answerChoices = NOTE_CLASS_OPTIONS;
   const cannotSaveBecauseNoAnswers = phase === "result" && results.length === 0;
   const saveContext = {
     isAuthenticated: isAuthenticatedState,
@@ -193,6 +200,55 @@ export function KeyboardTrainClient({
   useEffect(() => {
     startedAtRef.current = startedAt;
   }, [startedAt]);
+
+  useEffect(() => {
+    resultsRef.current = results;
+  }, [results]);
+
+  const loadKeyboardRuntime = useCallback(() => {
+    if (runtimeRef.current) {
+      return Promise.resolve(runtimeRef.current);
+    }
+
+    if (!runtimePromiseRef.current) {
+      runtimePromiseRef.current = import("./keyboard-train-runtime").then(
+        (runtime) => {
+          runtimeRef.current = runtime;
+
+          return runtime;
+        },
+      );
+    }
+
+    return runtimePromiseRef.current;
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const warmUp = () => {
+      void loadKeyboardRuntime();
+      void import("./keyboard-train-panels");
+    };
+
+    if ("requestIdleCallback" in window) {
+      const idleCallbackId = window.requestIdleCallback(warmUp, {
+        timeout: 1500,
+      });
+
+      return () => {
+        window.cancelIdleCallback(idleCallbackId);
+      };
+    }
+
+    const timeoutId = globalThis.setTimeout(warmUp, 0);
+
+    return () => {
+      globalThis.clearTimeout(timeoutId);
+    };
+  }, [loadKeyboardRuntime]);
 
   useEffect(() => {
     if (!loadBootstrapAction || bootstrapRequestedRef.current) {
@@ -255,13 +311,16 @@ export function KeyboardTrainClient({
     playedNonceRef.current = activeQuestion.playNonce;
     let cancelled = false;
 
-    void playQuestionAudio(
-      activeQuestion.question,
-      activeQuestion.playbackKind,
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    )
+    void loadKeyboardRuntime()
+      .then((runtime) =>
+        runtime.playQuestionAudio(
+          activeQuestion.question,
+          activeQuestion.playbackKind,
+          audioContextRef,
+          settings.masterVolume,
+          playbackLockRef,
+        ),
+      )
       .catch(() => {
         if (!cancelled) {
           setAudioError(
@@ -289,7 +348,7 @@ export function KeyboardTrainClient({
     return () => {
       cancelled = true;
     };
-  }, [activeQuestion, phase, settings.masterVolume]);
+  }, [activeQuestion, loadKeyboardRuntime, phase, settings.masterVolume]);
 
   useEffect(() => {
     if (
@@ -316,12 +375,19 @@ export function KeyboardTrainClient({
       setRemainingTimeMs(nextRemaining);
 
       if (nextRemaining === 0 && !timeoutHandledRef.current) {
+        const runtime = runtimeRef.current;
+
+        if (!runtime) {
+          return;
+        }
+
         timeoutHandledRef.current = true;
-        const timedOutSession = resolveTimeLimitExpiry(
+        const timedOutSession = runtime.resolveTimeLimitExpiry(
           new Date().toISOString(),
         );
         setActiveQuestion(null);
         setFeedbackResult(null);
+        setSummary(runtime.buildKeyboardGuestSummary(resultsRef.current));
         setLastAnsweredWasFinal(timedOutSession.lastAnsweredWasFinal);
         setFinishReason(timedOutSession.finishReason);
         setEndedAt(timedOutSession.endedAt);
@@ -385,8 +451,9 @@ export function KeyboardTrainClient({
     startedAt,
   ]);
 
-  function handleStart() {
-    const validationError = validateKeyboardTrainingConfig(config);
+  async function handleStart() {
+    const runtime = await loadKeyboardRuntime();
+    const validationError = runtime.validateKeyboardTrainingConfig(config);
 
     if (validationError) {
       setConfigError(validationError);
@@ -405,6 +472,7 @@ export function KeyboardTrainClient({
     setEndedAt(null);
     setFinishReason(null);
     setResults([]);
+    setSummary(null);
     setFeedbackResult(null);
     setLastAnsweredWasFinal(false);
     sessionDeadlineAtRef.current =
@@ -417,9 +485,16 @@ export function KeyboardTrainClient({
         ? config.endCondition.timeLimitSeconds * 1000
         : null,
     );
-    questionGeneratorStateRef.current = createQuestionGeneratorState(config);
+    questionGeneratorStateRef.current =
+      runtime.createQuestionGeneratorState(config);
     setActiveQuestion(
-      createActiveQuestion(config, 0, playbackIdRef, questionGeneratorStateRef),
+      createActiveQuestion(
+        runtime,
+        config,
+        0,
+        playbackIdRef,
+        questionGeneratorStateRef,
+      ),
     );
     if (isAuthenticatedState) {
       persistedConfigSessionRef.current = nextStartedAt;
@@ -428,18 +503,25 @@ export function KeyboardTrainClient({
     setPhase("preparing");
   }
 
-  function handleReplayBase() {
+  const handleReplayBase = useCallback(() => {
     if (!activeQuestion) {
       return;
     }
 
-    void playQuestionAudio(
-      activeQuestion.question,
-      "base",
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    )
+    const runtime = runtimeRef.current;
+
+    if (!runtime) {
+      return;
+    }
+
+    void runtime
+      .playQuestionAudio(
+        activeQuestion.question,
+        "base",
+        audioContextRef,
+        settings.masterVolume,
+        playbackLockRef,
+      )
       .then((didStartPlayback) => {
         if (!didStartPlayback) {
           return;
@@ -449,7 +531,7 @@ export function KeyboardTrainClient({
           current
             ? {
                 ...current,
-                replayBaseCount: getNextReplayCount(
+                replayBaseCount: runtime.getNextReplayCount(
                   current.replayBaseCount,
                   didStartPlayback,
                 ),
@@ -460,20 +542,27 @@ export function KeyboardTrainClient({
       .catch(() => {
         setAudioError("音声の再生に失敗しました。そのまま続行できます。");
       });
-  }
+  }, [activeQuestion, settings.masterVolume]);
 
-  function handleReplayTarget() {
+  const handleReplayTarget = useCallback(() => {
     if (!activeQuestion) {
       return;
     }
 
-    void playQuestionAudio(
-      activeQuestion.question,
-      "target",
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    )
+    const runtime = runtimeRef.current;
+
+    if (!runtime) {
+      return;
+    }
+
+    void runtime
+      .playQuestionAudio(
+        activeQuestion.question,
+        "target",
+        audioContextRef,
+        settings.masterVolume,
+        playbackLockRef,
+      )
       .then((didStartPlayback) => {
         if (!didStartPlayback) {
           return;
@@ -483,7 +572,7 @@ export function KeyboardTrainClient({
           current
             ? {
                 ...current,
-                replayTargetCount: getNextReplayCount(
+                replayTargetCount: runtime.getNextReplayCount(
                   current.replayTargetCount,
                   didStartPlayback,
                 ),
@@ -494,68 +583,97 @@ export function KeyboardTrainClient({
       .catch(() => {
         setAudioError("音声の再生に失敗しました。そのまま続行できます。");
       });
-  }
+  }, [activeQuestion, settings.masterVolume]);
 
-  function handleAnswer(answeredNote: NoteClass) {
-    if (!activeQuestion?.answeringStartedAt) {
-      return;
-    }
+  const handleAnswer = useCallback(
+    (answeredNote: NoteClass) => {
+      if (!activeQuestion?.answeringStartedAt) {
+        return;
+      }
 
-    const answeredAt = new Date().toISOString();
-    const responseTimeMs = Math.max(
-      0,
-      Date.parse(answeredAt) - Date.parse(activeQuestion.answeringStartedAt),
-    );
-    const result = evaluateKeyboardAnswer({
-      question: activeQuestion.question,
-      answeredNote,
-      responseTimeMs,
-      replayBaseCount: activeQuestion.replayBaseCount,
-      replayTargetCount: activeQuestion.replayTargetCount,
-      presentedAt: activeQuestion.presentedAt,
-      answeredAt,
-    });
+      const runtime = runtimeRef.current;
 
-    const updatedCount = results.length + 1;
+      if (!runtime) {
+        return;
+      }
 
-    setResults((current) => [...current, result]);
-    setFeedbackResult(result);
-    setLastAnsweredWasFinal(
-      config.endCondition.type === "question_count" &&
-        updatedCount >= config.endCondition.questionCount,
-    );
-    setPhase("feedback");
-    void playFeedbackEffect(
-      audioContextRef,
+      const answeredAt = new Date().toISOString();
+      const responseTimeMs = Math.max(
+        0,
+        Date.parse(answeredAt) - Date.parse(activeQuestion.answeringStartedAt),
+      );
+      const result = runtime.evaluateKeyboardAnswer({
+        question: activeQuestion.question,
+        answeredNote,
+        responseTimeMs,
+        replayBaseCount: activeQuestion.replayBaseCount,
+        replayTargetCount: activeQuestion.replayTargetCount,
+        presentedAt: activeQuestion.presentedAt,
+        answeredAt,
+      });
+
+      const updatedCount = results.length + 1;
+
+      setResults((current) => [...current, result]);
+      setFeedbackResult(result);
+      setLastAnsweredWasFinal(
+        config.endCondition.type === "question_count" &&
+          updatedCount >= config.endCondition.questionCount,
+      );
+      setPhase("feedback");
+      void runtime.playFeedbackEffect(
+        audioContextRef,
+        settings.masterVolume,
+        settings.soundEffectsEnabled,
+        result.isCorrect,
+        playbackLockRef,
+      );
+    },
+    [
+      activeQuestion,
+      config.endCondition,
+      results.length,
       settings.masterVolume,
       settings.soundEffectsEnabled,
-      result.isCorrect,
-      playbackLockRef,
-    );
-  }
+    ],
+  );
 
-  function handleReplayCorrectTarget() {
+  const handleReplayCorrectTarget = useCallback(() => {
     if (!feedbackResult) {
       return;
     }
 
-    void playQuestionAudio(
-      feedbackResult.question,
-      "target",
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    ).catch(() => {
-      setAudioError("音声の再生に失敗しました。そのまま続行できます。");
-    });
-  }
+    const runtime = runtimeRef.current;
 
-  function handleContinue() {
+    if (!runtime) {
+      return;
+    }
+
+    void runtime
+      .playQuestionAudio(
+        feedbackResult.question,
+        "target",
+        audioContextRef,
+        settings.masterVolume,
+        playbackLockRef,
+      )
+      .catch(() => {
+        setAudioError("音声の再生に失敗しました。そのまま続行できます。");
+      });
+  }, [feedbackResult, settings.masterVolume]);
+
+  const handleContinue = useCallback(() => {
     if (!feedbackResult || !activeQuestion) {
       return;
     }
 
-    const nextProgress = resolvePostFeedbackProgress({
+    const runtime = runtimeRef.current;
+
+    if (!runtime) {
+      return;
+    }
+
+    const nextProgress = runtime.resolvePostFeedbackProgress({
       endCondition: config.endCondition,
       currentQuestionIndex: activeQuestion.question.questionIndex,
       lastAnsweredWasFinal,
@@ -564,6 +682,7 @@ export function KeyboardTrainClient({
 
     if (nextProgress.phase === "result") {
       setActiveQuestion(null);
+      setSummary(runtime.buildKeyboardGuestSummary(resultsRef.current));
       setFinishReason(nextProgress.finishReason);
       setEndedAt(nextProgress.endedAt);
       setPhase(nextProgress.phase);
@@ -573,6 +692,7 @@ export function KeyboardTrainClient({
     setFeedbackResult(null);
     setActiveQuestion(
       createActiveQuestion(
+        runtime,
         config,
         nextProgress.nextQuestionIndex,
         playbackIdRef,
@@ -580,15 +700,16 @@ export function KeyboardTrainClient({
       ),
     );
     setPhase(nextProgress.phase);
-  }
+  }, [activeQuestion, config, feedbackResult, lastAnsweredWasFinal]);
 
-  function handleReset() {
+  const handleReset = useCallback(() => {
     setPhase("config");
     setStartedAt(null);
     setEndedAt(null);
     setFinishReason(null);
     setActiveQuestion(null);
     setResults([]);
+    setSummary(null);
     setFeedbackResult(null);
     setLastAnsweredWasFinal(false);
     setConfigError(null);
@@ -600,9 +721,9 @@ export function KeyboardTrainClient({
     sessionDeadlineAtRef.current = null;
     timeoutHandledRef.current = false;
     setRemainingTimeMs(null);
-  }
+  }, []);
 
-  function handleSaveResults() {
+  const handleSaveResults = useCallback(() => {
     const retrySaveContext = {
       isAuthenticated: isAuthenticatedState,
       startedAt,
@@ -626,7 +747,16 @@ export function KeyboardTrainClient({
       });
       setSaveResult(result);
     });
-  }
+  }, [
+    config,
+    endedAt,
+    finishReason,
+    isAuthenticatedState,
+    results,
+    saveResult?.ok,
+    saveResultsAction,
+    startedAt,
+  ]);
 
   return (
     <AppShell narrow className="ui-train-shell">
@@ -979,7 +1109,7 @@ export function KeyboardTrainClient({
         />
       ) : null}
 
-      {phase === "result" ? (
+      {phase === "result" && summary ? (
         <KeyboardResultPanel
           summary={summary}
           finishReason={finishReason}
@@ -992,11 +1122,21 @@ export function KeyboardTrainClient({
           onReset={handleReset}
         />
       ) : null}
+
+      {phase === "result" && !summary ? (
+        <Surface>
+          <SectionHeader
+            title="結果を集計中"
+            description="今回のセッション結果をまとめています。"
+          />
+        </Surface>
+      ) : null}
     </AppShell>
   );
 }
 
 function createActiveQuestion(
+  runtime: KeyboardTrainRuntimeModule,
   config: KeyboardTrainingConfig,
   questionIndex: number,
   playbackIdRef: React.MutableRefObject<number>,
@@ -1008,7 +1148,7 @@ function createActiveQuestion(
     );
   }
 
-  const nextQuestion = takeNextQuestion(
+  const nextQuestion = runtime.takeNextQuestion(
     config,
     questionGeneratorStateRef.current,
     questionIndex,

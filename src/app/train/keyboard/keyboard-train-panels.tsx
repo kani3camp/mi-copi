@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { type CSSProperties, memo } from "react";
 
 import {
   formatAccuracyLabel,
@@ -35,6 +35,7 @@ import {
   type TrainingPlaybackKind,
   TrainingResultPersistenceSection,
 } from "../train-ui-shared";
+import { formatKeyboardNoteLabel } from "./keyboard-note-label";
 
 const WHITE_KEY_NOTES: NoteClass[] = ["C", "D", "E", "F", "G", "A", "B"];
 
@@ -49,145 +50,158 @@ const BLACK_KEY_LAYOUT: Array<{
   { note: "A#", left: "calc(85.7142% - 5.4%)" },
 ];
 
-export function KeyboardQuestionPanel(props: {
-  phase: "playing" | "answering";
-  questionIndex: number;
-  direction: QuestionDirection;
-  replayBaseCount: number;
-  replayTargetCount: number;
-  playbackKind: TrainingPlaybackKind;
-  answerChoices: NoteClass[];
-  referenceNote: NoteClass;
-  showLabels: boolean;
-  onReplayBase: () => void;
-  onReplayTarget: () => void;
-  onAnswer: (note: NoteClass) => void;
-}) {
-  return (
-    <Surface tone="accent">
-      <SectionHeader
-        title={`問題 ${props.questionIndex + 1}`}
-        description="基準音と問題音を聞いて、鍵盤上の音名で回答してください。"
-      />
-      <div className="ui-train-status-grid">
-        <KeyValueCard
-          label="方向"
-          value={formatQuestionDirectionLabel(props.direction)}
+export const KeyboardQuestionPanel = memo(
+  function KeyboardQuestionPanel(props: {
+    phase: "playing" | "answering";
+    questionIndex: number;
+    direction: QuestionDirection;
+    replayBaseCount: number;
+    replayTargetCount: number;
+    playbackKind: TrainingPlaybackKind;
+    answerChoices: NoteClass[];
+    referenceNote: NoteClass;
+    showLabels: boolean;
+    onReplayBase: () => void;
+    onReplayTarget: () => void;
+    onAnswer: (note: NoteClass) => void;
+  }) {
+    return (
+      <Surface tone="accent">
+        <SectionHeader
+          title={`問題 ${props.questionIndex + 1}`}
+          description="基準音と問題音を聞いて、鍵盤上の音名で回答してください。"
         />
-        <KeyValueCard label="基準音の再生回数" value={props.replayBaseCount} />
-        <KeyValueCard
-          label="問題音の再生回数"
-          value={props.replayTargetCount}
-        />
-      </div>
-
-      {props.phase === "playing" ? (
-        <Notice>{getPlaybackStatusLabel(props.playbackKind)}</Notice>
-      ) : null}
-
-      {props.phase === "answering" ? (
-        <div className="ui-stack-md">
-          <div className="ui-sticky-actions">
-            <div className="ui-replay-panel">
-              <div className="ui-stack-sm">
-                <strong>もう一度聞く</strong>
-                <span className="ui-muted">再生中の追加タップは無効です。</span>
-              </div>
-              <div className="ui-replay-panel__row">
-                <Button
-                  type="button"
-                  onClick={props.onReplayBase}
-                  className="ui-icon-button"
-                  aria-label="基準音をもう一度聞く"
-                >
-                  <PlaybackIcon />
-                  <span className="ui-icon-button__label">基準音</span>
-                </Button>
-                <Button
-                  type="button"
-                  onClick={props.onReplayTarget}
-                  className="ui-icon-button"
-                  aria-label="問題音をもう一度聞く"
-                >
-                  <PlaybackIcon />
-                  <span className="ui-icon-button__label">問題音</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-          <KeyboardAnswerPad
-            answerChoices={props.answerChoices}
-            referenceNote={props.referenceNote}
-            onAnswer={props.onAnswer}
-            showLabels={props.showLabels}
+        <div className="ui-train-status-grid">
+          <KeyValueCard
+            label="方向"
+            value={formatQuestionDirectionLabel(props.direction)}
+          />
+          <KeyValueCard
+            label="基準音の再生回数"
+            value={props.replayBaseCount}
+          />
+          <KeyValueCard
+            label="問題音の再生回数"
+            value={props.replayTargetCount}
           />
         </div>
-      ) : null}
-    </Surface>
-  );
-}
 
-export function KeyboardFeedbackPanel(props: {
-  feedbackResult: KeyboardGuestResult;
-  lastAnsweredWasFinal: boolean;
-  showLabels: boolean;
-  onReplayCorrectTarget: () => void;
-  onContinue: () => void;
-}) {
-  return (
-    <Surface>
-      <SectionHeader title="フィードバック" />
-      <Notice tone={props.feedbackResult.isCorrect ? "success" : "error"}>
-        {props.feedbackResult.isCorrect ? "正解" : "不正解"}
-      </Notice>
-      <KeyValueGrid>
-        <KeyValueCard
-          label="正解の音"
-          value={formatKeyboardNoteLabel(
-            props.feedbackResult.question.targetNote,
-          )}
-        />
-        <KeyValueCard
-          label="あなたの回答"
-          value={formatKeyboardNoteLabel(props.feedbackResult.answeredNote)}
-        />
-        <KeyValueCard
-          label="誤差"
-          value={formatSignedSemitoneLabel(props.feedbackResult.errorSemitones)}
-        />
-        <KeyValueCard
-          label="回答時間"
-          value={formatResponseTimeMsLabel(props.feedbackResult.responseTimeMs)}
-        />
-        <KeyValueCard
-          label="スコア"
-          value={formatScoreLabel(props.feedbackResult.score)}
-        />
-      </KeyValueGrid>
-      <FeedbackKeyboardView
-        answeredNote={props.feedbackResult.answeredNote}
-        correctNote={props.feedbackResult.question.targetNote}
-        isCorrect={props.feedbackResult.isCorrect}
-        showLabels={props.showLabels}
-      />
-      <div className="ui-sticky-actions">
-        <Button type="button" onClick={props.onReplayCorrectTarget} block>
-          正解の音をもう一度聞く
-        </Button>
-        <Button
-          type="button"
-          onClick={props.onContinue}
-          variant="primary"
-          block
-        >
-          {props.lastAnsweredWasFinal ? "結果を見る" : "次の問題へ"}
-        </Button>
-      </div>
-    </Surface>
-  );
-}
+        {props.phase === "playing" ? (
+          <Notice>{getPlaybackStatusLabel(props.playbackKind)}</Notice>
+        ) : null}
 
-export function KeyboardResultPanel(props: {
+        {props.phase === "answering" ? (
+          <div className="ui-stack-md">
+            <div className="ui-sticky-actions">
+              <div className="ui-replay-panel">
+                <div className="ui-stack-sm">
+                  <strong>もう一度聞く</strong>
+                  <span className="ui-muted">
+                    再生中の追加タップは無効です。
+                  </span>
+                </div>
+                <div className="ui-replay-panel__row">
+                  <Button
+                    type="button"
+                    onClick={props.onReplayBase}
+                    className="ui-icon-button"
+                    aria-label="基準音をもう一度聞く"
+                  >
+                    <PlaybackIcon />
+                    <span className="ui-icon-button__label">基準音</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={props.onReplayTarget}
+                    className="ui-icon-button"
+                    aria-label="問題音をもう一度聞く"
+                  >
+                    <PlaybackIcon />
+                    <span className="ui-icon-button__label">問題音</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <KeyboardAnswerPad
+              answerChoices={props.answerChoices}
+              referenceNote={props.referenceNote}
+              onAnswer={props.onAnswer}
+              showLabels={props.showLabels}
+            />
+          </div>
+        ) : null}
+      </Surface>
+    );
+  },
+);
+
+export const KeyboardFeedbackPanel = memo(
+  function KeyboardFeedbackPanel(props: {
+    feedbackResult: KeyboardGuestResult;
+    lastAnsweredWasFinal: boolean;
+    showLabels: boolean;
+    onReplayCorrectTarget: () => void;
+    onContinue: () => void;
+  }) {
+    return (
+      <Surface>
+        <SectionHeader title="フィードバック" />
+        <Notice tone={props.feedbackResult.isCorrect ? "success" : "error"}>
+          {props.feedbackResult.isCorrect ? "正解" : "不正解"}
+        </Notice>
+        <KeyValueGrid>
+          <KeyValueCard
+            label="正解の音"
+            value={formatKeyboardNoteLabel(
+              props.feedbackResult.question.targetNote,
+            )}
+          />
+          <KeyValueCard
+            label="あなたの回答"
+            value={formatKeyboardNoteLabel(props.feedbackResult.answeredNote)}
+          />
+          <KeyValueCard
+            label="誤差"
+            value={formatSignedSemitoneLabel(
+              props.feedbackResult.errorSemitones,
+            )}
+          />
+          <KeyValueCard
+            label="回答時間"
+            value={formatResponseTimeMsLabel(
+              props.feedbackResult.responseTimeMs,
+            )}
+          />
+          <KeyValueCard
+            label="スコア"
+            value={formatScoreLabel(props.feedbackResult.score)}
+          />
+        </KeyValueGrid>
+        <FeedbackKeyboardView
+          answeredNote={props.feedbackResult.answeredNote}
+          correctNote={props.feedbackResult.question.targetNote}
+          isCorrect={props.feedbackResult.isCorrect}
+          showLabels={props.showLabels}
+        />
+        <div className="ui-sticky-actions">
+          <Button type="button" onClick={props.onReplayCorrectTarget} block>
+            正解の音をもう一度聞く
+          </Button>
+          <Button
+            type="button"
+            onClick={props.onContinue}
+            variant="primary"
+            block
+          >
+            {props.lastAnsweredWasFinal ? "結果を見る" : "次の問題へ"}
+          </Button>
+        </div>
+      </Surface>
+    );
+  },
+);
+
+export const KeyboardResultPanel = memo(function KeyboardResultPanel(props: {
   summary: KeyboardGuestSummary;
   finishReason: SessionFinishReason | null;
   isAuthenticated: boolean;
@@ -265,9 +279,9 @@ export function KeyboardResultPanel(props: {
       </div>
     </Surface>
   );
-}
+});
 
-export function KeyboardAnswerPad(props: {
+export const KeyboardAnswerPad = memo(function KeyboardAnswerPad(props: {
   answerChoices: NoteClass[];
   referenceNote: NoteClass;
   onAnswer: (note: NoteClass) => void;
@@ -320,9 +334,9 @@ export function KeyboardAnswerPad(props: {
       </div>
     </div>
   );
-}
+});
 
-export function FeedbackKeyboardView(props: {
+export const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
   answeredNote: NoteClass;
   correctNote: NoteClass;
   isCorrect: boolean;
@@ -378,24 +392,7 @@ export function FeedbackKeyboardView(props: {
       </div>
     </div>
   );
-}
-
-export function formatKeyboardNoteLabel(note: NoteClass): string {
-  switch (note) {
-    case "C#":
-      return "C# / Db";
-    case "D#":
-      return "D# / Eb";
-    case "F#":
-      return "F# / Gb";
-    case "G#":
-      return "G# / Ab";
-    case "A#":
-      return "A# / Bb";
-    default:
-      return note;
-  }
-}
+});
 
 function getKeyboardKeyStyle(
   note: NoteClass,
