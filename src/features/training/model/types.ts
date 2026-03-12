@@ -88,7 +88,9 @@ export interface Question {
   questionIndex: number;
   direction: QuestionDirection;
   baseNote: NoteClass;
+  baseMidi: number;
   targetNote: NoteClass;
+  targetMidi: number;
   distanceSemitones: number;
   notationStyle: NotationStyle;
 }

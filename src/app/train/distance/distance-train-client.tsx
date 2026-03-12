@@ -1157,18 +1157,18 @@ async function playQuestionAudio(
     const audioContext = await getAudioContext(audioContextRef);
 
     if (playbackKind === "base") {
-      await playNote(audioContext, question.baseNote, masterVolume);
+      await playNote(audioContext, question.baseMidi, masterVolume);
       return;
     }
 
     if (playbackKind === "target") {
-      await playNote(audioContext, question.targetNote, masterVolume);
+      await playNote(audioContext, question.targetMidi, masterVolume);
       return;
     }
 
-    await playNote(audioContext, question.baseNote, masterVolume);
+    await playNote(audioContext, question.baseMidi, masterVolume);
     await wait(140);
-    await playNote(audioContext, question.targetNote, masterVolume);
+    await playNote(audioContext, question.targetMidi, masterVolume);
   });
 }
 
@@ -1263,10 +1263,10 @@ async function getAudioContext(
 
 async function playNote(
   audioContext: AudioContext,
-  note: Question["baseNote"],
+  midi: number,
   masterVolume: number,
 ): Promise<void> {
-  await playTone(audioContext, getNoteFrequency(note), 0.35, masterVolume);
+  await playTone(audioContext, getNoteFrequency(midi), 0.35, masterVolume);
 }
 
 async function runGuardedPlayback(

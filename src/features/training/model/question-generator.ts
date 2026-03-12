@@ -1,25 +1,16 @@
+import {
+  getBaseMidiForNoteClass,
+  getNoteClassFromMidi,
+  getTargetMidi,
+  NOTE_CLASSES,
+} from "./pitch.ts";
 import type {
   DirectionMode,
   NoteClass,
   Question,
   QuestionDirection,
   TrainingConfig,
-} from "./types";
-
-const NOTE_CLASSES: NoteClass[] = [
-  "C",
-  "C#",
-  "D",
-  "D#",
-  "E",
-  "F",
-  "F#",
-  "G",
-  "G#",
-  "A",
-  "A#",
-  "B",
-];
+} from "./types.ts";
 
 const SIMPLE_INTERVALS = new Set([0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12]);
 
@@ -63,6 +54,8 @@ export function takeNextQuestion(
   const distanceSemitones = selectNextDistance(state, randomValue);
   const direction = resolveDirection(config.directionMode, randomValue);
   const baseNote = resolveBaseNote(config, randomValue);
+  const baseMidi = getBaseMidiForNoteClass(baseNote);
+  const targetMidi = getTargetMidi(baseMidi, direction, distanceSemitones);
 
   return {
     state: {
@@ -77,10 +70,9 @@ export function takeNextQuestion(
       questionIndex,
       direction,
       baseNote,
-      targetNote: shiftNote(
-        baseNote,
-        direction === "up" ? distanceSemitones : -distanceSemitones,
-      ),
+      baseMidi,
+      targetNote: getNoteClassFromMidi(targetMidi),
+      targetMidi,
       distanceSemitones,
       notationStyle: "sharp",
     },
@@ -174,13 +166,4 @@ function resolveBaseNote(
   }
 
   return NOTE_CLASSES[Math.floor(randomValue() * NOTE_CLASSES.length)];
-}
-
-function shiftNote(baseNote: NoteClass, distanceSemitones: number): NoteClass {
-  const startIndex = NOTE_CLASSES.indexOf(baseNote);
-  const shiftedIndex =
-    (startIndex + distanceSemitones + NOTE_CLASSES.length * 2) %
-    NOTE_CLASSES.length;
-
-  return NOTE_CLASSES[shiftedIndex];
 }

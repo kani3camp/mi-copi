@@ -184,6 +184,47 @@ test("generator keeps fixed base notes and randomizes random base notes", () => 
   assert.equal(secondStep.question.baseNote, "C");
 });
 
+test("generator keeps midi pitches aligned for descending and octave questions", () => {
+  const descendingConfig = createDistanceConfig();
+  descendingConfig.intervalRange.minSemitone = 1;
+  descendingConfig.intervalRange.maxSemitone = 1;
+  descendingConfig.baseNoteMode = "fixed";
+  descendingConfig.fixedBaseNote = "C";
+  descendingConfig.directionMode = "mixed";
+
+  const descendingStep = takeNextQuestion(
+    descendingConfig,
+    createQuestionGeneratorState(descendingConfig),
+    0,
+    createSequenceRandom([0, 0.9]),
+  );
+
+  assert.equal(descendingStep.question.baseMidi, 60);
+  assert.equal(descendingStep.question.targetNote, "B");
+  assert.equal(descendingStep.question.targetMidi, 59);
+  assert.ok(
+    descendingStep.question.baseMidi > descendingStep.question.targetMidi,
+  );
+
+  const octaveConfig = createDistanceConfig();
+  octaveConfig.intervalRange.minSemitone = 12;
+  octaveConfig.intervalRange.maxSemitone = 12;
+  octaveConfig.baseNoteMode = "fixed";
+  octaveConfig.fixedBaseNote = "C";
+  octaveConfig.directionMode = "up_only";
+
+  const octaveStep = takeNextQuestion(
+    octaveConfig,
+    createQuestionGeneratorState(octaveConfig),
+    0,
+    () => 0,
+  );
+
+  assert.equal(octaveStep.question.baseMidi, 60);
+  assert.equal(octaveStep.question.targetNote, "C");
+  assert.equal(octaveStep.question.targetMidi, 72);
+});
+
 function createSequenceRandom(values: number[]): () => number {
   let index = 0;
 
