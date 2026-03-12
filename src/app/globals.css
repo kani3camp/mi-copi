@@ -688,8 +688,6 @@ a {
 }
 
 .ui-sticky-actions {
-  position: sticky;
-  bottom: 12px;
   display: grid;
   gap: var(--space-3);
   padding: var(--space-3);
@@ -802,6 +800,8 @@ a {
   }
 
   .ui-sticky-actions {
+    position: sticky;
+    bottom: 12px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: center;
   }
