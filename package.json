@@ -16,7 +16,11 @@
     "lint:repo": "node scripts/lint.mjs",
     "check": "biome check .",
     "test": "node scripts/run-tests.mjs",
-    "verify": "npm run typecheck && npm run check && npm run lint:repo && npm run test && npm run build"
+    "verify": "npm run typecheck && npm run check && npm run lint:repo && npm run test && npm run build",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "test:storybook": "vitest run --project storybook",
+    "verify:storybook": "npm run build-storybook && npm run test:storybook"
   },
   "dependencies": {
     "better-auth": "1.3.8",
@@ -29,10 +33,19 @@
   "devDependencies": {
     "@better-auth/cli": "1.3.8",
     "@biomejs/biome": "^2.4.6",
+    "@storybook/addon-a11y": "^10.2.17",
+    "@storybook/addon-vitest": "^10.2.17",
+    "@storybook/nextjs-vite": "^10.2.17",
     "@types/node": "24.1.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "@vitest/browser-playwright": "^4.0.18",
+    "@vitest/coverage-v8": "^4.0.18",
     "drizzle-kit": "0.31.4",
-    "typescript": "5.9.3"
+    "playwright": "^1.58.2",
+    "storybook": "^10.2.17",
+    "typescript": "5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
   }
 }

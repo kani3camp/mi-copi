@@ -21,17 +21,9 @@ import {
   getNoteFrequency,
   validateDistanceTrainingConfig,
 } from "../../../features/training/model/distance-guest";
-import {
-  formatAccuracyLabel,
-  formatAvgErrorLabel,
-  formatDateTimeLabel,
-  formatResponseTimeMsLabel,
-  formatScoreLabel,
-} from "../../../features/training/model/format";
+import { formatDateTimeLabel } from "../../../features/training/model/format";
 import {
   formatDirectionModeLabel,
-  formatQuestionDirectionLabel,
-  formatSignedSemitoneLabel,
   getIntervalLabel,
 } from "../../../features/training/model/interval-notation";
 import {
@@ -63,13 +55,17 @@ import {
   Field,
   FieldGrid,
   KeyValueCard,
-  KeyValueGrid,
-  List,
   Notice,
   SectionHeader,
   Surface,
 } from "../../ui/primitives";
+import { formatRemainingTimeLabel } from "../train-ui-shared";
 import { TrainingPageHero } from "../training-page-shell";
+import {
+  DistanceFeedbackPanel,
+  DistanceQuestionPanel,
+  DistanceResultPanel,
+} from "./distance-train-panels";
 
 type DistanceTrainPhase =
   | "config"
@@ -170,8 +166,6 @@ export function DistanceTrainClient({
   const summary = useMemo(() => buildDistanceGuestSummary(results), [results]);
   const recentResults = useMemo(() => results.slice(-3).reverse(), [results]);
   const cannotSaveBecauseNoAnswers = phase === "result" && results.length === 0;
-  const saveFailureMessage =
-    saveResult && !saveResult.ok ? getSaveFailureMessage(saveResult) : null;
   const saveContext = {
     isAuthenticated,
     startedAt,
@@ -893,289 +887,45 @@ export function DistanceTrainClient({
       ) : null}
 
       {(phase === "playing" || phase === "answering") && activeQuestion ? (
-        <Surface tone="accent">
-          <SectionHeader
-            title={`問題 ${activeQuestion.question.questionIndex + 1}`}
-            description="基準音と問題音を聞いて、音程名で回答してください。"
-          />
-          <div className="ui-train-status-grid">
-            <KeyValueCard
-              label="方向"
-              value={formatQuestionDirectionLabel(
-                activeQuestion.question.direction,
-              )}
-            />
-            <KeyValueCard
-              label="基準音の再生回数"
-              value={activeQuestion.replayBaseCount}
-            />
-            <KeyValueCard
-              label="問題音の再生回数"
-              value={activeQuestion.replayTargetCount}
-            />
-          </div>
-
-          {phase === "playing" ? (
-            <Notice>
-              {getPlaybackStatusLabel(activeQuestion.playbackKind)}
-            </Notice>
-          ) : null}
-
-          {phase === "answering" ? (
-            <div className="ui-stack-md">
-              <div className="ui-sticky-actions">
-                <div className="ui-replay-panel">
-                  <div className="ui-stack-sm">
-                    <strong>もう一度聞く</strong>
-                    <span className="ui-muted">
-                      再生中の追加タップは無効です。
-                    </span>
-                  </div>
-                  <div className="ui-replay-panel__row">
-                    <Button
-                      type="button"
-                      onClick={handleReplayBase}
-                      className="ui-icon-button"
-                      aria-label="基準音をもう一度聞く"
-                    >
-                      <PlaybackIcon />
-                      <span className="ui-icon-button__label">基準音</span>
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={handleReplayTarget}
-                      className="ui-icon-button"
-                      aria-label="問題音をもう一度聞く"
-                    >
-                      <PlaybackIcon />
-                      <span className="ui-icon-button__label">問題音</span>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <div className="ui-train-answer-grid">
-                {answerChoiceValues.map((choice) => (
-                  <Button
-                    key={choice}
-                    type="button"
-                    onClick={() => handleAnswer(choice)}
-                    block
-                  >
-                    {formatIntervalName(choice)}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </Surface>
+        <DistanceQuestionPanel
+          phase={phase}
+          questionIndex={activeQuestion.question.questionIndex}
+          direction={activeQuestion.question.direction}
+          replayBaseCount={activeQuestion.replayBaseCount}
+          replayTargetCount={activeQuestion.replayTargetCount}
+          playbackKind={activeQuestion.playbackKind}
+          answerChoiceValues={answerChoiceValues}
+          intervalNotationStyle={intervalNotationStyle}
+          onReplayBase={handleReplayBase}
+          onReplayTarget={handleReplayTarget}
+          onAnswer={handleAnswer}
+        />
       ) : null}
 
       {phase === "feedback" && feedbackResult ? (
-        <Surface>
-          <SectionHeader title="フィードバック" />
-          <Notice tone={feedbackResult.isCorrect ? "success" : "error"}>
-            <strong>{feedbackResult.isCorrect ? "正解" : "不正解"}</strong>
-            <div>
-              {formatQuestionDirectionLabel(feedbackResult.question.direction)}
-            </div>
-          </Notice>
-          <FieldGrid>
-            <KeyValueCard
-              label="正解"
-              value={formatIntervalName(
-                feedbackResult.question.distanceSemitones,
-              )}
-            />
-            <KeyValueCard
-              label="あなたの回答"
-              value={formatIntervalName(
-                feedbackResult.answeredDistanceSemitones,
-              )}
-            />
-          </FieldGrid>
-          <KeyValueGrid>
-            <KeyValueCard
-              label="誤差"
-              value={formatSignedSemitoneLabel(feedbackResult.errorSemitones)}
-            />
-            <KeyValueCard
-              label="回答時間"
-              value={formatResponseTimeMsLabel(feedbackResult.responseTimeMs)}
-            />
-            <KeyValueCard
-              label="スコア"
-              value={formatScoreLabel(feedbackResult.score)}
-            />
-          </KeyValueGrid>
-          <div className="ui-sticky-actions">
-            <Button type="button" onClick={handleReplayCorrectTarget} block>
-              正解の音をもう一度聞く
-            </Button>
-            <Button
-              type="button"
-              onClick={handleContinue}
-              variant="primary"
-              block
-            >
-              {lastAnsweredWasFinal ? "結果を見る" : "次の問題へ"}
-            </Button>
-          </div>
-        </Surface>
+        <DistanceFeedbackPanel
+          feedbackResult={feedbackResult}
+          lastAnsweredWasFinal={lastAnsweredWasFinal}
+          intervalNotationStyle={intervalNotationStyle}
+          onReplayCorrectTarget={handleReplayCorrectTarget}
+          onContinue={handleContinue}
+        />
       ) : null}
 
       {phase === "result" ? (
-        <Surface>
-          <SectionHeader
-            title="結果"
-            description="今回のセッションの精度と反応速度をまとめています。"
-          />
-          <KeyValueGrid>
-            <KeyValueCard label="回答数" value={summary.questionCount} />
-            <KeyValueCard
-              label="終了理由"
-              value={formatFinishReasonLabel(finishReason)}
-            />
-            <KeyValueCard label="正解数" value={summary.correctCount} />
-            <KeyValueCard
-              label="正答率"
-              value={formatAccuracyLabel(summary.accuracyRate)}
-            />
-            <KeyValueCard
-              label="平均誤差"
-              value={formatAvgErrorLabel(summary.avgErrorAbs)}
-            />
-            <KeyValueCard
-              label="平均回答時間"
-              value={formatResponseTimeMsLabel(summary.avgResponseTimeMs)}
-            />
-            <KeyValueCard
-              label="セッションスコア"
-              value={formatScoreLabel(summary.sessionScore)}
-            />
-          </KeyValueGrid>
-
-          {recentResults.length > 0 ? (
-            <div className="ui-stack-md">
-              <h3 className="ui-section-title">直近の回答</h3>
-              <List as="div">
-                {recentResults.map((result) => (
-                  <div key={result.answeredAt} className="ui-kv-card">
-                    <strong>問題 {result.question.questionIndex + 1}</strong>
-                    <span className="ui-muted">
-                      正解:{" "}
-                      {formatIntervalName(result.question.distanceSemitones)}
-                    </span>
-                    <span className="ui-muted">
-                      回答:{" "}
-                      {formatIntervalName(result.answeredDistanceSemitones)}
-                    </span>
-                    <span className="ui-muted">
-                      {formatSignedSemitoneLabel(result.errorSemitones)} /{" "}
-                      {formatResponseTimeMsLabel(result.responseTimeMs)}
-                    </span>
-                  </div>
-                ))}
-              </List>
-            </div>
-          ) : null}
-
-          {isAuthenticated ? (
-            !cannotSaveBecauseNoAnswers ? (
-              <>
-                <Notice
-                  tone={
-                    saveResult?.ok
-                      ? "success"
-                      : saveResult
-                        ? "error"
-                        : canSaveResult
-                          ? "info"
-                          : "error"
-                  }
-                >
-                  {saveResult?.ok ? (
-                    <div className="ui-stack-md">
-                      <div>
-                        結果を自動保存しました。セッション ID:{" "}
-                        <code>{saveResult.sessionId}</code>
-                      </div>
-                      <div className="ui-nav-row">
-                        <ButtonLink href={`/sessions/${saveResult.sessionId}`}>
-                          セッション詳細を見る
-                        </ButtonLink>
-                        <ButtonLink href="/stats">統計を見る</ButtonLink>
-                      </div>
-                    </div>
-                  ) : saveResult ? (
-                    <div className="ui-stack-sm">
-                      <div>{saveFailureMessage}</div>
-                      <div className="ui-muted">
-                        詳細: {saveResult.code} / {saveResult.message}
-                      </div>
-                    </div>
-                  ) : canSaveResult ? (
-                    <div>
-                      {isSavePending
-                        ? "結果を自動保存しています..."
-                        : "保存の準備をしています..."}
-                    </div>
-                  ) : (
-                    <div>セッション情報が不足しているため保存できません。</div>
-                  )}
-                </Notice>
-
-                {saveResult && !saveResult.ok && canSaveResult ? (
-                  <div className="ui-action-row">
-                    <Button
-                      type="button"
-                      disabled={isSavePending}
-                      onClick={handleSaveResults}
-                      variant="primary"
-                    >
-                      {isSavePending ? "再試行中..." : "保存を再試行"}
-                    </Button>
-                  </div>
-                ) : null}
-              </>
-            ) : null
-          ) : (
-            <div className="ui-stack-md">
-              <Notice>ゲスト利用のため、この結果は保存されません。</Notice>
-              <p className="ui-subtitle">
-                ログインすると、次回以降のセッションから結果保存と統計を使えます。この結果は後から保存されません。
-              </p>
-              <div className="ui-nav-row">
-                <ButtonLink href="/login">今後の保存用にログイン</ButtonLink>
-              </div>
-            </div>
-          )}
-
-          {finishReason === "time_up" ? (
-            <Notice>
-              制限時間に達したため終了しました。進行中で未回答の問題は集計から除外されています。
-            </Notice>
-          ) : null}
-
-          {cannotSaveBecauseNoAnswers ? (
-            <Notice>
-              回答済みの問題がないため、このセッションは保存できません。時間に余裕を持ってもう一度お試しください。
-            </Notice>
-          ) : null}
-
-          <div className="ui-sticky-actions">
-            <div className="ui-stack-sm">
-              <strong>次に進む</strong>
-              <span className="ui-muted">
-                結果を確認したら新しいセッションを始められます。
-              </span>
-            </div>
-            <Button type="button" onClick={handleReset} block>
-              {cannotSaveBecauseNoAnswers
-                ? "新しいセッションを始める"
-                : "最初からやり直す"}
-            </Button>
-          </div>
-        </Surface>
+        <DistanceResultPanel
+          summary={summary}
+          recentResults={recentResults}
+          intervalNotationStyle={intervalNotationStyle}
+          finishReason={finishReason}
+          isAuthenticated={isAuthenticated}
+          canSaveResult={canSaveResult}
+          cannotSaveBecauseNoAnswers={cannotSaveBecauseNoAnswers}
+          isSavePending={isSavePending}
+          saveResult={saveResult}
+          onRetrySave={handleSaveResults}
+          onReset={handleReset}
+        />
       ) : null}
     </AppShell>
   );
@@ -1297,17 +1047,6 @@ async function playFeedbackEffect(
   });
 }
 
-function getPlaybackStatusLabel(playbackKind: PlaybackKind): string {
-  switch (playbackKind) {
-    case "base":
-      return "基準音を再生しています...";
-    case "target":
-      return "問題音を再生しています...";
-    default:
-      return "基準音のあとに問題音を再生しています...";
-  }
-}
-
 async function getAudioContext(
   audioContextRef: React.MutableRefObject<AudioContext | null>,
 ): Promise<AudioContext> {
@@ -1366,28 +1105,6 @@ function wait(durationMs: number): Promise<void> {
   });
 }
 
-function formatRemainingTimeLabel(valueMs: number): string {
-  const totalSeconds = Math.max(0, Math.ceil(valueMs / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
-
-function getSaveFailureMessage(
-  result: Extract<SaveTrainingSessionResult, { ok: false }>,
-): string {
-  if (result.code === "UNAUTHORIZED") {
-    return "ログイン状態を確認できませんでした。再度ログインしてからお試しください。";
-  }
-
-  if (result.code === "INVALID_INPUT") {
-    return "セッション情報が不足しているため、この結果は保存できませんでした。";
-  }
-
-  return "結果を保存できませんでした。もう一度お試しください。";
-}
-
 function formatPhaseLabel(phase: DistanceTrainPhase): string {
   switch (phase) {
     case "config":
@@ -1403,39 +1120,4 @@ function formatPhaseLabel(phase: DistanceTrainPhase): string {
     case "result":
       return "結果";
   }
-}
-
-function formatFinishReasonLabel(
-  finishReason: SessionFinishReason | null,
-): string {
-  switch (finishReason) {
-    case "target_reached":
-      return "目標数に到達";
-    case "time_up":
-      return "時間切れ";
-    case "manual_end":
-      return "手動終了";
-    default:
-      return "不明";
-  }
-}
-
-function PlaybackIcon() {
-  return (
-    <span className="ui-icon-button__icon" aria-hidden="true">
-      <svg viewBox="0 0 20 20" width="20" height="20" fill="none">
-        <title>再生</title>
-        <path
-          d="M4 7.5a1 1 0 0 1 1.6-.8l7 5a1 1 0 0 1 0 1.6l-7 5A1 1 0 0 1 4 17.5v-10Z"
-          fill="currentColor"
-        />
-        <path
-          d="M14.5 5.5a5.5 5.5 0 0 1 0 9"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
-      </svg>
-    </span>
-  );
 }
