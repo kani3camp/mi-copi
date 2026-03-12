@@ -10,7 +10,7 @@ const {
   validateTimeLimitSeconds,
 } = await import(new URL("./config.ts", import.meta.url).href);
 
-test("normalizeTrainingConfig only accepts canonical config keys and units", () => {
+test("normalizeTrainingConfig ignores legacy-only keys and falls back to canonical defaults", () => {
   const normalized = normalizeTrainingConfig({
     mode: "distance",
     intervalRange: {
@@ -84,17 +84,12 @@ test("normalizeTrainingConfig preserves canonical configs without reshaping valu
   });
 });
 
-test("normalizeTrainingConfigOrDefault falls back when legacy keys are provided", () => {
+test("normalizeTrainingConfigOrDefault falls back to defaults when config is invalid", () => {
   const normalized = normalizeTrainingConfigOrDefault(
     {
-      intervalRange: {
-        minSemitones: 12,
-        maxSemitones: 0,
-      },
-      endCondition: {
-        type: "time_limit",
-        timeLimitMinutes: 99,
-      },
+      mode: "keyboard",
+      intervalRange: "invalid",
+      endCondition: null,
     },
     "keyboard",
   );
@@ -111,9 +106,31 @@ test("normalizeTrainingConfigOrDefault falls back when legacy keys are provided"
     baseNoteMode: "random",
     fixedBaseNote: null,
     endCondition: {
-      type: "time_limit",
-      timeLimitSeconds: TRAINING_CONFIG_LIMITS.timeLimitSeconds.default,
+      type: "question_count",
+      questionCount: TRAINING_CONFIG_LIMITS.questionCount.default,
     },
+  });
+});
+
+test("normalizeTrainingConfigOrDefault keeps canonical mode defaults when snapshot shape is unreadable", () => {
+  const normalized = normalizeTrainingConfigOrDefault(undefined, "distance");
+
+  assert.deepEqual(normalized, {
+    mode: "distance",
+    intervalRange: {
+      minSemitone: TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.default,
+      maxSemitone: TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.default,
+    },
+    directionMode: "mixed",
+    includeUnison: false,
+    includeOctave: true,
+    baseNoteMode: "random",
+    fixedBaseNote: null,
+    endCondition: {
+      type: "question_count",
+      questionCount: TRAINING_CONFIG_LIMITS.questionCount.default,
+    },
+    intervalGranularity: "simple",
   });
 });
 

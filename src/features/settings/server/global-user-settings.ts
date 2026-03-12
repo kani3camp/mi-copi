@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { getCurrentUserOrNull } from "../../../lib/auth/server";
 import { getDb } from "../../../lib/db/client";
 import { userSettings } from "../../../lib/db/schema/app";
-import { readStoredTrainingConfigOrDefault } from "../../training/model/config-migration.ts";
+import { normalizeTrainingConfigOrDefault } from "../../training/model/config";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
@@ -99,14 +99,14 @@ export async function updateGlobalUserSettingsForCurrentUser(
         soundEffectsEnabled: normalizedSettings.soundEffectsEnabled,
         intervalNotationStyle: normalizedSettings.intervalNotationStyle,
         keyboardNoteLabelsVisible: normalizedSettings.keyboardNoteLabelsVisible,
-        lastDistanceConfig: readStoredTrainingConfigOrDefault(
+        lastDistanceConfig: normalizeTrainingConfigOrDefault(
           existing?.lastDistanceConfig,
           "distance",
-        ).config,
-        lastKeyboardConfig: readStoredTrainingConfigOrDefault(
+        ),
+        lastKeyboardConfig: normalizeTrainingConfigOrDefault(
           existing?.lastKeyboardConfig,
           "keyboard",
-        ).config,
+        ),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       })
@@ -118,14 +118,14 @@ export async function updateGlobalUserSettingsForCurrentUser(
           intervalNotationStyle: normalizedSettings.intervalNotationStyle,
           keyboardNoteLabelsVisible:
             normalizedSettings.keyboardNoteLabelsVisible,
-          lastDistanceConfig: readStoredTrainingConfigOrDefault(
+          lastDistanceConfig: normalizeTrainingConfigOrDefault(
             existing?.lastDistanceConfig,
             "distance",
-          ).config,
-          lastKeyboardConfig: readStoredTrainingConfigOrDefault(
+          ),
+          lastKeyboardConfig: normalizeTrainingConfigOrDefault(
             existing?.lastKeyboardConfig,
             "keyboard",
-          ).config,
+          ),
           updatedAt: now,
         },
       });
@@ -168,39 +168,16 @@ async function getUserSettingsRowForUserId(
       return null;
     }
 
-    const lastDistanceConfig = readStoredTrainingConfigOrDefault(
-      existing.lastDistanceConfig,
-      "distance",
-    );
-    const lastKeyboardConfig = readStoredTrainingConfigOrDefault(
-      existing.lastKeyboardConfig,
-      "keyboard",
-    );
-
-    if (lastDistanceConfig.shouldRewrite || lastKeyboardConfig.shouldRewrite) {
-      const now = new Date();
-
-      await db
-        .update(userSettings)
-        .set({
-          lastDistanceConfig: lastDistanceConfig.config,
-          lastKeyboardConfig: lastKeyboardConfig.config,
-          updatedAt: now,
-        })
-        .where(eq(userSettings.userId, userId));
-
-      return {
-        ...existing,
-        lastDistanceConfig: lastDistanceConfig.config,
-        lastKeyboardConfig: lastKeyboardConfig.config,
-        updatedAt: now,
-      };
-    }
-
     return {
       ...existing,
-      lastDistanceConfig: lastDistanceConfig.config,
-      lastKeyboardConfig: lastKeyboardConfig.config,
+      lastDistanceConfig: normalizeTrainingConfigOrDefault(
+        existing.lastDistanceConfig,
+        "distance",
+      ),
+      lastKeyboardConfig: normalizeTrainingConfigOrDefault(
+        existing.lastKeyboardConfig,
+        "keyboard",
+      ),
     };
   } catch (error) {
     if (isRecoverableUserSettingsStorageError(error)) {

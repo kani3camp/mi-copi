@@ -3,7 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { getCurrentUserOrNull } from "../../../lib/auth/server";
 import { getDb } from "../../../lib/db/client";
 import { questionResults, trainingSessions } from "../../../lib/db/schema/app";
-import { readStoredTrainingConfigOrDefault } from "../model/config-migration.ts";
+import { normalizeTrainingConfigOrDefault } from "../model/config";
 import type {
   NoteClass,
   QuestionDirection,
@@ -77,25 +77,6 @@ export async function getTrainingSessionDetailForCurrentUser(
     return null;
   }
 
-  const configSnapshot = readStoredTrainingConfigOrDefault(
-    session.configSnapshot,
-    session.mode,
-  );
-
-  if (configSnapshot.shouldRewrite) {
-    await db
-      .update(trainingSessions)
-      .set({
-        configSnapshot: configSnapshot.config,
-      })
-      .where(
-        and(
-          eq(trainingSessions.id, sessionId),
-          eq(trainingSessions.userId, currentUser.id),
-        ),
-      );
-  }
-
   const results = await db
     .select({
       id: questionResults.id,
@@ -122,7 +103,10 @@ export async function getTrainingSessionDetailForCurrentUser(
   return {
     id: session.id,
     mode: session.mode,
-    configSnapshot: configSnapshot.config,
+    configSnapshot: normalizeTrainingConfigOrDefault(
+      session.configSnapshot,
+      session.mode,
+    ),
     createdAt: session.createdAt.toISOString(),
     endedAt: session.endedAt.toISOString(),
     answeredQuestionCount: session.answeredQuestionCount,

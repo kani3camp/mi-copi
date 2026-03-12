@@ -12,7 +12,6 @@ import {
   createDefaultKeyboardTrainingConfig,
   normalizeTrainingConfigOrDefault,
 } from "../model/config";
-import { readStoredTrainingConfigOrDefault } from "../model/config-migration.ts";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
@@ -57,11 +56,17 @@ export async function getLastUsedTrainingConfigsForCurrentUser(): Promise<LastUs
       .limit(1);
 
     settings = existing
-      ? await buildCanonicalLastUsedConfigs({
-          userId: currentUser.id,
-          db,
-          existing,
-        })
+      ? {
+          lastDistanceConfig: normalizeTrainingConfigOrDefault(
+            existing.lastDistanceConfig,
+            "distance",
+          ),
+          lastKeyboardConfig: normalizeTrainingConfigOrDefault(
+            existing.lastKeyboardConfig,
+            "keyboard",
+          ),
+          updatedAt: existing.updatedAt,
+        }
       : null;
   } catch (error) {
     if (!isRecoverableUserSettingsStorageError(error)) {
@@ -145,14 +150,14 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
 
   const defaultGlobalSettings = createDefaultGlobalUserSettings();
   const now = new Date();
-  const normalizedDistanceConfig = readStoredTrainingConfigOrDefault(
+  const normalizedDistanceConfig = normalizeTrainingConfigOrDefault(
     existing?.lastDistanceConfig,
     "distance",
-  ).config;
-  const normalizedKeyboardConfig = readStoredTrainingConfigOrDefault(
+  );
+  const normalizedKeyboardConfig = normalizeTrainingConfigOrDefault(
     existing?.lastKeyboardConfig,
     "keyboard",
-  ).config;
+  );
 
   if (mode === "distance") {
     const distanceConfig = normalizeTrainingConfigOrDefault(config, "distance");
@@ -258,53 +263,4 @@ export async function resetLastUsedTrainingConfigForCurrentUser(
     "keyboard",
     createDefaultKeyboardTrainingConfig(),
   );
-}
-
-async function buildCanonicalLastUsedConfigs(params: {
-  userId: string;
-  db: ReturnType<typeof getDb>;
-  existing: {
-    lastDistanceConfig: DistanceTrainingConfig;
-    lastKeyboardConfig: KeyboardTrainingConfig;
-    updatedAt: Date;
-  };
-}): Promise<{
-  lastDistanceConfig: DistanceTrainingConfig;
-  lastKeyboardConfig: KeyboardTrainingConfig;
-  updatedAt: Date;
-}> {
-  const { userId, db, existing } = params;
-  const distanceConfig = readStoredTrainingConfigOrDefault(
-    existing.lastDistanceConfig,
-    "distance",
-  );
-  const keyboardConfig = readStoredTrainingConfigOrDefault(
-    existing.lastKeyboardConfig,
-    "keyboard",
-  );
-
-  if (!distanceConfig.shouldRewrite && !keyboardConfig.shouldRewrite) {
-    return {
-      lastDistanceConfig: distanceConfig.config,
-      lastKeyboardConfig: keyboardConfig.config,
-      updatedAt: existing.updatedAt,
-    };
-  }
-
-  const now = new Date();
-
-  await db
-    .update(userSettings)
-    .set({
-      lastDistanceConfig: distanceConfig.config,
-      lastKeyboardConfig: keyboardConfig.config,
-      updatedAt: now,
-    })
-    .where(eq(userSettings.userId, userId));
-
-  return {
-    lastDistanceConfig: distanceConfig.config,
-    lastKeyboardConfig: keyboardConfig.config,
-    updatedAt: now,
-  };
 }
