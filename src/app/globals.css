@@ -774,6 +774,7 @@ a {
 }
 
 .ui-line-chart__svg {
+  display: block;
   width: 100%;
   height: 120px;
   overflow: visible;
