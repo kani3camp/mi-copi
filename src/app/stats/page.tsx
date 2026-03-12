@@ -163,10 +163,6 @@ export default async function StatsPage() {
                 <div className="ui-grid-chart-panels">
                   <MetricLineChart
                     title="平均スコア"
-                    valueRangeLabel={formatRangeLabel(
-                      stats.dailyTrends.map((trend) => trend.averageScore),
-                      formatScoreLabel,
-                    )}
                     valueFormatter={formatScoreLabel}
                     points={stats.dailyTrends.map((trend) => ({
                       key: trend.date,
@@ -178,10 +174,6 @@ export default async function StatsPage() {
                   />
                   <MetricLineChart
                     title="平均誤差"
-                    valueRangeLabel={formatRangeLabel(
-                      stats.dailyTrends.map((trend) => trend.averageError),
-                      formatAvgErrorLabel,
-                    )}
                     valueFormatter={formatAvgErrorLabel}
                     points={stats.dailyTrends.map((trend) => ({
                       key: `${trend.date}-error`,
@@ -193,12 +185,6 @@ export default async function StatsPage() {
                   />
                   <MetricLineChart
                     title="平均回答時間"
-                    valueRangeLabel={formatRangeLabel(
-                      stats.dailyTrends.map(
-                        (trend) => trend.averageResponseTimeMs,
-                      ),
-                      formatResponseTimeMsLabel,
-                    )}
                     valueFormatter={formatResponseTimeMsLabel}
                     points={stats.dailyTrends.map((trend) => ({
                       key: `${trend.date}-response`,
@@ -210,10 +196,6 @@ export default async function StatsPage() {
                   />
                   <MetricLineChart
                     title="正答率"
-                    valueRangeLabel={formatRangeLabel(
-                      stats.dailyTrends.map((trend) => trend.correctRate),
-                      formatAccuracyLabel,
-                    )}
                     valueFormatter={formatAccuracyLabel}
                     points={stats.dailyTrends.map((trend) => ({
                       key: `${trend.date}-accuracy`,
@@ -226,10 +208,6 @@ export default async function StatsPage() {
                 </div>
                 <MetricLineChart
                   title="日ごとの問題数"
-                  valueRangeLabel={formatRangeLabel(
-                    stats.dailyTrends.map((trend) => trend.questionCount),
-                    formatQuestionCountLabel,
-                  )}
                   valueFormatter={formatQuestionCountLabel}
                   points={stats.dailyTrends.map((trend) => ({
                     key: `${trend.date}-count`,
@@ -255,12 +233,6 @@ export default async function StatsPage() {
                 <div className="ui-grid-chart-panels">
                   <MetricBarChart
                     title="正答率"
-                    valueRangeLabel={formatRangeLabel(
-                      stats.intervalPerformance.map(
-                        (interval) => interval.correctRate,
-                      ),
-                      formatAccuracyLabel,
-                    )}
                     valueFormatter={formatAccuracyLabel}
                     points={stats.intervalPerformance.map((interval) => ({
                       key: `${interval.intervalSemitones}-accuracy`,
@@ -273,12 +245,6 @@ export default async function StatsPage() {
                   />
                   <MetricBarChart
                     title="平均誤差"
-                    valueRangeLabel={formatRangeLabel(
-                      stats.intervalPerformance.map(
-                        (interval) => interval.averageError,
-                      ),
-                      formatAvgErrorLabel,
-                    )}
                     valueFormatter={formatAvgErrorLabel}
                     points={stats.intervalPerformance.map((interval) => ({
                       key: `${interval.intervalSemitones}-error`,
@@ -291,12 +257,6 @@ export default async function StatsPage() {
                   />
                   <MetricBarChart
                     title="平均回答時間"
-                    valueRangeLabel={formatRangeLabel(
-                      stats.intervalPerformance.map(
-                        (interval) => interval.averageResponseTimeMs,
-                      ),
-                      formatResponseTimeMsLabel,
-                    )}
                     valueFormatter={formatResponseTimeMsLabel}
                     points={stats.intervalPerformance.map((interval) => ({
                       key: `${interval.intervalSemitones}-response`,
@@ -309,12 +269,6 @@ export default async function StatsPage() {
                   />
                   <MetricBarChart
                     title="平均スコア"
-                    valueRangeLabel={formatRangeLabel(
-                      stats.intervalPerformance.map(
-                        (interval) => interval.averageScore,
-                      ),
-                      formatScoreLabel,
-                    )}
                     valueFormatter={formatScoreLabel}
                     points={stats.intervalPerformance.map((interval) => ({
                       key: `${interval.intervalSemitones}-score`,
@@ -328,12 +282,6 @@ export default async function StatsPage() {
                 </div>
                 <MetricBarChart
                   title="音程ごとの問題数"
-                  valueRangeLabel={formatRangeLabel(
-                    stats.intervalPerformance.map(
-                      (interval) => interval.questionCount,
-                    ),
-                    formatQuestionCountLabel,
-                  )}
                   valueFormatter={formatQuestionCountLabel}
                   points={stats.intervalPerformance.map((interval) => ({
                     key: `${interval.intervalSemitones}-count`,
@@ -621,7 +569,6 @@ type ChartPoint = {
 
 function MetricLineChart(props: {
   title: string;
-  valueRangeLabel: string;
   valueFormatter: (value: number) => string;
   points: ChartPoint[];
   denseLabels?: boolean;
@@ -646,10 +593,7 @@ function MetricLineChart(props: {
 
   return (
     <div className="ui-panel-card ui-chart-card">
-      <div className="ui-inline-split">
-        <strong>{props.title}</strong>
-        <span className="ui-muted">{props.valueRangeLabel}</span>
-      </div>
+      <strong>{props.title}</strong>
       <div className="ui-line-chart">
         <div className="ui-line-chart__axis">
           <span>{props.valueFormatter(maxValue)}</span>
@@ -739,7 +683,6 @@ function MetricLineChart(props: {
 
 function MetricBarChart(props: {
   title: string;
-  valueRangeLabel: string;
   valueFormatter: (value: number) => string;
   points: ChartPoint[];
   denseLabels?: boolean;
@@ -748,10 +691,7 @@ function MetricBarChart(props: {
 
   return (
     <div className="ui-panel-card ui-chart-card">
-      <div className="ui-inline-split">
-        <strong>{props.title}</strong>
-        <span className="ui-muted">{props.valueRangeLabel}</span>
-      </div>
+      <strong>{props.title}</strong>
       <div className="ui-bar-chart">
         <div className="ui-bar-chart__axis">
           <span>{props.valueFormatter(maxValue)}</span>
@@ -977,16 +917,6 @@ function shouldShowDenseChartLabel(index: number, total: number): boolean {
   const step = Math.ceil(total / 4);
 
   return index === 0 || index === total - 1 || index % step === 0;
-}
-
-function formatRangeLabel(
-  values: number[],
-  formatter: (value: number) => string,
-): string {
-  const maxValue = Math.max(...values, 0);
-  const minValue = Math.min(...values, 0);
-
-  return `${formatter(minValue)} - ${formatter(maxValue)}`;
 }
 
 function createChartColumnsStyle(columnCount: number): CSSProperties {
