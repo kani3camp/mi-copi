@@ -153,19 +153,24 @@ export default async function StatsPage() {
             {stats.dailyTrends.length > 0 ? (
               <List as="div">
                 {stats.dailyTrends.map((trend) => (
-                  <article key={trend.date} className="ui-panel-card">
+                  <article
+                    key={trend.date}
+                    className="ui-panel-card ui-panel-card--compact"
+                  >
                     <div className="ui-inline-split">
                       <strong>{formatDateLabel(trend.date)}</strong>
                       <span className="ui-muted">{trend.questionCount} 問</span>
                     </div>
-                    <MetricGrid>
+                    <MetricGrid className="ui-grid-metrics--compact">
                       <MetricCard
                         label="平均スコア"
                         value={formatScoreLabel(trend.averageScore)}
+                        className="ui-metric-card--dense"
                       />
                       <MetricCard
                         label="平均誤差"
                         value={formatAvgErrorLabel(trend.averageError)}
+                        className="ui-metric-card--dense"
                       />
                       <MetricCard
                         label="平均回答時間"
@@ -173,10 +178,12 @@ export default async function StatsPage() {
                           trend.averageResponseTimeMs,
                         )}
                         compactValue
+                        className="ui-metric-card--dense"
                       />
                       <MetricCard
                         label="正答率"
                         value={formatAccuracyLabel(trend.correctRate)}
+                        className="ui-metric-card--dense"
                       />
                     </MetricGrid>
                   </article>

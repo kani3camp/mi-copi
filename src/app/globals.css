@@ -441,6 +441,11 @@ a {
   min-height: 122px;
 }
 
+.ui-metric-card--dense {
+  min-height: 88px;
+  padding: var(--space-3);
+}
+
 .ui-metric-card--accent {
   background: linear-gradient(
     180deg,
@@ -598,6 +603,15 @@ a {
 
 .ui-trend-card {
   display: grid;
+  gap: var(--space-3);
+}
+
+.ui-panel-card--compact {
+  gap: var(--space-3);
+}
+
+.ui-grid-metrics--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
