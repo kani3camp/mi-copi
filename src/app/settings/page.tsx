@@ -1,6 +1,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { formatDateTimeLabel } from "../../features/training/model/format";
+import {
+  formatDateTimeLabel,
+  formatDurationSecondsLabel,
+} from "../../features/training/model/format";
 import type { TrainingConfigSnapshot } from "../../features/training/model/types";
 import { getSettingsPageDataForCurrentUser } from "../../features/training/server/getSettingsPageData";
 import { resetLastUsedTrainingConfigForCurrentUser } from "../../features/training/server/lastUsedTrainingConfig";
@@ -227,7 +230,7 @@ function ConfigSnapshotView(props: { config: TrainingConfigSnapshot }) {
 }
 
 function formatTimeLimitSecondsLabel(value: number): string {
-  return `${value} 秒`;
+  return formatDurationSecondsLabel(value);
 }
 
 function formatConfigModeLabel(value: "distance" | "keyboard"): string {

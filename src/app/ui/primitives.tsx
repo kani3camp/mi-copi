@@ -135,8 +135,16 @@ export function Notice(
     className?: string;
   }>,
 ) {
+  const tone = props.tone ?? "info";
+  const role = tone === "error" ? "alert" : "status";
+  const ariaLive = tone === "error" ? "assertive" : "polite";
+
   return (
-    <div className={noticeClassName(props.tone, props.className)}>
+    <div
+      className={noticeClassName(tone, props.className)}
+      role={role}
+      aria-live={ariaLive}
+    >
       {props.children}
     </div>
   );

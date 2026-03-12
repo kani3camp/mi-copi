@@ -20,6 +20,7 @@ const {
   formatAvgErrorLabel,
   formatDateLabel,
   formatDateTimeLabel,
+  formatDurationSecondsLabel,
   formatResponseTimeMsLabel,
   formatScoreLabel,
   formatTrainingModeLabel,
@@ -76,6 +77,9 @@ test("format helpers round and preserve fallback values for training results", (
   assert.equal(formatAvgErrorLabel(1.25), "1.3");
   assert.equal(formatAvgErrorLabel("invalid"), "invalid");
   assert.equal(formatResponseTimeMsLabel(1499.6), "1500 ms");
+  assert.equal(formatDurationSecondsLabel(180), "3 分");
+  assert.equal(formatDurationSecondsLabel(95), "1 分 35 秒");
+  assert.equal(formatDurationSecondsLabel("invalid"), "invalid 秒");
   assert.equal(formatTrainingModeLabel("distance"), "Distance");
   assert.equal(formatTrainingModeLabel("keyboard"), "Keyboard");
 });

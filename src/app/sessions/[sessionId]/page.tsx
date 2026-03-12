@@ -5,6 +5,7 @@ import {
   formatAccuracyLabel,
   formatAvgErrorLabel,
   formatDateTimeLabel,
+  formatDurationSecondsLabel,
   formatResponseTimeMsLabel,
   formatScoreLabel,
 } from "../../../features/training/model/format";
@@ -216,5 +217,5 @@ function formatDetailModeLabel(value: "distance" | "keyboard"): string {
 }
 
 function formatTimeLimitSecondsLabel(value: number): string {
-  return `${value} 秒`;
+  return formatDurationSecondsLabel(value);
 }

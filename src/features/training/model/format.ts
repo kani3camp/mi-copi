@@ -59,6 +59,28 @@ export function formatResponseTimeMsLabel(value: number | string): string {
   return `${Math.round(parsed)} ms`;
 }
 
+export function formatDurationSecondsLabel(value: number | string): string {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return `${value} 秒`;
+  }
+
+  const totalSeconds = Math.max(0, Math.round(parsed));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (minutes === 0) {
+    return `${seconds} 秒`;
+  }
+
+  if (seconds === 0) {
+    return `${minutes} 分`;
+  }
+
+  return `${minutes} 分 ${seconds} 秒`;
+}
+
 export function formatTrainingModeLabel(value: TrainingMode): string {
   if (value === "distance") {
     return "Distance";
