@@ -1,4 +1,4 @@
-import type { TrainingMode } from "./types";
+import type { QuestionDirection, TrainingMode } from "./types";
 
 type NumericLike = number | string;
 
@@ -14,10 +14,33 @@ export interface AggregatableSessionMetrics {
 export interface AggregatableQuestionMetrics {
   mode: TrainingMode;
   isCorrect: boolean;
+  targetIntervalSemitones: NumericLike;
+  direction: QuestionDirection;
   errorSemitones: NumericLike;
   responseTimeMs: NumericLike;
   score: NumericLike;
   answeredAt: string;
+}
+
+export interface PerformanceMetrics {
+  questionCount: number;
+  correctRate: number;
+  averageError: number;
+  averageResponseTimeMs: number;
+  averageScore: number;
+}
+
+export interface IntervalPerformanceSummary extends PerformanceMetrics {
+  intervalSemitones: number;
+}
+
+export interface AnswerBiasSummary {
+  higherCount: number;
+  lowerCount: number;
+  onTargetCount: number;
+  higherRate: number;
+  lowerRate: number;
+  onTargetRate: number;
 }
 
 export interface TrainingOverviewMetrics {
@@ -44,6 +67,18 @@ export interface DailyTrendSummary {
   averageScore: number;
   averageError: number;
   averageResponseTimeMs: number;
+}
+
+export interface DailyScoreTrendPoint {
+  date: string;
+  questionCount: number;
+  averageScore: number;
+}
+
+export interface ScoreTrendsByMode {
+  overall: DailyScoreTrendPoint[];
+  distance: DailyScoreTrendPoint[];
+  keyboard: DailyScoreTrendPoint[];
 }
 
 export interface ModeTrainingStats extends TrainingOverviewMetrics {
@@ -142,6 +177,67 @@ export function buildModeTrainingStats(
   };
 }
 
+export function buildIntervalPerformance(
+  questionResults: AggregatableQuestionMetrics[],
+): IntervalPerformanceSummary[] {
+  const byInterval = new Map<number, AggregatableQuestionMetrics[]>();
+
+  for (const result of questionResults) {
+    const intervalSemitones = Math.abs(
+      toNumber(result.targetIntervalSemitones),
+    );
+    const bucket = byInterval.get(intervalSemitones);
+
+    if (bucket) {
+      bucket.push(result);
+      continue;
+    }
+
+    byInterval.set(intervalSemitones, [result]);
+  }
+
+  return [...byInterval.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([intervalSemitones, results]) => ({
+      intervalSemitones,
+      ...buildPerformanceMetrics(results),
+    }));
+}
+
+export function buildDirectionPerformance(
+  questionResults: AggregatableQuestionMetrics[],
+): Record<QuestionDirection, PerformanceMetrics> {
+  return {
+    up: buildPerformanceMetrics(
+      questionResults.filter((result) => result.direction === "up"),
+    ),
+    down: buildPerformanceMetrics(
+      questionResults.filter((result) => result.direction === "down"),
+    ),
+  };
+}
+
+export function buildAnswerBiasSummary(
+  questionResults: AggregatableQuestionMetrics[],
+): AnswerBiasSummary {
+  const higherCount = questionResults.filter(
+    (result) => toNumber(result.errorSemitones) > 0,
+  ).length;
+  const lowerCount = questionResults.filter(
+    (result) => toNumber(result.errorSemitones) < 0,
+  ).length;
+  const onTargetCount = questionResults.length - higherCount - lowerCount;
+
+  return {
+    higherCount,
+    lowerCount,
+    onTargetCount,
+    higherRate: ratioOrZero(higherCount, questionResults.length),
+    lowerRate: ratioOrZero(lowerCount, questionResults.length),
+    onTargetRate: ratioOrZero(onTargetCount, questionResults.length),
+  };
+}
+
 export function buildRecentQuestionSummary(
   questionResultsInRecentOrder: AggregatableQuestionMetrics[],
   size: number,
@@ -169,21 +265,7 @@ export function buildRecentQuestionSummary(
 export function buildDailyTrendSummaries(
   questionResultsInRecentOrder: AggregatableQuestionMetrics[],
 ): DailyTrendSummary[] {
-  const byDate = new Map<string, AggregatableQuestionMetrics[]>();
-
-  for (const result of questionResultsInRecentOrder) {
-    const dateKey = toIsoDate(result.answeredAt);
-    const dateBucket = byDate.get(dateKey);
-
-    if (dateBucket) {
-      dateBucket.push(result);
-      continue;
-    }
-
-    byDate.set(dateKey, [result]);
-  }
-
-  return [...byDate.entries()]
+  return getDailyBuckets(questionResultsInRecentOrder)
     .sort(([leftDate], [rightDate]) => rightDate.localeCompare(leftDate))
     .map(([date, results]) => ({
       date,
@@ -204,6 +286,24 @@ export function buildDailyTrendSummaries(
     }));
 }
 
+export function buildScoreTrendsByMode(
+  questionResultsInRecentOrder: AggregatableQuestionMetrics[],
+): ScoreTrendsByMode {
+  return {
+    overall: buildDailyScoreTrendPoints(questionResultsInRecentOrder),
+    distance: buildDailyScoreTrendPoints(
+      questionResultsInRecentOrder.filter(
+        (result) => result.mode === "distance",
+      ),
+    ),
+    keyboard: buildDailyScoreTrendPoints(
+      questionResultsInRecentOrder.filter(
+        (result) => result.mode === "keyboard",
+      ),
+    ),
+  };
+}
+
 function toNumber(value: NumericLike): number {
   return Number(value);
 }
@@ -212,12 +312,67 @@ function toIsoDate(value: string): string {
   return new Date(value).toISOString().slice(0, 10);
 }
 
+function getDailyBuckets(
+  questionResultsInRecentOrder: AggregatableQuestionMetrics[],
+): Array<[string, AggregatableQuestionMetrics[]]> {
+  const byDate = new Map<string, AggregatableQuestionMetrics[]>();
+
+  for (const result of questionResultsInRecentOrder) {
+    const dateKey = toIsoDate(result.answeredAt);
+    const dateBucket = byDate.get(dateKey);
+
+    if (dateBucket) {
+      dateBucket.push(result);
+      continue;
+    }
+
+    byDate.set(dateKey, [result]);
+  }
+
+  return [...byDate.entries()];
+}
+
 function averageOrNull(values: number[]): number | null {
   if (values.length === 0) {
     return null;
   }
 
   return averageOrZero(values);
+}
+
+function buildPerformanceMetrics(
+  results: AggregatableQuestionMetrics[],
+): PerformanceMetrics {
+  return {
+    questionCount: results.length,
+    correctRate: ratioOrZero(
+      results.filter((result) => result.isCorrect).length,
+      results.length,
+    ),
+    averageError: averageOrZero(
+      results.map((result) => Math.abs(toNumber(result.errorSemitones))),
+    ),
+    averageResponseTimeMs: averageOrZero(
+      results.map((result) => toNumber(result.responseTimeMs)),
+    ),
+    averageScore: averageOrZero(
+      results.map((result) => toNumber(result.score)),
+    ),
+  };
+}
+
+function buildDailyScoreTrendPoints(
+  questionResultsInRecentOrder: AggregatableQuestionMetrics[],
+): DailyScoreTrendPoint[] {
+  return getDailyBuckets(questionResultsInRecentOrder)
+    .sort(([leftDate], [rightDate]) => rightDate.localeCompare(leftDate))
+    .map(([date, results]) => ({
+      date,
+      questionCount: results.length,
+      averageScore: averageOrZero(
+        results.map((result) => toNumber(result.score)),
+      ),
+    }));
 }
 
 function averageOrZero(values: number[]): number {

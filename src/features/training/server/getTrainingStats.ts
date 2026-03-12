@@ -4,12 +4,16 @@ import { getCurrentUserOrNull } from "../../../lib/auth/server";
 import { getDb } from "../../../lib/db/client";
 import { questionResults, trainingSessions } from "../../../lib/db/schema/app";
 import {
+  buildAnswerBiasSummary,
   buildDailyTrendSummaries,
+  buildDirectionPerformance,
+  buildIntervalPerformance,
   buildModeTrainingStats,
   buildRecentQuestionSummary,
+  buildScoreTrendsByMode,
   buildTrainingOverview,
 } from "../model/stats-aggregation";
-import type { TrainingMode } from "../model/types";
+import type { QuestionDirection, TrainingMode } from "../model/types";
 
 interface RecentStatsSession {
   id: string;
@@ -18,6 +22,20 @@ interface RecentStatsSession {
   sessionScore: number;
   accuracyRate: number;
   endedAt: string;
+}
+
+interface PerformanceSummary {
+  questionCount: number;
+  correctRate: number;
+  averageError: number;
+  averageResponseTimeMs: number;
+  averageScore: number;
+}
+
+interface DailyScoreTrendPoint {
+  date: string;
+  questionCount: number;
+  averageScore: number;
 }
 
 export interface TrainingStats {
@@ -59,6 +77,25 @@ export interface TrainingStats {
       averageError: number;
       averageResponseTimeMs: number;
     };
+  };
+  intervalPerformance: Array<
+    PerformanceSummary & {
+      intervalSemitones: number;
+    }
+  >;
+  directionPerformance: Record<QuestionDirection, PerformanceSummary>;
+  answerBias: {
+    higherCount: number;
+    lowerCount: number;
+    onTargetCount: number;
+    higherRate: number;
+    lowerRate: number;
+    onTargetRate: number;
+  };
+  scoreTrends: {
+    overall: DailyScoreTrendPoint[];
+    distance: DailyScoreTrendPoint[];
+    keyboard: DailyScoreTrendPoint[];
   };
   dailyTrends: Array<{
     date: string;
@@ -123,6 +160,36 @@ export async function getTrainingStatsForCurrentUser(): Promise<TrainingStats> {
           averageResponseTimeMs: 0,
         },
       },
+      intervalPerformance: [],
+      directionPerformance: {
+        up: {
+          questionCount: 0,
+          correctRate: 0,
+          averageError: 0,
+          averageResponseTimeMs: 0,
+          averageScore: 0,
+        },
+        down: {
+          questionCount: 0,
+          correctRate: 0,
+          averageError: 0,
+          averageResponseTimeMs: 0,
+          averageScore: 0,
+        },
+      },
+      answerBias: {
+        higherCount: 0,
+        lowerCount: 0,
+        onTargetCount: 0,
+        higherRate: 0,
+        lowerRate: 0,
+        onTargetRate: 0,
+      },
+      scoreTrends: {
+        overall: [],
+        distance: [],
+        keyboard: [],
+      },
       dailyTrends: [],
       recentSessions: [],
     };
@@ -147,6 +214,8 @@ export async function getTrainingStatsForCurrentUser(): Promise<TrainingStats> {
     .select({
       mode: questionResults.mode,
       isCorrect: questionResults.isCorrect,
+      targetIntervalSemitones: questionResults.targetIntervalSemitones,
+      direction: questionResults.direction,
       errorSemitones: questionResults.errorSemitones,
       responseTimeMs: questionResults.responseTimeMs,
       score: questionResults.score,
@@ -167,6 +236,8 @@ export async function getTrainingStatsForCurrentUser(): Promise<TrainingStats> {
   const normalizedQuestionResults = allQuestionResults.map((result) => ({
     mode: result.mode,
     isCorrect: result.isCorrect,
+    targetIntervalSemitones: result.targetIntervalSemitones,
+    direction: result.direction,
     errorSemitones: result.errorSemitones,
     responseTimeMs: result.responseTimeMs,
     score: result.score,
@@ -191,6 +262,10 @@ export async function getTrainingStatsForCurrentUser(): Promise<TrainingStats> {
       recent10: buildRecentQuestionSummary(normalizedQuestionResults, 10),
       recent30: buildRecentQuestionSummary(normalizedQuestionResults, 30),
     },
+    intervalPerformance: buildIntervalPerformance(normalizedQuestionResults),
+    directionPerformance: buildDirectionPerformance(normalizedQuestionResults),
+    answerBias: buildAnswerBiasSummary(normalizedQuestionResults),
+    scoreTrends: buildScoreTrendsByMode(normalizedQuestionResults),
     dailyTrends: buildDailyTrendSummaries(normalizedQuestionResults),
     recentSessions: allSessions.slice(0, 10).map((session) => ({
       id: session.id,

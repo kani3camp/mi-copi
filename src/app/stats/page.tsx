@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getGlobalUserSettingsForCurrentUser } from "../../features/settings/server/global-user-settings";
 import {
   formatAccuracyLabel,
   formatAvgErrorLabel,
@@ -7,6 +8,7 @@ import {
   formatResponseTimeMsLabel,
   formatScoreLabel,
 } from "../../features/training/model/format";
+import { getIntervalLabel } from "../../features/training/model/interval-notation";
 import { getTrainingStatsForCurrentUser } from "../../features/training/server/getTrainingStats";
 import {
   cardStyle,
@@ -25,8 +27,12 @@ import {
 } from "../ui/polish";
 
 export default async function StatsPage() {
-  const stats = await getTrainingStatsForCurrentUser();
+  const [stats, globalSettings] = await Promise.all([
+    getTrainingStatsForCurrentUser(),
+    getGlobalUserSettingsForCurrentUser(),
+  ]);
   const compactMetricValueStyle = { ...metricValueStyle, fontSize: "22px" };
+  const intervalNotationStyle = globalSettings.settings.intervalNotationStyle;
 
   return (
     <main style={pageShellStyle}>
@@ -89,6 +95,27 @@ export default async function StatsPage() {
                   )}
                 </span>
               </div>
+            </div>
+          </section>
+
+          <section style={cardStyle}>
+            <h2 style={sectionTitleStyle}>スコア推移</h2>
+            <p style={subtleTextStyle}>
+              日次平均スコアを、全体・距離モード・鍵盤モードで並べて比較できます。
+            </p>
+            <div style={metricsGridStyle}>
+              <ScoreTrendColumn
+                label="全体"
+                points={stats.scoreTrends.overall.slice(0, 10)}
+              />
+              <ScoreTrendColumn
+                label="距離モード"
+                points={stats.scoreTrends.distance.slice(0, 10)}
+              />
+              <ScoreTrendColumn
+                label="鍵盤モード"
+                points={stats.scoreTrends.keyboard.slice(0, 10)}
+              />
             </div>
           </section>
 
@@ -265,6 +292,107 @@ export default async function StatsPage() {
           </section>
 
           <section style={cardStyle}>
+            <h2 style={sectionTitleStyle}>音程別パフォーマンス</h2>
+            <p style={subtleTextStyle}>
+              正解の音程距離ごとに、正答率・誤差・回答時間・平均スコアを見比べられます。
+            </p>
+            {stats.intervalPerformance.length > 0 ? (
+              <div style={listStyle}>
+                {stats.intervalPerformance.map((interval) => (
+                  <article
+                    key={interval.intervalSemitones}
+                    style={metricCardStyle}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "12px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <strong style={{ fontSize: "16px" }}>
+                        {getIntervalLabel(
+                          interval.intervalSemitones,
+                          intervalNotationStyle,
+                        )}
+                      </strong>
+                      <span style={subtleTextStyle}>
+                        {interval.questionCount} 問
+                      </span>
+                    </div>
+                    <div style={metricsGridStyle}>
+                      <MetricValueCard
+                        label="正答率"
+                        value={formatAccuracyLabel(interval.correctRate)}
+                      />
+                      <MetricValueCard
+                        label="平均誤差"
+                        value={formatAvgErrorLabel(interval.averageError)}
+                      />
+                      <MetricValueCard
+                        label="平均回答時間"
+                        value={formatResponseTimeMsLabel(
+                          interval.averageResponseTimeMs,
+                        )}
+                        compact
+                      />
+                      <MetricValueCard
+                        label="平均スコア"
+                        value={formatScoreLabel(interval.averageScore)}
+                      />
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p style={subtleTextStyle}>音程別データはまだありません。</p>
+            )}
+          </section>
+
+          <section style={cardStyle}>
+            <h2 style={sectionTitleStyle}>上下方向の比較</h2>
+            <p style={subtleTextStyle}>
+              上行と下行で、正答率や反応速度に偏りがないかを確認できます。
+            </p>
+            <div style={metricsGridStyle}>
+              <DirectionPerformanceCard
+                label="上行"
+                stats={stats.directionPerformance.up}
+              />
+              <DirectionPerformanceCard
+                label="下行"
+                stats={stats.directionPerformance.down}
+              />
+            </div>
+          </section>
+
+          <section style={cardStyle}>
+            <h2 style={sectionTitleStyle}>回答傾向</h2>
+            <p style={subtleTextStyle}>
+              回答が高めか低めか、または一致しやすいかを全体傾向として見られます。
+            </p>
+            <div style={metricsGridStyle}>
+              <BiasMetricCard
+                label="高めに回答"
+                count={stats.answerBias.higherCount}
+                rate={stats.answerBias.higherRate}
+              />
+              <BiasMetricCard
+                label="低めに回答"
+                count={stats.answerBias.lowerCount}
+                rate={stats.answerBias.lowerRate}
+              />
+              <BiasMetricCard
+                label="一致"
+                count={stats.answerBias.onTargetCount}
+                rate={stats.answerBias.onTargetRate}
+              />
+            </div>
+          </section>
+
+          <section style={cardStyle}>
             <h2 style={sectionTitleStyle}>最近のセッション</h2>
             {stats.recentSessions.length > 0 ? (
               <ul style={listStyle}>
@@ -309,4 +437,101 @@ export default async function StatsPage() {
 
 function formatSecondaryModeLabel(value: "distance" | "keyboard"): string {
   return value === "distance" ? "距離モード" : "鍵盤モード";
+}
+
+function MetricValueCard(props: {
+  label: string;
+  value: string;
+  compact?: boolean;
+}) {
+  return (
+    <div style={metricCardStyle}>
+      <span style={metricLabelStyle}>{props.label}</span>
+      <span
+        style={{
+          ...metricValueStyle,
+          ...(props.compact ? { fontSize: "22px" } : {}),
+        }}
+      >
+        {props.value}
+      </span>
+    </div>
+  );
+}
+
+function DirectionPerformanceCard(props: {
+  label: string;
+  stats: {
+    questionCount: number;
+    correctRate: number;
+    averageError: number;
+    averageResponseTimeMs: number;
+    averageScore: number;
+  };
+}) {
+  return (
+    <div style={metricCardStyle}>
+      <span style={metricLabelStyle}>{props.label}</span>
+      <span style={metricValueStyle}>{props.stats.questionCount}</span>
+      <span style={subtleTextStyle}>
+        正答率 {formatAccuracyLabel(props.stats.correctRate)}
+        {" / "}平均誤差 {formatAvgErrorLabel(props.stats.averageError)}
+      </span>
+      <span style={subtleTextStyle}>
+        平均回答時間{" "}
+        {formatResponseTimeMsLabel(props.stats.averageResponseTimeMs)}
+        {" / "}平均スコア {formatScoreLabel(props.stats.averageScore)}
+      </span>
+    </div>
+  );
+}
+
+function BiasMetricCard(props: { label: string; count: number; rate: number }) {
+  return (
+    <div style={metricCardStyle}>
+      <span style={metricLabelStyle}>{props.label}</span>
+      <span style={metricValueStyle}>{props.count}</span>
+      <span style={subtleTextStyle}>{formatAccuracyLabel(props.rate)}</span>
+    </div>
+  );
+}
+
+function ScoreTrendColumn(props: {
+  label: string;
+  points: Array<{
+    date: string;
+    questionCount: number;
+    averageScore: number;
+  }>;
+}) {
+  return (
+    <div style={metricCardStyle}>
+      <span style={metricLabelStyle}>{props.label}</span>
+      {props.points.length > 0 ? (
+        <div style={{ display: "grid", gap: "10px" }}>
+          {props.points.map((point) => (
+            <div
+              key={`${props.label}-${point.date}`}
+              style={{
+                display: "grid",
+                gap: "4px",
+                paddingTop: "8px",
+                borderTop: "1px solid rgba(91, 78, 62, 0.16)",
+              }}
+            >
+              <strong style={{ fontSize: "15px" }}>
+                {formatDateLabel(point.date)}
+              </strong>
+              <span style={subtleTextStyle}>
+                平均スコア {formatScoreLabel(point.averageScore)}
+              </span>
+              <span style={subtleTextStyle}>{point.questionCount} 問</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <span style={subtleTextStyle}>データはまだありません。</span>
+      )}
+    </div>
+  );
 }

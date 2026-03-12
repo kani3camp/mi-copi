@@ -5,9 +5,13 @@ const { buildSessionSummaryFromResults } = await import(
   new URL("./summary.ts", import.meta.url).href
 );
 const {
+  buildAnswerBiasSummary,
   buildDailyTrendSummaries,
+  buildDirectionPerformance,
+  buildIntervalPerformance,
   buildModeTrainingStats,
   buildRecentQuestionSummary,
+  buildScoreTrendsByMode,
   buildTrainingOverview,
   summarizeHomeHeadline,
 } = await import(new URL("./stats-aggregation.ts", import.meta.url).href);
@@ -105,6 +109,8 @@ test("stats aggregation derives overview, recent windows, and mode breakdowns", 
     createAggregatableQuestion({
       mode: "distance",
       isCorrect: true,
+      targetIntervalSemitones: 4,
+      direction: "up",
       errorSemitones: 0,
       responseTimeMs: 1000,
       score: 100,
@@ -112,6 +118,8 @@ test("stats aggregation derives overview, recent windows, and mode breakdowns", 
     createAggregatableQuestion({
       mode: "distance",
       isCorrect: false,
+      targetIntervalSemitones: 4,
+      direction: "down",
       errorSemitones: -2,
       responseTimeMs: 1400,
       score: 50,
@@ -120,6 +128,8 @@ test("stats aggregation derives overview, recent windows, and mode breakdowns", 
     createAggregatableQuestion({
       mode: "keyboard",
       isCorrect: true,
+      targetIntervalSemitones: 2,
+      direction: "up",
       errorSemitones: 1,
       responseTimeMs: 800,
       score: 75,
@@ -163,6 +173,80 @@ test("stats aggregation derives overview, recent windows, and mode breakdowns", 
     averageScore: 75,
     averageError: 1,
     averageResponseTimeMs: 1200,
+  });
+
+  assert.deepEqual(buildIntervalPerformance(questionResults), [
+    {
+      intervalSemitones: 2,
+      questionCount: 1,
+      correctRate: 1,
+      averageError: 1,
+      averageResponseTimeMs: 800,
+      averageScore: 75,
+    },
+    {
+      intervalSemitones: 4,
+      questionCount: 2,
+      correctRate: 0.5,
+      averageError: 1,
+      averageResponseTimeMs: 1200,
+      averageScore: 75,
+    },
+  ]);
+
+  assert.deepEqual(buildDirectionPerformance(questionResults), {
+    up: {
+      questionCount: 2,
+      correctRate: 1,
+      averageError: 0.5,
+      averageResponseTimeMs: 900,
+      averageScore: 87.5,
+    },
+    down: {
+      questionCount: 1,
+      correctRate: 0,
+      averageError: 2,
+      averageResponseTimeMs: 1400,
+      averageScore: 50,
+    },
+  });
+
+  assert.deepEqual(buildAnswerBiasSummary(questionResults), {
+    higherCount: 1,
+    lowerCount: 1,
+    onTargetCount: 1,
+    higherRate: 0.333,
+    lowerRate: 0.333,
+    onTargetRate: 0.333,
+  });
+
+  assert.deepEqual(buildScoreTrendsByMode(questionResults), {
+    overall: [
+      {
+        date: "2026-03-11",
+        questionCount: 2,
+        averageScore: 75,
+      },
+      {
+        date: "2026-03-10",
+        questionCount: 1,
+        averageScore: 75,
+      },
+    ],
+    distance: [
+      {
+        date: "2026-03-11",
+        questionCount: 2,
+        averageScore: 75,
+      },
+    ],
+    keyboard: [
+      {
+        date: "2026-03-10",
+        questionCount: 1,
+        averageScore: 75,
+      },
+    ],
   });
 });
 
@@ -247,6 +331,88 @@ test("daily trend aggregation groups question results by answered date", () => {
   ]);
 });
 
+test("diagnostic aggregations keep empty data safe", () => {
+  assert.deepEqual(buildIntervalPerformance([]), []);
+  assert.deepEqual(buildDirectionPerformance([]), {
+    up: {
+      questionCount: 0,
+      correctRate: 0,
+      averageError: 0,
+      averageResponseTimeMs: 0,
+      averageScore: 0,
+    },
+    down: {
+      questionCount: 0,
+      correctRate: 0,
+      averageError: 0,
+      averageResponseTimeMs: 0,
+      averageScore: 0,
+    },
+  });
+  assert.deepEqual(buildAnswerBiasSummary([]), {
+    higherCount: 0,
+    lowerCount: 0,
+    onTargetCount: 0,
+    higherRate: 0,
+    lowerRate: 0,
+    onTargetRate: 0,
+  });
+  assert.deepEqual(buildScoreTrendsByMode([]), {
+    overall: [],
+    distance: [],
+    keyboard: [],
+  });
+});
+
+test("score trends keep mode splits independent and round daily averages to 3 decimals", () => {
+  const results = [
+    createAggregatableQuestion({
+      mode: "distance",
+      score: 98.3333,
+      answeredAt: "2026-03-12T08:00:00.000Z",
+    }),
+    createAggregatableQuestion({
+      mode: "distance",
+      score: 61.6666,
+      answeredAt: "2026-03-12T06:00:00.000Z",
+    }),
+    createAggregatableQuestion({
+      mode: "keyboard",
+      score: 40,
+      answeredAt: "2026-03-11T08:00:00.000Z",
+    }),
+  ];
+
+  assert.deepEqual(buildScoreTrendsByMode(results), {
+    overall: [
+      {
+        date: "2026-03-12",
+        questionCount: 2,
+        averageScore: 80,
+      },
+      {
+        date: "2026-03-11",
+        questionCount: 1,
+        averageScore: 40,
+      },
+    ],
+    distance: [
+      {
+        date: "2026-03-12",
+        questionCount: 2,
+        averageScore: 80,
+      },
+    ],
+    keyboard: [
+      {
+        date: "2026-03-11",
+        questionCount: 1,
+        averageScore: 40,
+      },
+    ],
+  });
+});
+
 function createQuestionResult(overrides: Record<string, unknown>) {
   return {
     questionIndex: 0,
@@ -289,6 +455,8 @@ function createAggregatableQuestion(overrides: Record<string, unknown>) {
   return {
     mode: "distance",
     isCorrect: true,
+    targetIntervalSemitones: 4,
+    direction: "up",
     errorSemitones: 0,
     responseTimeMs: 1000,
     score: 100,
