@@ -48,13 +48,13 @@ export default async function HomePage() {
           <TrainModeCard
             href="/train/distance"
             eyebrow="距離モード"
-            title="距離モードを始める"
+            title="音程名で答える"
             description="音程名で答える反復練習。誤差と回答速度をすぐ確認できます。"
           />
           <TrainModeCard
             href="/train/keyboard"
             eyebrow="鍵盤モード"
-            title="鍵盤モードを始める"
+            title="鍵盤で答える"
             description="鍵盤で問題音を答える練習。黒鍵込みで耳コピ寄りに試せます。"
           />
         </div>
