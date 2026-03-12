@@ -224,13 +224,18 @@ export default async function StatsPage() {
                     denseLabels
                   />
                 </div>
-                <ChartCountRow
-                  label="日ごとの問題数"
-                  items={stats.dailyTrends.map((trend) => ({
-                    key: trend.date,
+                <MetricLineChart
+                  title="日ごとの問題数"
+                  valueRangeLabel={formatRangeLabel(
+                    stats.dailyTrends.map((trend) => trend.questionCount),
+                    formatQuestionCountLabel,
+                  )}
+                  valueFormatter={formatQuestionCountLabel}
+                  points={stats.dailyTrends.map((trend) => ({
+                    key: `${trend.date}-count`,
                     label: formatCompactDateLabel(trend.date),
                     assistiveLabel: `${formatDateLabel(trend.date)} ${trend.questionCount} 問`,
-                    value: `${trend.questionCount}問`,
+                    value: trend.questionCount,
                   }))}
                   denseLabels
                 />
@@ -614,13 +619,6 @@ type ChartPoint = {
   value: number;
 };
 
-type CountRowItem = {
-  key: string | number;
-  label: string;
-  assistiveLabel: string;
-  value: string;
-};
-
 function MetricLineChart(props: {
   title: string;
   valueRangeLabel: string;
@@ -810,43 +808,6 @@ function MetricBarChart(props: {
       </div>
       <ScreenReaderText as="p">
         {props.points.map((point) => point.assistiveLabel).join("、")}
-      </ScreenReaderText>
-    </div>
-  );
-}
-
-function ChartCountRow(props: {
-  label: string;
-  items: CountRowItem[];
-  denseLabels?: boolean;
-}) {
-  return (
-    <div className="ui-panel-card ui-chart-count-card">
-      <span className="ui-muted">{props.label}</span>
-      <div
-        className="ui-chart-count-row"
-        style={createChartColumnsStyle(props.items.length)}
-        aria-hidden="true"
-      >
-        {props.items.map((item, index) => {
-          const showLabel =
-            !props.denseLabels ||
-            shouldShowDenseChartLabel(index, props.items.length);
-
-          return (
-            <div
-              key={item.key}
-              className="ui-chart-count-row__item"
-              data-visible={showLabel}
-            >
-              <span>{showLabel ? item.label : ""}</span>
-              <strong>{showLabel ? item.value : ""}</strong>
-            </div>
-          );
-        })}
-      </div>
-      <ScreenReaderText as="p">
-        {props.items.map((item) => item.assistiveLabel).join("、")}
       </ScreenReaderText>
     </div>
   );
