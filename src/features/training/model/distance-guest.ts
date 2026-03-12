@@ -1,3 +1,9 @@
+import {
+  createDefaultDistanceTrainingConfig as createCanonicalDefaultDistanceTrainingConfig,
+  validateIntervalRange,
+  validateQuestionCount,
+  validateTimeLimitSeconds,
+} from "./config";
 import { buildSessionSummaryFromResults } from "./summary";
 import type {
   DirectionMode,
@@ -52,23 +58,7 @@ export interface DistanceGuestSummary {
 }
 
 export function createDefaultDistanceTrainingConfig(): DistanceTrainingConfig {
-  return {
-    mode: "distance",
-    intervalRange: {
-      minSemitones: 0,
-      maxSemitones: 12,
-    },
-    directionMode: "mixed",
-    includeUnison: false,
-    includeOctave: true,
-    baseNoteMode: "random",
-    fixedBaseNote: null,
-    endCondition: {
-      type: "question_count",
-      questionCount: 10,
-    },
-    intervalGranularity: "simple",
-  };
+  return createCanonicalDefaultDistanceTrainingConfig();
 }
 
 export function getDistanceQuestionCount(
@@ -87,8 +77,8 @@ export function getDistanceAnswerChoices(
   const intervals: number[] = [];
 
   for (
-    let semitones = config.intervalRange.minSemitones;
-    semitones <= config.intervalRange.maxSemitones;
+    let semitones = config.intervalRange.minSemitone;
+    semitones <= config.intervalRange.maxSemitone;
     semitones += 1
   ) {
     if (!config.includeUnison && semitones === 0) {
@@ -115,26 +105,22 @@ export function getDistanceAnswerChoices(
 export function validateDistanceTrainingConfig(
   config: DistanceTrainingConfig,
 ): string | null {
-  if (config.intervalRange.minSemitones > config.intervalRange.maxSemitones) {
-    return "minSemitones must be less than or equal to maxSemitones.";
+  const intervalRangeError = validateIntervalRange(config.intervalRange);
+
+  if (intervalRangeError) {
+    return intervalRangeError;
   }
 
   if (getDistanceAnswerChoices(config).length === 0) {
     return "The selected interval settings do not produce any playable questions.";
   }
 
-  if (
-    config.endCondition.type === "question_count" &&
-    config.endCondition.questionCount <= 0
-  ) {
-    return "questionCount must be at least 1.";
+  if (config.endCondition.type === "question_count") {
+    return validateQuestionCount(config.endCondition.questionCount);
   }
 
-  if (
-    config.endCondition.type === "time_limit" &&
-    config.endCondition.timeLimitMinutes <= 0
-  ) {
-    return "timeLimitMinutes must be at least 1.";
+  if (config.endCondition.type === "time_limit") {
+    return validateTimeLimitSeconds(config.endCondition.timeLimitSeconds);
   }
 
   return null;

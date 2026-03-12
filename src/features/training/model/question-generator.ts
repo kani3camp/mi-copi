@@ -91,8 +91,8 @@ function getCandidateDistances(config: TrainingConfig): number[] {
   const candidates: number[] = [];
 
   for (
-    let semitones = config.intervalRange.minSemitones;
-    semitones <= config.intervalRange.maxSemitones;
+    let semitones = config.intervalRange.minSemitone;
+    semitones <= config.intervalRange.maxSemitone;
     semitones += 1
   ) {
     if (!config.includeUnison && semitones === 0) {

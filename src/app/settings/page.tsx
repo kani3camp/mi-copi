@@ -1,8 +1,8 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
 import { formatDateTimeLabel } from "../../features/training/model/format";
+import type { TrainingConfigSnapshot } from "../../features/training/model/types";
 import { getSettingsPageDataForCurrentUser } from "../../features/training/server/getSettingsPageData";
 import { resetLastUsedTrainingConfigForCurrentUser } from "../../features/training/server/lastUsedTrainingConfig";
 import {
@@ -190,30 +190,7 @@ export default async function SettingsPage({
   );
 }
 
-function ConfigSnapshotView(props: {
-  config: {
-    mode: "distance" | "keyboard";
-    intervalRange: {
-      minSemitones: number;
-      maxSemitones: number;
-    };
-    directionMode: "up_only" | "mixed";
-    includeUnison: boolean;
-    includeOctave: boolean;
-    baseNoteMode: "fixed" | "random";
-    fixedBaseNote: string | null;
-    endCondition:
-      | {
-          type: "question_count";
-          questionCount: number;
-        }
-      | {
-          type: "time_limit";
-          timeLimitMinutes: number;
-        };
-    intervalGranularity?: "simple" | "aug_dim";
-  };
-}) {
+function ConfigSnapshotView(props: { config: TrainingConfigSnapshot }) {
   const { config } = props;
 
   return (
@@ -222,8 +199,8 @@ function ConfigSnapshotView(props: {
         <strong>モード:</strong> {formatConfigModeLabel(config.mode)}
       </div>
       <div style={keyValueCardStyle}>
-        <strong>音程範囲:</strong> {config.intervalRange.minSemitones} -{" "}
-        {config.intervalRange.maxSemitones}
+        <strong>音程範囲:</strong> {config.intervalRange.minSemitone} -{" "}
+        {config.intervalRange.maxSemitone}
       </div>
       <div style={keyValueCardStyle}>
         <strong>出題方向:</strong>{" "}
@@ -248,7 +225,7 @@ function ConfigSnapshotView(props: {
         <strong>終了条件:</strong>{" "}
         {config.endCondition.type === "question_count"
           ? `問題数 (${config.endCondition.questionCount})`
-          : `制限時間 (${config.endCondition.timeLimitMinutes} 分)`}
+          : `制限時間 (${formatTimeLimitSecondsLabel(config.endCondition.timeLimitSeconds)})`}
       </div>
       {"intervalGranularity" in config && config.intervalGranularity ? (
         <div style={keyValueCardStyle}>
@@ -258,6 +235,10 @@ function ConfigSnapshotView(props: {
       ) : null}
     </div>
   );
+}
+
+function formatTimeLimitSecondsLabel(value: number): string {
+  return `${value} 秒`;
 }
 
 function formatConfigModeLabel(value: "distance" | "keyboard"): string {

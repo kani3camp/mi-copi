@@ -41,8 +41,8 @@ export type NoteClass =
 export type ScoreFormulaVersion = "v1";
 
 export interface IntervalRange {
-  minSemitones: number;
-  maxSemitones: number;
+  minSemitone: number;
+  maxSemitone: number;
 }
 
 export interface TrainingEndConditionByQuestionCount {
@@ -53,7 +53,7 @@ export interface TrainingEndConditionByQuestionCount {
 export interface TrainingEndConditionByTimeLimit {
   type: "time_limit";
   // This limit applies to the whole session, not each question.
-  timeLimitMinutes: number;
+  timeLimitSeconds: number;
 }
 
 export type TrainingEndCondition =

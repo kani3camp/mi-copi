@@ -52,7 +52,7 @@ export function toPlannedSessionFields(
     return {
       endConditionType: "time_limit",
       plannedQuestionCount: null,
-      plannedTimeLimitSeconds: endCondition.timeLimitMinutes * 60,
+      plannedTimeLimitSeconds: endCondition.timeLimitSeconds,
     };
   }
 

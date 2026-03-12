@@ -7,8 +7,11 @@ import { getDb } from "../../../lib/db/client";
 import { userSettings } from "../../../lib/db/schema/app";
 import { createDefaultGlobalUserSettings } from "../../settings/model/global-user-settings";
 import { isRecoverableUserSettingsStorageError } from "../../settings/server/user-settings-storage";
-import { createDefaultDistanceTrainingConfig } from "../model/distance-guest";
-import { createDefaultKeyboardTrainingConfig } from "../model/keyboard-guest";
+import {
+  createDefaultDistanceTrainingConfig,
+  createDefaultKeyboardTrainingConfig,
+  normalizeTrainingConfigOrDefault,
+} from "../model/config";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
@@ -52,7 +55,19 @@ export async function getLastUsedTrainingConfigsForCurrentUser(): Promise<LastUs
       .where(eq(userSettings.userId, currentUser.id))
       .limit(1);
 
-    settings = existing ?? null;
+    settings = existing
+      ? {
+          lastDistanceConfig: normalizeTrainingConfigOrDefault(
+            existing.lastDistanceConfig,
+            "distance",
+          ),
+          lastKeyboardConfig: normalizeTrainingConfigOrDefault(
+            existing.lastKeyboardConfig,
+            "keyboard",
+          ),
+          updatedAt: existing.updatedAt,
+        }
+      : null;
   } catch (error) {
     if (!isRecoverableUserSettingsStorageError(error)) {
       throw error;
@@ -135,9 +150,17 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
 
   const defaultGlobalSettings = createDefaultGlobalUserSettings();
   const now = new Date();
+  const normalizedDistanceConfig = normalizeTrainingConfigOrDefault(
+    existing?.lastDistanceConfig,
+    "distance",
+  );
+  const normalizedKeyboardConfig = normalizeTrainingConfigOrDefault(
+    existing?.lastKeyboardConfig,
+    "keyboard",
+  );
 
   if (mode === "distance") {
-    const distanceConfig = config as DistanceTrainingConfig;
+    const distanceConfig = normalizeTrainingConfigOrDefault(config, "distance");
 
     await db
       .insert(userSettings)
@@ -155,8 +178,7 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
           existing?.keyboardNoteLabelsVisible ??
           defaultGlobalSettings.keyboardNoteLabelsVisible,
         lastDistanceConfig: distanceConfig,
-        lastKeyboardConfig:
-          existing?.lastKeyboardConfig ?? createDefaultKeyboardTrainingConfig(),
+        lastKeyboardConfig: normalizedKeyboardConfig,
         createdAt: now,
         updatedAt: now,
       })
@@ -175,9 +197,7 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
             existing?.keyboardNoteLabelsVisible ??
             defaultGlobalSettings.keyboardNoteLabelsVisible,
           lastDistanceConfig: distanceConfig,
-          lastKeyboardConfig:
-            existing?.lastKeyboardConfig ??
-            createDefaultKeyboardTrainingConfig(),
+          lastKeyboardConfig: normalizedKeyboardConfig,
           updatedAt: now,
         },
       });
@@ -185,7 +205,7 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
     return;
   }
 
-  const keyboardConfig = config as KeyboardTrainingConfig;
+  const keyboardConfig = normalizeTrainingConfigOrDefault(config, "keyboard");
 
   await db
     .insert(userSettings)
@@ -202,8 +222,7 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
       keyboardNoteLabelsVisible:
         existing?.keyboardNoteLabelsVisible ??
         defaultGlobalSettings.keyboardNoteLabelsVisible,
-      lastDistanceConfig:
-        existing?.lastDistanceConfig ?? createDefaultDistanceTrainingConfig(),
+      lastDistanceConfig: normalizedDistanceConfig,
       lastKeyboardConfig: keyboardConfig,
       createdAt: now,
       updatedAt: now,
@@ -222,8 +241,7 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
         keyboardNoteLabelsVisible:
           existing?.keyboardNoteLabelsVisible ??
           defaultGlobalSettings.keyboardNoteLabelsVisible,
-        lastDistanceConfig:
-          existing?.lastDistanceConfig ?? createDefaultDistanceTrainingConfig(),
+        lastDistanceConfig: normalizedDistanceConfig,
         lastKeyboardConfig: keyboardConfig,
         updatedAt: now,
       },

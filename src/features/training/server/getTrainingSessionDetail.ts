@@ -3,6 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { getCurrentUserOrNull } from "../../../lib/auth/server";
 import { getDb } from "../../../lib/db/client";
 import { questionResults, trainingSessions } from "../../../lib/db/schema/app";
+import { normalizeTrainingConfigOrDefault } from "../model/config";
 import type {
   NoteClass,
   QuestionDirection,
@@ -102,7 +103,10 @@ export async function getTrainingSessionDetailForCurrentUser(
   return {
     id: session.id,
     mode: session.mode,
-    configSnapshot: session.configSnapshot,
+    configSnapshot: normalizeTrainingConfigOrDefault(
+      session.configSnapshot,
+      session.mode,
+    ),
     createdAt: session.createdAt.toISOString(),
     endedAt: session.endedAt.toISOString(),
     answeredQuestionCount: session.answeredQuestionCount,

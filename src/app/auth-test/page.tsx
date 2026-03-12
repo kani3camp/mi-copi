@@ -70,8 +70,8 @@ function buildDummyTrainingSessionInput(): SaveTrainingSessionInput {
     config: {
       mode: "distance",
       intervalRange: {
-        minSemitones: 0,
-        maxSemitones: 12,
+        minSemitone: 0,
+        maxSemitone: 12,
       },
       directionMode: "mixed",
       includeUnison: false,
@@ -80,19 +80,19 @@ function buildDummyTrainingSessionInput(): SaveTrainingSessionInput {
       fixedBaseNote: null,
       endCondition: {
         type: "question_count",
-        questionCount: 1,
+        questionCount: 5,
       },
       intervalGranularity: "simple",
     },
-    finishReason: "target_reached",
+    finishReason: "manual_end",
     endCondition: {
       type: "question_count",
-      questionCount: 1,
+      questionCount: 5,
     },
     startedAt,
     endedAt: answeredAt,
     summary: {
-      plannedQuestionCount: 1,
+      plannedQuestionCount: 5,
       answeredQuestionCount: 1,
       correctQuestionCount: 1,
       sessionScore: 100,

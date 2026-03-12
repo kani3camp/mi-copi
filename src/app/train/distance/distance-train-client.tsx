@@ -4,6 +4,15 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
 import {
+  clampIntervalMaxSemitone,
+  clampIntervalMinSemitone,
+  clampQuestionCount,
+  clampTimeLimitSeconds,
+  createDefaultQuestionCountEndCondition,
+  createDefaultTimeLimitEndCondition,
+  TRAINING_CONFIG_LIMITS,
+} from "../../../features/training/model/config";
+import {
   type buildDistanceGuestSaveInput,
   buildDistanceGuestSummary,
   type DistanceGuestResult,
@@ -343,11 +352,11 @@ export function DistanceTrainClient({
     sessionDeadlineAtRef.current =
       config.endCondition.type === "time_limit"
         ? Date.parse(nextStartedAt) +
-          config.endCondition.timeLimitMinutes * 60 * 1000
+          config.endCondition.timeLimitSeconds * 1000
         : null;
     setRemainingTimeMs(
       config.endCondition.type === "time_limit"
-        ? config.endCondition.timeLimitMinutes * 60 * 1000
+        ? config.endCondition.timeLimitSeconds * 1000
         : null,
     );
     questionGeneratorStateRef.current = createQuestionGeneratorState(config);
@@ -585,8 +594,8 @@ export function DistanceTrainClient({
                   ...current,
                   endCondition:
                     event.target.value === "time_limit"
-                      ? { type: "time_limit", timeLimitMinutes: 3 }
-                      : { type: "question_count", questionCount: 10 },
+                      ? createDefaultTimeLimitEndCondition()
+                      : createDefaultQuestionCountEndCondition(),
                 }))
               }
             >
@@ -601,15 +610,15 @@ export function DistanceTrainClient({
               <input
                 style={controlStyle}
                 type="number"
-                min={1}
-                max={20}
+                min={TRAINING_CONFIG_LIMITS.questionCount.min}
+                max={TRAINING_CONFIG_LIMITS.questionCount.max}
                 value={plannedQuestionCount}
                 onChange={(event) =>
                   setConfig((current) => ({
                     ...current,
                     endCondition: {
                       type: "question_count",
-                      questionCount: clampNumber(event.target.value, 1, 20),
+                      questionCount: clampQuestionCount(event.target.value),
                     },
                   }))
                 }
@@ -617,19 +626,22 @@ export function DistanceTrainClient({
             </label>
           ) : (
             <label style={formFieldStyle}>
-              <span>制限時間（分）</span>
+              <span>制限時間（秒）</span>
               <input
                 style={controlStyle}
                 type="number"
-                min={1}
-                max={30}
-                value={config.endCondition.timeLimitMinutes}
+                min={TRAINING_CONFIG_LIMITS.timeLimitSeconds.min}
+                max={TRAINING_CONFIG_LIMITS.timeLimitSeconds.max}
+                step={30}
+                value={config.endCondition.timeLimitSeconds}
                 onChange={(event) =>
                   setConfig((current) => ({
                     ...current,
                     endCondition: {
                       type: "time_limit",
-                      timeLimitMinutes: clampNumber(event.target.value, 1, 30),
+                      timeLimitSeconds: clampTimeLimitSeconds(
+                        event.target.value,
+                      ),
                     },
                   }))
                 }
@@ -643,17 +655,26 @@ export function DistanceTrainClient({
               <input
                 style={controlStyle}
                 type="number"
-                min={0}
-                max={12}
-                value={config.intervalRange.minSemitones}
+                min={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.min}
+                max={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.max}
+                value={config.intervalRange.minSemitone}
                 onChange={(event) =>
-                  setConfig((current) => ({
-                    ...current,
-                    intervalRange: {
-                      ...current.intervalRange,
-                      minSemitones: clampNumber(event.target.value, 0, 12),
-                    },
-                  }))
+                  setConfig((current) => {
+                    const minSemitone = clampIntervalMinSemitone(
+                      event.target.value,
+                    );
+
+                    return {
+                      ...current,
+                      intervalRange: {
+                        minSemitone,
+                        maxSemitone: clampIntervalMaxSemitone(
+                          current.intervalRange.maxSemitone,
+                          minSemitone,
+                        ),
+                      },
+                    };
+                  })
                 }
               />
             </label>
@@ -663,15 +684,21 @@ export function DistanceTrainClient({
               <input
                 style={controlStyle}
                 type="number"
-                min={1}
-                max={12}
-                value={config.intervalRange.maxSemitones}
+                min={Math.max(
+                  TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.min,
+                  config.intervalRange.minSemitone,
+                )}
+                max={TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.max}
+                value={config.intervalRange.maxSemitone}
                 onChange={(event) =>
                   setConfig((current) => ({
                     ...current,
                     intervalRange: {
                       ...current.intervalRange,
-                      maxSemitones: clampNumber(event.target.value, 1, 12),
+                      maxSemitone: clampIntervalMaxSemitone(
+                        event.target.value,
+                        current.intervalRange.minSemitone,
+                      ),
                     },
                   }))
                 }
@@ -1332,16 +1359,6 @@ function wait(durationMs: number): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, durationMs);
   });
-}
-
-function clampNumber(rawValue: string, min: number, max: number): number {
-  const parsedValue = Number.parseInt(rawValue, 10);
-
-  if (Number.isNaN(parsedValue)) {
-    return min;
-  }
-
-  return Math.min(Math.max(parsedValue, min), max);
 }
 
 function formatRemainingTimeLabel(valueMs: number): string {

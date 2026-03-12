@@ -111,8 +111,8 @@ export default async function TrainingSessionDetailPage({
           </div>
           <div style={keyValueCardStyle}>
             <strong>音程範囲:</strong>{" "}
-            {detail.configSnapshot.intervalRange.minSemitones} -{" "}
-            {detail.configSnapshot.intervalRange.maxSemitones}
+            {detail.configSnapshot.intervalRange.minSemitone} -{" "}
+            {detail.configSnapshot.intervalRange.maxSemitone}
           </div>
           <div style={keyValueCardStyle}>
             <strong>出題方向:</strong>{" "}
@@ -142,7 +142,7 @@ export default async function TrainingSessionDetailPage({
             <strong>終了条件:</strong>{" "}
             {detail.configSnapshot.endCondition.type === "question_count"
               ? `問題数 (${detail.configSnapshot.endCondition.questionCount})`
-              : `制限時間 (${detail.configSnapshot.endCondition.timeLimitMinutes} 分)`}
+              : `制限時間 (${formatTimeLimitSecondsLabel(detail.configSnapshot.endCondition.timeLimitSeconds)})`}
           </div>
           {detail.configSnapshot.mode === "distance" ? (
             <div style={keyValueCardStyle}>
@@ -221,4 +221,8 @@ export default async function TrainingSessionDetailPage({
 
 function formatDetailModeLabel(value: "distance" | "keyboard"): string {
   return value === "distance" ? "距離モード" : "鍵盤モード";
+}
+
+function formatTimeLimitSecondsLabel(value: number): string {
+  return `${value} 秒`;
 }

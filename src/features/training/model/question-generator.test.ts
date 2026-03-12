@@ -8,8 +8,8 @@ const { createQuestionGeneratorState, takeNextQuestion } = await import(
 
 test("generator state derives effective candidates from config", () => {
   const distanceConfig = createDistanceConfig();
-  distanceConfig.intervalRange.minSemitones = 0;
-  distanceConfig.intervalRange.maxSemitones = 6;
+  distanceConfig.intervalRange.minSemitone = 0;
+  distanceConfig.intervalRange.maxSemitone = 6;
   distanceConfig.includeUnison = false;
   distanceConfig.includeOctave = false;
   distanceConfig.intervalGranularity = "simple";
@@ -34,8 +34,8 @@ test("generator state derives effective candidates from config", () => {
   );
 
   const keyboardConfig = createKeyboardConfig();
-  keyboardConfig.intervalRange.minSemitones = 10;
-  keyboardConfig.intervalRange.maxSemitones = 12;
+  keyboardConfig.intervalRange.minSemitone = 10;
+  keyboardConfig.intervalRange.maxSemitone = 12;
   keyboardConfig.includeOctave = false;
 
   assert.deepEqual(
@@ -46,8 +46,8 @@ test("generator state derives effective candidates from config", () => {
 
 test("generator distributes distances evenly and avoids three repeats in a row", () => {
   const config = createDistanceConfig();
-  config.intervalRange.minSemitones = 1;
-  config.intervalRange.maxSemitones = 3;
+  config.intervalRange.minSemitone = 1;
+  config.intervalRange.maxSemitone = 3;
   config.includeOctave = false;
   config.baseNoteMode = "fixed";
   config.fixedBaseNote = "C";
@@ -81,8 +81,8 @@ test("generator distributes distances evenly and avoids three repeats in a row",
 
 test("generator relaxes repeat control when only one candidate is available", () => {
   const config = createKeyboardConfig();
-  config.intervalRange.minSemitones = 5;
-  config.intervalRange.maxSemitones = 5;
+  config.intervalRange.minSemitone = 5;
+  config.intervalRange.maxSemitone = 5;
   config.includeUnison = true;
   config.includeOctave = false;
   config.baseNoteMode = "fixed";
@@ -103,8 +103,8 @@ test("generator relaxes repeat control when only one candidate is available", ()
 
 test("generator respects up_only and mixed direction modes", () => {
   const upOnlyConfig = createKeyboardConfig();
-  upOnlyConfig.intervalRange.minSemitones = 5;
-  upOnlyConfig.intervalRange.maxSemitones = 5;
+  upOnlyConfig.intervalRange.minSemitone = 5;
+  upOnlyConfig.intervalRange.maxSemitone = 5;
   upOnlyConfig.baseNoteMode = "fixed";
   upOnlyConfig.fixedBaseNote = "C";
   upOnlyConfig.directionMode = "up_only";
@@ -119,8 +119,8 @@ test("generator respects up_only and mixed direction modes", () => {
   assert.equal(upOnlyStep.question.direction, "up");
 
   const mixedConfig = createKeyboardConfig();
-  mixedConfig.intervalRange.minSemitones = 5;
-  mixedConfig.intervalRange.maxSemitones = 5;
+  mixedConfig.intervalRange.minSemitone = 5;
+  mixedConfig.intervalRange.maxSemitone = 5;
   mixedConfig.baseNoteMode = "fixed";
   mixedConfig.fixedBaseNote = "C";
   mixedConfig.directionMode = "mixed";
@@ -145,8 +145,8 @@ test("generator respects up_only and mixed direction modes", () => {
 
 test("generator keeps fixed base notes and randomizes random base notes", () => {
   const fixedConfig = createDistanceConfig();
-  fixedConfig.intervalRange.minSemitones = 1;
-  fixedConfig.intervalRange.maxSemitones = 1;
+  fixedConfig.intervalRange.minSemitone = 1;
+  fixedConfig.intervalRange.maxSemitone = 1;
   fixedConfig.baseNoteMode = "fixed";
   fixedConfig.fixedBaseNote = "F#";
   fixedConfig.directionMode = "up_only";
@@ -161,8 +161,8 @@ test("generator keeps fixed base notes and randomizes random base notes", () => 
   assert.equal(fixedStep.question.baseNote, "F#");
 
   const randomConfig = createDistanceConfig();
-  randomConfig.intervalRange.minSemitones = 1;
-  randomConfig.intervalRange.maxSemitones = 1;
+  randomConfig.intervalRange.minSemitone = 1;
+  randomConfig.intervalRange.maxSemitone = 1;
   randomConfig.baseNoteMode = "random";
   randomConfig.directionMode = "up_only";
 
@@ -204,8 +204,8 @@ function createDistanceConfig(): DistanceTrainingConfig {
   return {
     mode: "distance" as const,
     intervalRange: {
-      minSemitones: 0,
-      maxSemitones: 12,
+      minSemitone: 0,
+      maxSemitone: 12,
     },
     directionMode: "mixed" as const,
     includeUnison: false,
@@ -224,8 +224,8 @@ function createKeyboardConfig(): KeyboardTrainingConfig {
   return {
     mode: "keyboard" as const,
     intervalRange: {
-      minSemitones: 0,
-      maxSemitones: 12,
+      minSemitone: 0,
+      maxSemitone: 12,
     },
     directionMode: "mixed" as const,
     includeUnison: false,

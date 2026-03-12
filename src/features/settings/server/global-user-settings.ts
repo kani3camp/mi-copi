@@ -5,8 +5,7 @@ import { eq } from "drizzle-orm";
 import { getCurrentUserOrNull } from "../../../lib/auth/server";
 import { getDb } from "../../../lib/db/client";
 import { userSettings } from "../../../lib/db/schema/app";
-import { createDefaultDistanceTrainingConfig } from "../../training/model/distance-guest";
-import { createDefaultKeyboardTrainingConfig } from "../../training/model/keyboard-guest";
+import { normalizeTrainingConfigOrDefault } from "../../training/model/config";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
@@ -100,10 +99,14 @@ export async function updateGlobalUserSettingsForCurrentUser(
         soundEffectsEnabled: normalizedSettings.soundEffectsEnabled,
         intervalNotationStyle: normalizedSettings.intervalNotationStyle,
         keyboardNoteLabelsVisible: normalizedSettings.keyboardNoteLabelsVisible,
-        lastDistanceConfig:
-          existing?.lastDistanceConfig ?? createDefaultDistanceTrainingConfig(),
-        lastKeyboardConfig:
-          existing?.lastKeyboardConfig ?? createDefaultKeyboardTrainingConfig(),
+        lastDistanceConfig: normalizeTrainingConfigOrDefault(
+          existing?.lastDistanceConfig,
+          "distance",
+        ),
+        lastKeyboardConfig: normalizeTrainingConfigOrDefault(
+          existing?.lastKeyboardConfig,
+          "keyboard",
+        ),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       })
@@ -115,12 +118,14 @@ export async function updateGlobalUserSettingsForCurrentUser(
           intervalNotationStyle: normalizedSettings.intervalNotationStyle,
           keyboardNoteLabelsVisible:
             normalizedSettings.keyboardNoteLabelsVisible,
-          lastDistanceConfig:
-            existing?.lastDistanceConfig ??
-            createDefaultDistanceTrainingConfig(),
-          lastKeyboardConfig:
-            existing?.lastKeyboardConfig ??
-            createDefaultKeyboardTrainingConfig(),
+          lastDistanceConfig: normalizeTrainingConfigOrDefault(
+            existing?.lastDistanceConfig,
+            "distance",
+          ),
+          lastKeyboardConfig: normalizeTrainingConfigOrDefault(
+            existing?.lastKeyboardConfig,
+            "keyboard",
+          ),
           updatedAt: now,
         },
       });
@@ -159,7 +164,19 @@ async function getUserSettingsRowForUserId(
       .where(eq(userSettings.userId, userId))
       .limit(1);
 
-    return existing ?? null;
+    return existing
+      ? {
+          ...existing,
+          lastDistanceConfig: normalizeTrainingConfigOrDefault(
+            existing.lastDistanceConfig,
+            "distance",
+          ),
+          lastKeyboardConfig: normalizeTrainingConfigOrDefault(
+            existing.lastKeyboardConfig,
+            "keyboard",
+          ),
+        }
+      : null;
   } catch (error) {
     if (isRecoverableUserSettingsStorageError(error)) {
       return null;
