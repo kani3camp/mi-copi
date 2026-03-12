@@ -11,11 +11,10 @@ import {
 } from "../../features/training/model/format";
 import { getIntervalLabel } from "../../features/training/model/interval-notation";
 import { getTrainingStatsForCurrentUser } from "../../features/training/server/getTrainingStats";
+import { ButtonLink, ListLinkCard } from "../ui/navigation-link";
 import {
   AppShell,
-  ButtonLink,
   List,
-  ListLinkCard,
   MetricCard,
   MetricGrid,
   Notice,
@@ -38,7 +37,11 @@ export default async function StatsPage() {
         title="統計"
         eyebrow="Progress View"
         subtitle="保存済みの回答とセッションを、全体・直近・日次・モード別の切り口で見渡せます。"
-        actions={<ButtonLink href="/">ホームへ戻る</ButtonLink>}
+        actions={
+          <ButtonLink href="/" pendingLabel="ホームを開いています...">
+            ホームへ戻る
+          </ButtonLink>
+        }
       />
 
       {stats.isAuthenticated ? (
@@ -403,7 +406,10 @@ export default async function StatsPage() {
               <List>
                 {stats.recentSessions.map((session) => (
                   <li key={session.id}>
-                    <ListLinkCard href={`/sessions/${session.id}`}>
+                    <ListLinkCard
+                      href={`/sessions/${session.id}`}
+                      pendingLabel="セッション詳細を開いています..."
+                    >
                       <strong>{formatSecondaryModeLabel(session.mode)}</strong>
                       <span className="ui-muted">
                         スコア {formatScoreLabel(session.sessionScore)} / 問題数{" "}

@@ -8,6 +8,7 @@ export function buttonClassName(
   variant: ButtonVariant = "secondary",
   options?: {
     block?: boolean;
+    pending?: boolean;
     className?: string;
   },
 ): string {
@@ -15,6 +16,7 @@ export function buttonClassName(
     "ui-button",
     `ui-button--${variant}`,
     options?.block && "ui-button--block",
+    options?.pending && "ui-button--pending",
     options?.className,
   );
 }

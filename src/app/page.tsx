@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import {
   formatAccuracyLabel,
   formatAvgErrorLabel,
@@ -10,14 +8,13 @@ import {
 } from "../features/training/model/format";
 import { getHomeTrainingSummaryForCurrentUser } from "../features/training/server/getHomeTrainingSummary";
 import { HomeSignOutButton } from "./home-sign-out-button";
+import { ButtonLink, ListLinkCard } from "./ui/navigation-link";
 import {
   AppShell,
-  ButtonLink,
   Chip,
   KeyValueCard,
   KeyValueGrid,
   List,
-  ListLinkCard,
   MetricCard,
   MetricGrid,
   PageHero,
@@ -36,8 +33,13 @@ export default async function HomePage() {
         subtitle="基準音ありの相対音感トレーニングを、スマホで短く反復できるホームです。次の練習開始と、保存済みの成長確認をここから行えます。"
         actions={
           <>
-            <ButtonLink href="/settings">設定</ButtonLink>
-            <ButtonLink href="/login">
+            <ButtonLink href="/settings" pendingLabel="設定を開いています...">
+              設定
+            </ButtonLink>
+            <ButtonLink
+              href="/login"
+              pendingLabel="ログイン画面を開いています..."
+            >
               {summary.isAuthenticated ? "アカウント" : "ログイン"}
             </ButtonLink>
             {summary.isAuthenticated ? <HomeSignOutButton /> : null}
@@ -50,12 +52,14 @@ export default async function HomePage() {
             eyebrow="距離モード"
             title="音程名で答える"
             description="音程名で答える反復練習。誤差と回答速度をすぐ確認できます。"
+            pendingLabel="距離モードを開いています..."
           />
           <TrainModeCard
             href="/train/keyboard"
             eyebrow="鍵盤モード"
             title="鍵盤で答える"
             description="鍵盤で問題音を答える練習。黒鍵込みで耳コピ寄りに試せます。"
+            pendingLabel="鍵盤モードを開いています..."
           />
         </div>
       </PageHero>
@@ -132,13 +136,20 @@ export default async function HomePage() {
             <SectionHeader
               title="最近の保存済みセッション"
               description="前回の仕上がりを見てから次の練習に入れます。"
-              actions={<ButtonLink href="/stats">統計を見る</ButtonLink>}
+              actions={
+                <ButtonLink href="/stats" pendingLabel="統計を開いています...">
+                  統計を見る
+                </ButtonLink>
+              }
             />
             {summary.recentSessions.length > 0 ? (
               <List>
                 {summary.recentSessions.map((session) => (
                   <li key={session.id}>
-                    <ListLinkCard href={`/sessions/${session.id}`}>
+                    <ListLinkCard
+                      href={`/sessions/${session.id}`}
+                      pendingLabel="セッション詳細を開いています..."
+                    >
                       <Chip tone={getTrainingModeChipTone(session.mode)}>
                         {formatTrainingModeLabel(session.mode)}
                       </Chip>
@@ -180,10 +191,16 @@ export default async function HomePage() {
             />
           </KeyValueGrid>
           <div className="ui-nav-row">
-            <ButtonLink href="/login" variant="primary">
+            <ButtonLink
+              href="/login"
+              variant="primary"
+              pendingLabel="ログイン画面を開いています..."
+            >
               ログインして履歴を残す
             </ButtonLink>
-            <ButtonLink href="/settings">設定を見る</ButtonLink>
+            <ButtonLink href="/settings" pendingLabel="設定を開いています...">
+              設定を見る
+            </ButtonLink>
           </div>
         </Surface>
       )}
@@ -200,12 +217,13 @@ function TrainModeCard(props: {
   eyebrow: string;
   title: string;
   description: string;
+  pendingLabel: string;
 }) {
   return (
-    <Link href={props.href} className="ui-list-link">
+    <ListLinkCard href={props.href} pendingLabel={props.pendingLabel}>
       <span className="ui-hero__eyebrow">{props.eyebrow}</span>
       <strong>{props.title}</strong>
       <span className="ui-muted">{props.description}</span>
-    </Link>
+    </ListLinkCard>
   );
 }

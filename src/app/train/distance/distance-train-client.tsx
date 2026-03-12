@@ -48,10 +48,10 @@ import type {
   SessionFinishReason,
 } from "../../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
+import { ButtonLink } from "../../ui/navigation-link";
 import {
   AppShell,
   Button,
-  ButtonLink,
   Field,
   FieldGrid,
   KeyValueCard,
@@ -572,9 +572,16 @@ export function DistanceTrainClient({
         phaseLabel={formatPhaseLabel(phase)}
         actions={
           <>
-            <ButtonLink href="/">ホームへ戻る</ButtonLink>
+            <ButtonLink href="/" pendingLabel="ホームを開いています...">
+              ホームへ戻る
+            </ButtonLink>
             {!isAuthenticated ? (
-              <ButtonLink href="/login">ログイン</ButtonLink>
+              <ButtonLink
+                href="/login"
+                pendingLabel="ログイン画面を開いています..."
+              >
+                ログイン
+              </ButtonLink>
             ) : null}
           </>
         }

@@ -1,7 +1,7 @@
 import { getCurrentUserOrNull } from "../../lib/auth/server";
+import { ButtonLink } from "../ui/navigation-link";
 import {
   AppShell,
-  ButtonLink,
   KeyValueCard,
   KeyValueGrid,
   PageHero,
@@ -21,9 +21,21 @@ export default async function LoginPage() {
         subtitle="Google ログインまたはゲスト開始の入口です。相対音感トレーニングをすぐ始めつつ、必要なときだけ保存機能に切り替えられます。"
         actions={
           <>
-            <ButtonLink href="/">ホームへ戻る</ButtonLink>
-            <ButtonLink href="/train/distance">距離モードへ</ButtonLink>
-            <ButtonLink href="/train/keyboard">鍵盤モードへ</ButtonLink>
+            <ButtonLink href="/" pendingLabel="ホームを開いています...">
+              ホームへ戻る
+            </ButtonLink>
+            <ButtonLink
+              href="/train/distance"
+              pendingLabel="距離モードを開いています..."
+            >
+              距離モードへ
+            </ButtonLink>
+            <ButtonLink
+              href="/train/keyboard"
+              pendingLabel="鍵盤モードを開いています..."
+            >
+              鍵盤モードへ
+            </ButtonLink>
           </>
         }
       />

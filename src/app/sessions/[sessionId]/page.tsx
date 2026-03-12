@@ -15,9 +15,9 @@ import {
   getIntervalLabel,
 } from "../../../features/training/model/interval-notation";
 import { getTrainingSessionDetailForCurrentUser } from "../../../features/training/server/getTrainingSessionDetail";
+import { ButtonLink } from "../../ui/navigation-link";
 import {
   AppShell,
-  ButtonLink,
   KeyValueCard,
   KeyValueGrid,
   List,
@@ -55,8 +55,12 @@ export default async function TrainingSessionDetailPage({
         subtitle="保存済みセッションの概要、設定、回答結果を確認できます。"
         actions={
           <>
-            <ButtonLink href="/">ホームへ戻る</ButtonLink>
-            <ButtonLink href="/stats">統計を見る</ButtonLink>
+            <ButtonLink href="/" pendingLabel="ホームを開いています...">
+              ホームへ戻る
+            </ButtonLink>
+            <ButtonLink href="/stats" pendingLabel="統計を開いています...">
+              統計を見る
+            </ButtonLink>
           </>
         }
       />

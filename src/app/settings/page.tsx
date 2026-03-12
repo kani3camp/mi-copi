@@ -8,10 +8,9 @@ import { formatDirectionModeLabel } from "../../features/training/model/interval
 import type { TrainingConfigSnapshot } from "../../features/training/model/types";
 import { getSettingsPageDataForCurrentUser } from "../../features/training/server/getSettingsPageData";
 import { resetLastUsedTrainingConfigForCurrentUser } from "../../features/training/server/lastUsedTrainingConfig";
+import { ButtonLink } from "../ui/navigation-link";
 import {
   AppShell,
-  Button,
-  ButtonLink,
   KeyValueCard,
   KeyValueGrid,
   Notice,
@@ -20,6 +19,7 @@ import {
   Surface,
 } from "../ui/primitives";
 import { GlobalSettingsSection } from "./global-settings-section";
+import { ResetConfigSubmitButton } from "./reset-config-submit-button";
 
 interface SettingsPageProps {
   searchParams?: Promise<{
@@ -72,9 +72,21 @@ export default async function SettingsPage({
         subtitle="全体設定の変更と、保存済みの前回設定の確認やリセットを行えます。"
         actions={
           <>
-            <ButtonLink href="/">ホームへ戻る</ButtonLink>
-            <ButtonLink href="/train/distance">距離モードへ</ButtonLink>
-            <ButtonLink href="/train/keyboard">鍵盤モードへ</ButtonLink>
+            <ButtonLink href="/" pendingLabel="ホームを開いています...">
+              ホームへ戻る
+            </ButtonLink>
+            <ButtonLink
+              href="/train/distance"
+              pendingLabel="距離モードを開いています..."
+            >
+              距離モードへ
+            </ButtonLink>
+            <ButtonLink
+              href="/train/keyboard"
+              pendingLabel="鍵盤モードを開いています..."
+            >
+              鍵盤モードへ
+            </ButtonLink>
           </>
         }
       />
@@ -125,9 +137,9 @@ export default async function SettingsPage({
               <>
                 <ConfigSnapshotView config={data.lastDistanceConfig} />
                 <form action={resetDistanceAction}>
-                  <Button type="submit" variant="ghost">
+                  <ResetConfigSubmitButton>
                     距離モードを初期値に戻す
-                  </Button>
+                  </ResetConfigSubmitButton>
                 </form>
               </>
             ) : (
@@ -136,9 +148,9 @@ export default async function SettingsPage({
                   距離モードの保存済み設定はまだありません。
                 </p>
                 <form action={resetDistanceAction}>
-                  <Button type="submit" variant="ghost">
+                  <ResetConfigSubmitButton>
                     距離モードを初期値に戻す
-                  </Button>
+                  </ResetConfigSubmitButton>
                 </form>
               </>
             )}
@@ -150,9 +162,9 @@ export default async function SettingsPage({
               <>
                 <ConfigSnapshotView config={data.lastKeyboardConfig} />
                 <form action={resetKeyboardAction}>
-                  <Button type="submit" variant="ghost">
+                  <ResetConfigSubmitButton>
                     鍵盤モードを初期値に戻す
-                  </Button>
+                  </ResetConfigSubmitButton>
                 </form>
               </>
             ) : (
@@ -161,9 +173,9 @@ export default async function SettingsPage({
                   鍵盤モードの保存済み設定はまだありません。
                 </p>
                 <form action={resetKeyboardAction}>
-                  <Button type="submit" variant="ghost">
+                  <ResetConfigSubmitButton>
                     鍵盤モードを初期値に戻す
-                  </Button>
+                  </ResetConfigSubmitButton>
                 </form>
               </>
             )}

@@ -3,7 +3,8 @@
 import { useState } from "react";
 
 import { getAuthClient } from "../../lib/auth/client";
-import { Button, ButtonLink, Notice } from "../ui/primitives";
+import { ButtonLink } from "../ui/navigation-link";
+import { Button, Notice } from "../ui/primitives";
 
 interface LoginControlsProps {
   isAuthenticated: boolean;
@@ -42,7 +43,9 @@ export function LoginControls({ isAuthenticated }: LoginControlsProps) {
           すでにサインイン済みです。ホームからそのまま学習を始められます。
         </Notice>
         <div className="ui-nav-row">
-          <ButtonLink href="/">ホームへ戻る</ButtonLink>
+          <ButtonLink href="/" pendingLabel="ホームを開いています...">
+            ホームへ戻る
+          </ButtonLink>
         </div>
       </div>
     );
@@ -62,6 +65,7 @@ export function LoginControls({ isAuthenticated }: LoginControlsProps) {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={isPending}
+          pending={isPending}
           variant="primary"
           block
         >
@@ -77,7 +81,7 @@ export function LoginControls({ isAuthenticated }: LoginControlsProps) {
             保存なしで今すぐ始める軽い反復練習向けです。
           </p>
         </div>
-        <ButtonLink href="/" block>
+        <ButtonLink href="/" block pendingLabel="ホームを開いています...">
           ゲストで始める
         </ButtonLink>
       </div>

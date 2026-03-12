@@ -1,6 +1,7 @@
 import type { SessionFinishReason } from "../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
-import { Button, ButtonLink, Notice } from "../ui/primitives";
+import { ButtonLink } from "../ui/navigation-link";
+import { Button, Notice } from "../ui/primitives";
 
 export type TrainingPlaybackKind = "question" | "base" | "target";
 
@@ -54,7 +55,12 @@ export function TrainingResultPersistenceSection(props: {
           ログインすると、次回以降のセッションから結果保存と統計を使えます。この結果は後から保存されません。
         </p>
         <div className="ui-nav-row">
-          <ButtonLink href="/login">今後の保存用にログイン</ButtonLink>
+          <ButtonLink
+            href="/login"
+            pendingLabel="ログイン画面を開いています..."
+          >
+            今後の保存用にログイン
+          </ButtonLink>
         </div>
       </div>
     );
@@ -84,10 +90,15 @@ export function TrainingResultPersistenceSection(props: {
               <code>{props.saveResult.sessionId}</code>
             </div>
             <div className="ui-nav-row">
-              <ButtonLink href={`/sessions/${props.saveResult.sessionId}`}>
+              <ButtonLink
+                href={`/sessions/${props.saveResult.sessionId}`}
+                pendingLabel="セッション詳細を開いています..."
+              >
                 セッション詳細を見る
               </ButtonLink>
-              <ButtonLink href="/stats">統計を見る</ButtonLink>
+              <ButtonLink href="/stats" pendingLabel="統計を開いています...">
+                統計を見る
+              </ButtonLink>
             </div>
           </div>
         ) : props.saveResult ? (
@@ -113,6 +124,7 @@ export function TrainingResultPersistenceSection(props: {
           <Button
             type="button"
             disabled={props.isSavePending}
+            pending={props.isSavePending}
             onClick={props.onRetrySave}
             variant="primary"
           >

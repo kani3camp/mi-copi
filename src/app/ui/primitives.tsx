@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type {
   ComponentPropsWithoutRef,
   PropsWithChildren,
@@ -6,7 +5,12 @@ import type {
 } from "react";
 
 import { cn } from "./cn";
-import { buttonClassName, chipClassName, noticeClassName } from "./styles";
+import {
+  type ButtonVariant,
+  buttonClassName,
+  chipClassName,
+  noticeClassName,
+} from "./styles";
 
 export function AppShell(
   props: PropsWithChildren<{
@@ -97,34 +101,31 @@ export function SectionHeader(props: {
   );
 }
 
-export function ButtonLink(
-  props: ComponentPropsWithoutRef<typeof Link> & {
-    variant?: Parameters<typeof buttonClassName>[0];
-    block?: boolean;
-  },
-) {
-  const { className, variant = "secondary", block, ...rest } = props;
-
-  return (
-    <Link
-      {...rest}
-      className={buttonClassName(variant, { block, className })}
-    />
-  );
-}
-
 export function Button(
   props: ComponentPropsWithoutRef<"button"> & {
-    variant?: Parameters<typeof buttonClassName>[0];
+    variant?: ButtonVariant;
     block?: boolean;
+    pending?: boolean;
   },
 ) {
-  const { className, variant = "secondary", block, ...rest } = props;
+  const {
+    className,
+    variant = "secondary",
+    block,
+    pending = false,
+    ...rest
+  } = props;
 
   return (
     <button
       {...rest}
-      className={buttonClassName(variant, { block, className })}
+      className={buttonClassName(variant, {
+        block,
+        pending,
+        className,
+      })}
+      data-pending={pending ? "true" : undefined}
+      aria-busy={pending || undefined}
     />
   );
 }
@@ -255,12 +256,6 @@ export function List(
   const Tag = props.as ?? "ul";
 
   return <Tag className={cn("ui-list", props.className)}>{props.children}</Tag>;
-}
-
-export function ListLinkCard(props: ComponentPropsWithoutRef<typeof Link>) {
-  const { className, ...rest } = props;
-
-  return <Link {...rest} className={cn("ui-list-link", className)} />;
 }
 
 export function Divider(props: { className?: string }) {

@@ -46,10 +46,10 @@ import type {
   SessionFinishReason,
 } from "../../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
+import { ButtonLink } from "../../ui/navigation-link";
 import {
   AppShell,
   Button,
-  ButtonLink,
   Field,
   FieldGrid,
   KeyValueCard,
@@ -564,8 +564,15 @@ export function KeyboardTrainClient({
         phaseLabel={formatPhaseLabel(phase)}
         actions={
           <>
-            <ButtonLink href="/">ホームへ戻る</ButtonLink>
-            <ButtonLink href="/train/distance">距離モードへ</ButtonLink>
+            <ButtonLink href="/" pendingLabel="ホームを開いています...">
+              ホームへ戻る
+            </ButtonLink>
+            <ButtonLink
+              href="/train/distance"
+              pendingLabel="距離モードを開いています..."
+            >
+              距離モードへ
+            </ButtonLink>
           </>
         }
       >
