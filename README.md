@@ -49,9 +49,6 @@
   - 保存済みデータの統計表示。ゲスト時は保存案内のみ
 - `/sessions/[sessionId]`
   - 保存済みセッション詳細
-- `/auth-test`
-  - Better Auth と保存疎通の開発者向け確認ページ
-
 route ごとの詳細な実装見取り図は `docs/implementation/route-status.md` を参照してください。
 
 補足:
