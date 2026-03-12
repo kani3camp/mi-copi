@@ -12,6 +12,7 @@ import {
   buildTrainingOverview,
 } from "../model/stats-aggregation.ts";
 import type { QuestionDirection, TrainingMode } from "../model/types.ts";
+import type { SelectOnlyDb } from "./query-types.ts";
 
 interface RecentStatsSession {
   id: string;
@@ -107,10 +108,37 @@ export interface TrainingStats {
 }
 
 export interface TrainingStatsDependencies {
-  db?: {
-    select: (...args: unknown[]) => any;
-  };
+  db?: SelectOnlyDb;
   getCurrentUser?: () => Promise<CurrentUser | null>;
+}
+
+type AppSchemaModule = typeof import("../../../lib/db/schema/app.ts");
+
+type StatsTables = {
+  questionResults: AppSchemaModule["questionResults"];
+  trainingSessions: AppSchemaModule["trainingSessions"];
+};
+
+interface StatsSessionRow {
+  id: string;
+  mode: TrainingMode;
+  answeredQuestionCount: number;
+  sessionScore: number | string;
+  accuracyRate: number | string;
+  avgErrorAbs: number | string;
+  avgResponseTimeMs: number | string;
+  endedAt: Date;
+}
+
+interface StatsQuestionResultRow {
+  mode: TrainingMode;
+  isCorrect: boolean;
+  targetIntervalSemitones: number | string;
+  direction: QuestionDirection;
+  errorSemitones: number | string;
+  responseTimeMs: number;
+  score: number | string;
+  answeredAt: Date;
 }
 
 export async function getTrainingStatsForCurrentUser(
@@ -202,11 +230,11 @@ export async function getTrainingStatsForCurrentUser(
     };
   }
 
-  const db = deps.db ?? (await getDb());
-  const { questionResults, trainingSessions }: any = deps.db
+  const db = (deps.db ?? (await getDb())) as SelectOnlyDb;
+  const { questionResults, trainingSessions } = deps.db
     ? getPlaceholderStatsTables()
     : await getStatsTables();
-  const allSessions = await db
+  const allSessions = (await db
     .select({
       id: trainingSessions.id,
       mode: trainingSessions.mode,
@@ -219,8 +247,8 @@ export async function getTrainingStatsForCurrentUser(
     })
     .from(trainingSessions)
     .where(eq(trainingSessions.userId, currentUser.id))
-    .orderBy(desc(trainingSessions.endedAt));
-  const allQuestionResults = await db
+    .orderBy(desc(trainingSessions.endedAt))) as StatsSessionRow[];
+  const allQuestionResults = (await db
     .select({
       mode: questionResults.mode,
       isCorrect: questionResults.isCorrect,
@@ -233,24 +261,24 @@ export async function getTrainingStatsForCurrentUser(
     })
     .from(questionResults)
     .where(eq(questionResults.userId, currentUser.id))
-    .orderBy(desc(questionResults.answeredAt));
+    .orderBy(desc(questionResults.answeredAt))) as StatsQuestionResultRow[];
 
-  const normalizedSessions = allSessions.map((session: any) => ({
+  const normalizedSessions = allSessions.map((session) => ({
     mode: session.mode,
     answeredQuestionCount: session.answeredQuestionCount,
-    sessionScore: session.sessionScore,
-    avgErrorAbs: session.avgErrorAbs,
-    avgResponseTimeMs: session.avgResponseTimeMs,
+    sessionScore: Number(session.sessionScore),
+    avgErrorAbs: Number(session.avgErrorAbs),
+    avgResponseTimeMs: Number(session.avgResponseTimeMs),
     endedAt: session.endedAt.toISOString(),
   }));
-  const normalizedQuestionResults = allQuestionResults.map((result: any) => ({
+  const normalizedQuestionResults = allQuestionResults.map((result) => ({
     mode: result.mode,
     isCorrect: result.isCorrect,
-    targetIntervalSemitones: result.targetIntervalSemitones,
+    targetIntervalSemitones: Number(result.targetIntervalSemitones),
     direction: result.direction,
-    errorSemitones: result.errorSemitones,
+    errorSemitones: Number(result.errorSemitones),
     responseTimeMs: result.responseTimeMs,
-    score: result.score,
+    score: Number(result.score),
     answeredAt: result.answeredAt.toISOString(),
   }));
   const overview = buildTrainingOverview(
@@ -277,7 +305,7 @@ export async function getTrainingStatsForCurrentUser(
     answerBias: buildAnswerBiasSummary(normalizedQuestionResults),
     scoreTrends: buildScoreTrendsByMode(normalizedQuestionResults),
     dailyTrends: buildDailyTrendSummaries(normalizedQuestionResults),
-    recentSessions: allSessions.slice(0, 10).map((session: any) => ({
+    recentSessions: allSessions.slice(0, 10).map((session) => ({
       id: session.id,
       mode: session.mode,
       answeredQuestionCount: session.answeredQuestionCount,
@@ -310,7 +338,7 @@ async function getStatsTables() {
   return { questionResults, trainingSessions };
 }
 
-function getPlaceholderStatsTables() {
+function getPlaceholderStatsTables(): StatsTables {
   return {
     questionResults: {
       userId: "question_results.user_id",
@@ -334,5 +362,5 @@ function getPlaceholderStatsTables() {
       avgResponseTimeMs: "training_sessions.avg_response_time_ms",
       endedAt: "training_sessions.ended_at",
     },
-  };
+  } as unknown as StatsTables;
 }

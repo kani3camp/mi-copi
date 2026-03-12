@@ -15,6 +15,7 @@ import type {
   KeyboardTrainingConfig,
   TrainingMode,
 } from "../model/types.ts";
+import type { InsertDb, SelectOnlyDb } from "./query-types.ts";
 
 export interface LastUsedTrainingConfigs {
   isAuthenticated: boolean;
@@ -24,12 +25,30 @@ export interface LastUsedTrainingConfigs {
 }
 
 export interface LastUsedTrainingConfigDependencies {
-  db?: {
-    select: (...args: unknown[]) => any;
-    insert: (...args: unknown[]) => any;
-  };
+  db?: SelectOnlyDb & InsertDb;
   getCurrentUser?: () => Promise<CurrentUser | null>;
   now?: () => Date;
+}
+
+type AppSchemaModule = typeof import("../../../lib/db/schema/app.ts");
+
+type UserSettingsTables = {
+  userSettings: AppSchemaModule["userSettings"];
+};
+
+interface UserSettingsReadRow {
+  lastDistanceConfig: unknown;
+  lastKeyboardConfig: unknown;
+  updatedAt: Date;
+}
+
+interface UserSettingsUpsertExistingRow {
+  masterVolume: number;
+  soundEffectsEnabled: boolean;
+  intervalNotationStyle: "ja" | "abbr" | "mixed";
+  keyboardNoteLabelsVisible: boolean;
+  lastDistanceConfig: unknown;
+  lastKeyboardConfig: unknown;
 }
 
 export async function getLastUsedTrainingConfigsForCurrentUser(
@@ -46,8 +65,8 @@ export async function getLastUsedTrainingConfigsForCurrentUser(
     };
   }
 
-  const db = deps.db ?? (await getDb());
-  const { userSettings }: any = deps.db
+  const db = (deps.db ?? (await getDb())) as SelectOnlyDb;
+  const { userSettings } = deps.db
     ? getPlaceholderUserSettingsTable()
     : await getUserSettingsTable();
   let settings: {
@@ -57,7 +76,7 @@ export async function getLastUsedTrainingConfigsForCurrentUser(
   } | null = null;
 
   try {
-    const [existing] = await db
+    const [existing] = (await db
       .select({
         lastDistanceConfig: userSettings.lastDistanceConfig,
         lastKeyboardConfig: userSettings.lastKeyboardConfig,
@@ -65,7 +84,7 @@ export async function getLastUsedTrainingConfigsForCurrentUser(
       })
       .from(userSettings)
       .where(eq(userSettings.userId, currentUser.id))
-      .limit(1);
+      .limit(1)) as UserSettingsReadRow[];
 
     settings = existing
       ? {
@@ -154,11 +173,11 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
     return;
   }
 
-  const db = deps.db ?? (await getDb());
-  const { userSettings }: any = deps.db
+  const db = (deps.db ?? (await getDb())) as SelectOnlyDb & InsertDb;
+  const { userSettings } = deps.db
     ? getPlaceholderUserSettingsTable()
     : await getUserSettingsTable();
-  const [existing] = await db
+  const [existing] = (await db
     .select({
       masterVolume: userSettings.masterVolume,
       soundEffectsEnabled: userSettings.soundEffectsEnabled,
@@ -169,7 +188,7 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
     })
     .from(userSettings)
     .where(eq(userSettings.userId, currentUser.id))
-    .limit(1);
+    .limit(1)) as UserSettingsUpsertExistingRow[];
 
   const defaultGlobalSettings = createDefaultGlobalUserSettings();
   const now = deps.now?.() ?? new Date();
@@ -311,7 +330,7 @@ async function getUserSettingsTable() {
   return { userSettings };
 }
 
-function getPlaceholderUserSettingsTable() {
+function getPlaceholderUserSettingsTable(): UserSettingsTables {
   return {
     userSettings: {
       userId: "user_settings.user_id",
@@ -323,5 +342,5 @@ function getPlaceholderUserSettingsTable() {
       lastKeyboardConfig: "user_settings.last_keyboard_config",
       updatedAt: "user_settings.updated_at",
     },
-  };
+  } as unknown as UserSettingsTables;
 }

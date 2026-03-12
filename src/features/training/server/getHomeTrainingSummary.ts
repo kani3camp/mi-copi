@@ -3,6 +3,7 @@ import { count, desc, eq } from "drizzle-orm";
 import type { CurrentUser } from "../../../lib/auth/server.ts";
 import { summarizeHomeHeadline } from "../model/stats-aggregation.ts";
 import type { TrainingMode } from "../model/types.ts";
+import type { SelectOnlyDb } from "./query-types.ts";
 
 export interface RecentTrainingSessionSummary {
   id: string;
@@ -26,10 +27,30 @@ export interface HomeTrainingSummary {
 }
 
 export interface HomeTrainingSummaryDependencies {
-  db?: {
-    select: (...args: unknown[]) => any;
-  };
+  db?: SelectOnlyDb;
   getCurrentUser?: () => Promise<CurrentUser | null>;
+}
+
+type AppSchemaModule = typeof import("../../../lib/db/schema/app.ts");
+
+type HomeTables = {
+  questionResults: AppSchemaModule["questionResults"];
+  trainingSessions: AppSchemaModule["trainingSessions"];
+};
+
+interface CountRow {
+  count: number;
+}
+
+interface RecentSessionRow {
+  id: string;
+  mode: TrainingMode;
+  answeredQuestionCount: number;
+  sessionScore: number | string;
+  accuracyRate: number | string;
+  avgErrorAbs: number | string;
+  avgResponseTimeMs: number | string;
+  endedAt: Date;
 }
 
 export async function getHomeTrainingSummaryForCurrentUser(
@@ -51,19 +72,19 @@ export async function getHomeTrainingSummaryForCurrentUser(
     };
   }
 
-  const db = deps.db ?? (await getDb());
-  const { questionResults, trainingSessions }: any = deps.db
+  const db = (deps.db ?? (await getDb())) as SelectOnlyDb;
+  const { questionResults, trainingSessions } = deps.db
     ? getPlaceholderHomeTables()
     : await getHomeTables();
-  const [sessionCountRow] = await db
+  const [sessionCountRow] = (await db
     .select({ count: count() })
     .from(trainingSessions)
-    .where(eq(trainingSessions.userId, currentUser.id));
-  const [questionResultCountRow] = await db
+    .where(eq(trainingSessions.userId, currentUser.id))) as CountRow[];
+  const [questionResultCountRow] = (await db
     .select({ count: count() })
     .from(questionResults)
-    .where(eq(questionResults.userId, currentUser.id));
-  const recentSessions = await db
+    .where(eq(questionResults.userId, currentUser.id))) as CountRow[];
+  const recentSessions = (await db
     .select({
       id: trainingSessions.id,
       mode: trainingSessions.mode,
@@ -77,28 +98,28 @@ export async function getHomeTrainingSummaryForCurrentUser(
     .from(trainingSessions)
     .where(eq(trainingSessions.userId, currentUser.id))
     .orderBy(desc(trainingSessions.endedAt))
-    .limit(5);
+    .limit(5)) as RecentSessionRow[];
   const headlineSummary = summarizeHomeHeadline(
-    recentSessions.map((session: any) => ({
+    recentSessions.map((session) => ({
       mode: session.mode,
       answeredQuestionCount: session.answeredQuestionCount,
-      sessionScore: session.sessionScore,
-      avgErrorAbs: session.avgErrorAbs,
-      avgResponseTimeMs: session.avgResponseTimeMs,
+      sessionScore: Number(session.sessionScore),
+      avgErrorAbs: Number(session.avgErrorAbs),
+      avgResponseTimeMs: Number(session.avgResponseTimeMs),
       endedAt: session.endedAt.toISOString(),
     })),
   );
 
   return {
     isAuthenticated: true,
-    totalSessions: sessionCountRow?.count ?? 0,
-    totalSavedQuestionResults: questionResultCountRow?.count ?? 0,
+    totalSessions: Number(sessionCountRow?.count ?? 0),
+    totalSavedQuestionResults: Number(questionResultCountRow?.count ?? 0),
     lastTrainingTime: headlineSummary.lastTrainingTime,
     lastUsedMode: headlineSummary.lastUsedMode,
     latestSessionScore: headlineSummary.latestSessionScore,
     recentAverageError: headlineSummary.recentAverageError,
     recentAverageResponseTimeMs: headlineSummary.recentAverageResponseTimeMs,
-    recentSessions: recentSessions.map((session: any) => ({
+    recentSessions: recentSessions.map((session) => ({
       id: session.id,
       mode: session.mode,
       answeredQuestionCount: session.answeredQuestionCount,
@@ -131,7 +152,7 @@ async function getHomeTables() {
   return { questionResults, trainingSessions };
 }
 
-function getPlaceholderHomeTables() {
+function getPlaceholderHomeTables(): HomeTables {
   return {
     questionResults: {
       userId: "question_results.user_id",
@@ -147,5 +168,5 @@ function getPlaceholderHomeTables() {
       avgResponseTimeMs: "training_sessions.avg_response_time_ms",
       endedAt: "training_sessions.ended_at",
     },
-  };
+  } as unknown as HomeTables;
 }
