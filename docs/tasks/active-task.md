@@ -2,15 +2,17 @@
 
 ## Goal
 
-Align the canonical docs so Codex can start the next implementation bundle without source-of-truth ambiguity.
+Reduce docs drift around the shipped app so the next Codex session can identify current routes, persistence behavior, and repo entrypoints without rereading the whole codebase first.
 
 ## Why Now
 
-The next recommended implementation step is the Schema / Types / Contracts bundle.
-Before that starts, the repo needs one consistent doc set for UI rules, scoring, route state, save payloads, and terminology.
+The repo already has working home / settings / stats / training flows, but the top-level entry docs still read like an earlier implementation phase.
+That makes it easy to mistake old PR sequencing memos for the current backlog or miss which routes are already implemented.
 
 ## References
 
+- `README.md`
+- `docs/README.md`
 - `docs/product/current-constraints.md`
 - `docs/product/decision-log.md`
 - `docs/product/requirements.md`
@@ -19,52 +21,54 @@ Before that starts, the repo needs one consistent doc set for UI rules, scoring,
 - `docs/product/ui-system.md`
 - `docs/delivery/acceptance-criteria.md`
 - `docs/delivery/pr-plan.md`
-- `docs/implementation/api-contracts.md`
-- `docs/implementation/db-schema.md`
-- `docs/implementation/training-flow.md`
-- `docs/implementation/scoring.md`
-- `docs/implementation/ts-types.md`
+- `docs/implementation/route-status.md`
+- `src/app/page.tsx`
+- `src/app/settings/page.tsx`
+- `src/app/stats/page.tsx`
+- `src/app/train/distance/page.tsx`
+- `src/app/train/keyboard/page.tsx`
+- `src/app/sessions/[sessionId]/page.tsx`
+- `src/features/training/server/lastUsedTrainingConfig.ts`
+- `src/features/settings/server/global-user-settings.ts`
 
 ## In Scope
 
-- remove stale terminology from canonical docs
-- make `ui-system` part of the source-of-truth path
-- align scoring, TS contract types, and related implementation docs
-- leave a clear docs entrypoint for the next implementation bundle
+- refresh repo entry docs so a newcomer can find the right source of truth quickly
+- document the current route-level implementation status in one place
+- align README, docs overview, and active-task wording around product truth vs implementation bridge vs delivery memo
+- add only implementation-backed clarifications to constraints when they prevent avoidable confusion
 
 ## Out Of Scope
 
 - application code changes
-- migration work
 - dependency changes
 - env var changes
-- score-meaning changes beyond clarifying the existing v1 formula
+- auth / schema / migration meaning changes
+- rewriting every implementation bridge doc in one pass
+- deciding new product scope from undocumented assumptions
 
 ## Likely Touched Files
 
-- `AGENTS.md`
+- `README.md`
 - `docs/README.md`
-- `docs/product/ui-system.md`
-- `docs/product/basic-design.md`
-- `docs/implementation/api-contracts.md`
-- `docs/implementation/training-flow.md`
-- `docs/implementation/scoring.md`
-- `docs/implementation/ts-types.md`
+- `docs/product/current-constraints.md`
+- `docs/implementation/route-status.md`
+- `docs/delivery/pr-plan.md`
 - `docs/tasks/active-task.md`
 
 ## Verification
 
-- read-through consistency check across product and implementation docs
-- search for stale cent-based, minute-based, or retired enum terminology
-- run repo-level doc-safe verification scripts as appropriate
+- read-through consistency check across README, docs overview, active task, and referenced product docs
+- cross-check route / persistence statements against the current implementation
+- run `git diff --check`
 
 ## Human Approval Needed?
 
-- No, unless canonical docs reveal a contradiction that cannot be resolved safely from the repo source of truth.
+- No, unless the docs reveal a product-level contradiction that cannot be resolved from code and existing canonical docs.
 
 ## Completion Definition
 
-- canonical docs agree on UI policy, scoring, route state, and save payload terminology
-- `docs/product/ui-system.md` is reachable from the standard docs entrypoints
-- `docs/implementation/scoring.md` and `docs/implementation/ts-types.md` match the confirmed MVP spec
-- Codex can move directly into the next implementation bundle with no extra spec cleanup step
+- `README.md` works as a practical repo entrypoint
+- `docs/README.md` clearly distinguishes product truth, implementation bridge, and delivery aids
+- `docs/implementation/route-status.md` gives a reliable route-level snapshot of the shipped app
+- `docs/tasks/active-task.md` no longer points at already-completed early-stage implementation bundles

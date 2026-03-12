@@ -1,6 +1,6 @@
 # current-constraints
 
-最終更新: 2026-03-11
+最終更新: 2026-03-12
 
 ## Product / UX
 - MVP は Web アプリとして実装する
@@ -25,6 +25,8 @@
 - セッション結果は終了時にまとめて保存する
 - ゲスト利用では結果保存しない
 - ゲスト結果の後保存・ログイン後バックフィルは行わない
+- ゲストの全体設定はブラウザローカル保持までとし、クラウド保存しない
+- 認証ユーザーの last-used training config は `distance` / `keyboard` を分けて保持する
 - スコアは内部計算・DB保存ともに小数で扱い、小数第3位まで保持する
 - 表示時のみ必要に応じて丸める
 
@@ -36,6 +38,7 @@
 - アプリ内部の保存・取得は Server Actions / Server Functions 寄りで構成する
 - 不要な REST API は増やさない
 - 過剰な分散を避け、モジュラーモノリスを基本とする
+- Settings 画面では mode ごとの last-used config を確認・初期値リセットできる
 
 ## AI Development Rules
 - Codex 主体で進める

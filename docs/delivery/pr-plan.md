@@ -1,5 +1,6 @@
 This file is the repository-level implementation sequence, not the current task file.
-Codex should derive the next concrete bundle at run time using Plan mode, while respecting this order and the current codebase state.
+Most milestones below are already represented in the current repo.
+Use `docs/tasks/active-task.md` and `docs/implementation/route-status.md` to choose the next bundle now, and treat this file as historical sequencing guidance rather than a live backlog.
 
 # PR Plan
 

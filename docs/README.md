@@ -1,6 +1,9 @@
 # Docs Overview
 
-`docs/` contains the repository source of truth.
+`docs/` contains the repository source of truth and implementation bridge.
+
+Start with `AGENTS.md` when you need repo execution rules, approval boundaries, or Codex operating policy.
+After that, use the canonical docs below for product truth.
 
 ## Canonical Order
 1. `docs/product/current-constraints.md`
@@ -25,10 +28,11 @@ UI の見た目・トークン・参照基準を判断するときは `docs/prod
 
 - `docs/implementation/*.md`
   - Implementation-level contracts and design details derived from the product docs.
+  - `docs/implementation/route-status.md` is the current implementation map for routes, persistence behavior, and page-level status.
 - `docs/product/ui-system.md`
   - Shared UI/UX criteria and initial design tokens for humans and Codex.
 - `docs/delivery/*.md`
-  - Delivery process notes, acceptance templates, and PR planning aids.
+  - Delivery process notes, acceptance templates, and PR planning aids. They help bundle work, but they are not product truth.
 - `docs/architecture/*.md`
   - Legacy compatibility pointers kept only so older links still resolve. Do not treat them as canonical.
 
