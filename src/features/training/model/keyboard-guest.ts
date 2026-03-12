@@ -3,8 +3,14 @@ import {
   validateIntervalRange,
   validateQuestionCount,
   validateTimeLimitSeconds,
-} from "./config";
-import { buildSessionSummaryFromResults } from "./summary";
+} from "./config.ts";
+import {
+  calculateQuestionScoreV1,
+  isCorrectByErrorSemitones,
+  roundTo3,
+  SCORE_FORMULA_VERSION_V1,
+} from "./scoring.ts";
+import { buildSessionSummaryFromResults } from "./summary.ts";
 import type {
   DirectionMode,
   KeyboardTrainingConfig,
@@ -154,15 +160,15 @@ export function evaluateKeyboardAnswer(params: {
     question: params.question,
     answeredNote: params.answeredNote,
     answeredDistanceSemitones,
-    isCorrect,
+    isCorrect: isCorrectByErrorSemitones(errorSemitones),
     errorSemitones,
     responseTimeMs: params.responseTimeMs,
-    score: calculateQuestionScore(
-      Math.abs(errorSemitones) * 100,
-      params.responseTimeMs,
-      params.question.distanceSemitones,
-    ),
-    scoreFormulaVersion: "v1",
+    score: calculateQuestionScoreV1({
+      errorSemitones,
+      responseTimeMs: params.responseTimeMs,
+      targetIntervalSemitones: params.question.distanceSemitones,
+    }),
+    scoreFormulaVersion: SCORE_FORMULA_VERSION_V1,
     replayBaseCount: params.replayBaseCount,
     replayTargetCount: params.replayTargetCount,
     presentedAt: params.presentedAt,
@@ -325,83 +331,6 @@ function getBaseMidi(noteClass: NoteClass): number {
   return 60 + NOTE_CLASSES.indexOf(noteClass);
 }
 
-function calculateQuestionScore(
-  pitchErrorCents: number,
-  responseTimeMs: number,
-  distanceSemitones: number,
-): number {
-  return roundTo3(
-    100 *
-      accuracyMultiplier(pitchErrorCents) *
-      speedMultiplier(responseTimeMs) *
-      distanceMultiplier(distanceSemitones),
-  );
-}
-
-function accuracyMultiplier(pitchErrorCents: number): number {
-  if (pitchErrorCents <= 5) {
-    return 1;
-  }
-
-  if (pitchErrorCents <= 10) {
-    return 0.95;
-  }
-
-  if (pitchErrorCents <= 20) {
-    return 0.85;
-  }
-
-  if (pitchErrorCents <= 35) {
-    return 0.7;
-  }
-
-  if (pitchErrorCents <= 50) {
-    return 0.5;
-  }
-
-  return 0.25;
-}
-
-function speedMultiplier(responseTimeMs: number): number {
-  if (responseTimeMs <= 1000) {
-    return 1;
-  }
-
-  if (responseTimeMs <= 2000) {
-    return 0.95;
-  }
-
-  if (responseTimeMs <= 3500) {
-    return 0.85;
-  }
-
-  if (responseTimeMs <= 5000) {
-    return 0.7;
-  }
-
-  if (responseTimeMs <= 8000) {
-    return 0.5;
-  }
-
-  return 0.25;
-}
-
-function distanceMultiplier(distanceSemitones: number): number {
-  if (distanceSemitones <= 2) {
-    return 1;
-  }
-
-  if (distanceSemitones <= 5) {
-    return 1.05;
-  }
-
-  if (distanceSemitones <= 8) {
-    return 1.1;
-  }
-
-  return 1.15;
-}
-
 function sumBy<T>(items: T[], selector: (item: T) => number): number {
   return items.reduce((sum, item) => sum + selector(item), 0);
 }
@@ -412,8 +341,4 @@ function averageOrZero(total: number, count: number): number {
   }
 
   return roundTo3(total / count);
-}
-
-function roundTo3(value: number): number {
-  return Math.round(value * 1000) / 1000;
 }

@@ -164,6 +164,8 @@ Rules:
 - If repo-level DB/auth wiring is not available yet, the composition root may stay as a TODO-backed stub rather than inventing new infrastructure.
 - Better Auth route/provider wiring may exist before auth tables are migrated, so this alone does not guarantee a fully working login flow yet.
 - Recompute or validate summary fields on the server before writing.
+- Normalize legacy config payload keys/units into the canonical `TrainingConfig` shape before validation during the rollout period.
+- Recompute per-question `score`, `isCorrect`, `score_formula_version`, and the persisted session summary from canonical question fields on the server before writing.
 - Guest flows never call this contract.
 - Return `UNAUTHORIZED` for guest or missing-user calls, `INVALID_INPUT` for failed input validation, and `SAVE_FAILED` when the transaction fails.
 - If the save fails, the client keeps the result screen visible and offers retry.

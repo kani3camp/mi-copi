@@ -3,7 +3,7 @@
 import {
   toQuestionResultInserts,
   toTrainingSessionInsert,
-} from "../model/persistence";
+} from "../model/persistence.ts";
 import type {
   QuestionResultInsertShape,
   SaveTrainingSessionInput,
@@ -11,6 +11,7 @@ import type {
   SessionFinishReason,
   TrainingSessionInsertShape,
 } from "../model/types";
+import { normalizeSaveTrainingSessionInput } from "./saveTrainingSession.validation.ts";
 
 const SESSION_FINISH_REASONS = [
   "target_reached",
@@ -81,7 +82,11 @@ export async function saveTrainingSession(
     };
   }
 
-  const issues = validateSaveTrainingSessionInput(input);
+  const normalized = normalizeSaveTrainingSessionInput(input);
+  const issues = validateSaveTrainingSessionInput(
+    normalized.input,
+    normalized.issues,
+  );
 
   if (issues.length > 0) {
     return {
@@ -93,9 +98,12 @@ export async function saveTrainingSession(
 
   const sessionId = deps.generateSessionId?.() ?? crypto.randomUUID();
   const createdAt = (deps.now?.() ?? new Date()).toISOString();
-  const trainingSessionInsert = toTrainingSessionInsert(input, userId);
+  const trainingSessionInsert = toTrainingSessionInsert(
+    normalized.input,
+    userId,
+  );
   const questionResultInserts = toQuestionResultInserts(
-    input,
+    normalized.input,
     sessionId,
     userId,
   );
@@ -130,8 +138,9 @@ export async function saveTrainingSession(
 
 function validateSaveTrainingSessionInput(
   input: SaveTrainingSessionInput,
+  initialIssues: string[] = [],
 ): string[] {
-  const issues: string[] = [];
+  const issues = [...initialIssues];
 
   if (input.results.length === 0) {
     issues.push("At least one answered question result is required.");
@@ -155,7 +164,7 @@ function validateSaveTrainingSessionInput(
     issues.push("endCondition.type is invalid.");
   }
 
-  return issues;
+  return dedupeIssues(issues);
 }
 
 function buildTrainingSessionInsertRow(
@@ -225,4 +234,8 @@ function isSessionEndConditionType(
   value: string,
 ): value is SessionEndConditionType {
   return SESSION_END_CONDITION_TYPES.includes(value as SessionEndConditionType);
+}
+
+function dedupeIssues(issues: string[]): string[] {
+  return [...new Set(issues)];
 }
