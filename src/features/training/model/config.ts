@@ -196,8 +196,7 @@ export function normalizeTrainingEndCondition(
     return {
       type: "time_limit",
       timeLimitSeconds: clampTimeLimitSeconds(
-        getFirstNumber(record, ["timeLimitSeconds"]) ??
-          toLegacyMinutesSeconds(getFirstNumber(record, ["timeLimitMinutes"])),
+        getFirstNumber(record, ["timeLimitSeconds"]),
       ),
     };
   }
@@ -228,10 +227,10 @@ export function normalizeTrainingConfig(
 
   const intervalRangeRecord = asRecord(record.intervalRange);
   const minSemitone = clampIntervalMinSemitone(
-    getFirstNumber(intervalRangeRecord, ["minSemitone", "minSemitones"]),
+    getFirstNumber(intervalRangeRecord, ["minSemitone"]),
   );
   const maxSemitone = clampIntervalMaxSemitone(
-    getFirstNumber(intervalRangeRecord, ["maxSemitone", "maxSemitones"]),
+    getFirstNumber(intervalRangeRecord, ["maxSemitone"]),
     minSemitone,
   );
   const baseNoteMode = readBaseNoteMode(record.baseNoteMode);
@@ -284,16 +283,6 @@ export function normalizeTrainingConfigOrDefault(
   return (
     normalizeTrainingConfig(value, mode) ?? createDefaultTrainingConfig(mode)
   );
-}
-
-function toLegacyMinutesSeconds(
-  minutes: number | undefined,
-): number | undefined {
-  if (minutes === undefined) {
-    return undefined;
-  }
-
-  return minutes * 60;
 }
 
 function clampInteger(

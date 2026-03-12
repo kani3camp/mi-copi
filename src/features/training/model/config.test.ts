@@ -10,7 +10,7 @@ const {
   validateTimeLimitSeconds,
 } = await import(new URL("./config.ts", import.meta.url).href);
 
-test("normalizeTrainingConfig reads legacy minute-based and plural-key configs", () => {
+test("normalizeTrainingConfig only accepts canonical config keys and units", () => {
   const normalized = normalizeTrainingConfig({
     mode: "distance",
     intervalRange: {
@@ -32,8 +32,8 @@ test("normalizeTrainingConfig reads legacy minute-based and plural-key configs",
   assert.deepEqual(normalized, {
     mode: "distance",
     intervalRange: {
-      minSemitone: 1,
-      maxSemitone: 9,
+      minSemitone: 0,
+      maxSemitone: 12,
     },
     directionMode: "mixed",
     includeUnison: false,
@@ -42,7 +42,7 @@ test("normalizeTrainingConfig reads legacy minute-based and plural-key configs",
     fixedBaseNote: "F#",
     endCondition: {
       type: "time_limit",
-      timeLimitSeconds: 240,
+      timeLimitSeconds: TRAINING_CONFIG_LIMITS.timeLimitSeconds.default,
     },
     intervalGranularity: "aug_dim",
   });
@@ -84,7 +84,7 @@ test("normalizeTrainingConfig preserves canonical configs without reshaping valu
   });
 });
 
-test("normalizeTrainingConfigOrDefault clamps documented ranges", () => {
+test("normalizeTrainingConfigOrDefault falls back when legacy keys are provided", () => {
   const normalized = normalizeTrainingConfigOrDefault(
     {
       intervalRange: {
@@ -102,8 +102,8 @@ test("normalizeTrainingConfigOrDefault clamps documented ranges", () => {
   assert.deepEqual(normalized, {
     mode: "keyboard",
     intervalRange: {
-      minSemitone: TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.max,
-      maxSemitone: TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.max,
+      minSemitone: TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.default,
+      maxSemitone: TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.default,
     },
     directionMode: "mixed",
     includeUnison: false,
@@ -112,7 +112,7 @@ test("normalizeTrainingConfigOrDefault clamps documented ranges", () => {
     fixedBaseNote: null,
     endCondition: {
       type: "time_limit",
-      timeLimitSeconds: TRAINING_CONFIG_LIMITS.timeLimitSeconds.max,
+      timeLimitSeconds: TRAINING_CONFIG_LIMITS.timeLimitSeconds.default,
     },
   });
 });

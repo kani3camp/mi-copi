@@ -87,7 +87,7 @@ test("saveTrainingSession persists recomputed canonical summary and scores", asy
   assert.equal(db.questionResults[1]?.scoreFormulaVersion, "v1");
 });
 
-test("saveTrainingSession normalizes legacy config payloads before persisting", async () => {
+test("saveTrainingSession rejects legacy config payloads", async () => {
   const db = createMockDb();
   const legacyInput = buildCanonicalInput() as unknown as {
     config: Record<string, unknown>;
@@ -119,12 +119,14 @@ test("saveTrainingSession normalizes legacy config payloads before persisting", 
     },
   );
 
-  assert.equal(result.ok, true);
-  assert.deepEqual(db.trainingSessions[0]?.configSnapshot.endCondition, {
-    type: "time_limit",
-    timeLimitSeconds: 240,
+  assert.deepEqual(result, {
+    ok: false,
+    code: "INVALID_INPUT",
+    message:
+      "Use intervalRange.minSemitone and intervalRange.maxSemitone. Use endCondition.timeLimitSeconds instead of timeLimitMinutes.",
   });
-  assert.equal(db.trainingSessions[0]?.plannedTimeLimitSeconds, 240);
+  assert.equal(db.trainingSessions.length, 0);
+  assert.equal(db.questionResults.length, 0);
 });
 
 test("saveTrainingSession rejects invalid config bounds", async () => {

@@ -495,14 +495,15 @@ function validateProvidedTrainingConfig(value: unknown): string[] {
 
   const issues: string[] = [];
   const intervalRange = asRecord(record.intervalRange);
-  const minSemitone = readOptionalInteger(intervalRange, [
-    "minSemitone",
-    "minSemitones",
-  ]);
-  const maxSemitone = readOptionalInteger(intervalRange, [
-    "maxSemitone",
-    "maxSemitones",
-  ]);
+  const minSemitone = readOptionalInteger(intervalRange, ["minSemitone"]);
+  const maxSemitone = readOptionalInteger(intervalRange, ["maxSemitone"]);
+
+  if (
+    intervalRange &&
+    ("minSemitones" in intervalRange || "maxSemitones" in intervalRange)
+  ) {
+    issues.push("Use intervalRange.minSemitone and intervalRange.maxSemitone.");
+  }
 
   if (minSemitone !== undefined && !isValidMinSemitone(minSemitone)) {
     issues.push("minSemitone must be between 0 and 11.");
@@ -551,17 +552,16 @@ function validateProvidedTrainingEndCondition(value: unknown): string[] {
 
   if (record.type === "time_limit") {
     const timeLimitSeconds = readOptionalInteger(record, ["timeLimitSeconds"]);
-    const legacyTimeLimitMinutes = readOptionalInteger(record, [
-      "timeLimitMinutes",
-    ]);
-    const normalizedSeconds =
-      timeLimitSeconds ?? toLegacyTimeLimitSeconds(legacyTimeLimitMinutes);
+
+    if ("timeLimitMinutes" in record) {
+      return ["Use endCondition.timeLimitSeconds instead of timeLimitMinutes."];
+    }
 
     if (
-      normalizedSeconds !== undefined &&
-      (!Number.isInteger(normalizedSeconds) ||
-        normalizedSeconds < 60 ||
-        normalizedSeconds > 1800)
+      timeLimitSeconds !== undefined &&
+      (!Number.isInteger(timeLimitSeconds) ||
+        timeLimitSeconds < 60 ||
+        timeLimitSeconds > 1800)
     ) {
       return ["timeLimitSeconds must be between 60 and 1800."];
     }
@@ -611,14 +611,4 @@ function isValidMaxSemitone(value: number, minSemitone: number): boolean {
   return (
     Number.isInteger(value) && value >= Math.max(1, minSemitone) && value <= 12
   );
-}
-
-function toLegacyTimeLimitSeconds(
-  value: number | undefined,
-): number | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  return value * 60;
 }
