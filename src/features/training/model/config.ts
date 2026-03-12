@@ -28,6 +28,11 @@ export const TRAINING_CONFIG_LIMITS = {
   },
 } as const;
 
+export const QUESTION_COUNT_PRESET_OPTIONS = [5, 10, 15, 20, 30, 50] as const;
+export const TIME_LIMIT_SECONDS_PRESET_OPTIONS = [
+  60, 120, 180, 300, 600, 900, 1800,
+] as const;
+
 const NOTE_CLASSES = new Set<NoteClass>([
   "C",
   "C#",
@@ -121,6 +126,24 @@ export function clampTimeLimitSeconds(value: unknown): number {
     TRAINING_CONFIG_LIMITS.timeLimitSeconds.min,
     TRAINING_CONFIG_LIMITS.timeLimitSeconds.max,
     TRAINING_CONFIG_LIMITS.timeLimitSeconds.default,
+  );
+}
+
+export function getQuestionCountSelectOptions(selectedValue: number): number[] {
+  return buildSelectOptions(
+    selectedValue,
+    QUESTION_COUNT_PRESET_OPTIONS,
+    clampQuestionCount,
+  );
+}
+
+export function getTimeLimitSecondsSelectOptions(
+  selectedValue: number,
+): number[] {
+  return buildSelectOptions(
+    selectedValue,
+    TIME_LIMIT_SECONDS_PRESET_OPTIONS,
+    clampTimeLimitSeconds,
   );
 }
 
@@ -300,6 +323,18 @@ function clampInteger(
   const rounded = Math.round(numericValue);
 
   return Math.min(max, Math.max(min, rounded));
+}
+
+function buildSelectOptions(
+  selectedValue: number,
+  presetOptions: readonly number[],
+  clampValue: (value: unknown) => number,
+): number[] {
+  const normalizedSelectedValue = clampValue(selectedValue);
+
+  return [...new Set([...presetOptions, normalizedSelectedValue])].sort(
+    (left, right) => left - right,
+  );
 }
 
 function getFirstNumber(

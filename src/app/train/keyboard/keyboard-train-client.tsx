@@ -13,10 +13,10 @@ import { useGlobalUserSettings } from "../../../features/settings/client/global-
 import {
   clampIntervalMaxSemitone,
   clampIntervalMinSemitone,
-  clampQuestionCount,
-  clampTimeLimitSeconds,
   createDefaultQuestionCountEndCondition,
   createDefaultTimeLimitEndCondition,
+  getQuestionCountSelectOptions,
+  getTimeLimitSecondsSelectOptions,
   TRAINING_CONFIG_LIMITS,
 } from "../../../features/training/model/config";
 import {
@@ -162,6 +162,14 @@ export function KeyboardTrainClient({
   const sessionDeadlineAtRef = useRef<number | null>(null);
   const timeoutHandledRef = useRef(false);
   const plannedQuestionCount = getKeyboardQuestionCount(config);
+  const questionCountOptions =
+    getQuestionCountSelectOptions(plannedQuestionCount);
+  const timeLimitOptions =
+    config.endCondition.type === "time_limit"
+      ? getTimeLimitSecondsSelectOptions(config.endCondition.timeLimitSeconds)
+      : getTimeLimitSecondsSelectOptions(
+          createDefaultTimeLimitEndCondition().timeLimitSeconds,
+        );
   const [remainingTimeMs, setRemainingTimeMs] = useState<number | null>(null);
   const answerChoices = useMemo(() => getKeyboardAnswerChoices(), []);
   const summary = useMemo(() => buildKeyboardGuestSummary(results), [results]);
@@ -224,20 +232,6 @@ export function KeyboardTrainClient({
       cancelled = true;
     };
   }, [activeQuestion, phase, settings.masterVolume]);
-
-  useEffect(() => {
-    if (
-      !isAuthenticated ||
-      phase !== "result" ||
-      !startedAt ||
-      persistedConfigSessionRef.current === startedAt
-    ) {
-      return;
-    }
-
-    persistedConfigSessionRef.current = startedAt;
-    void persistLastUsedConfigAction(config);
-  }, [config, isAuthenticated, persistLastUsedConfigAction, phase, startedAt]);
 
   useEffect(() => {
     if (
@@ -366,6 +360,10 @@ export function KeyboardTrainClient({
     setActiveQuestion(
       createActiveQuestion(config, 0, playbackIdRef, questionGeneratorStateRef),
     );
+    if (isAuthenticated) {
+      persistedConfigSessionRef.current = nextStartedAt;
+      void persistLastUsedConfigAction(config);
+    }
     setPhase("preparing");
   }
 
@@ -594,44 +592,47 @@ export function KeyboardTrainClient({
 
               {config.endCondition.type === "question_count" ? (
                 <Field label="問題数">
-                  <input
-                    className="ui-input"
-                    type="number"
-                    min={TRAINING_CONFIG_LIMITS.questionCount.min}
-                    max={TRAINING_CONFIG_LIMITS.questionCount.max}
+                  <select
+                    className="ui-select"
                     value={plannedQuestionCount}
                     onChange={(event) =>
                       setConfig((current) => ({
                         ...current,
                         endCondition: {
                           type: "question_count",
-                          questionCount: clampQuestionCount(event.target.value),
+                          questionCount: Number(event.target.value),
                         },
                       }))
                     }
-                  />
+                  >
+                    {questionCountOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option} 問
+                      </option>
+                    ))}
+                  </select>
                 </Field>
               ) : (
                 <Field label="制限時間（秒）">
-                  <input
-                    className="ui-input"
-                    type="number"
-                    min={TRAINING_CONFIG_LIMITS.timeLimitSeconds.min}
-                    max={TRAINING_CONFIG_LIMITS.timeLimitSeconds.max}
-                    step={30}
+                  <select
+                    className="ui-select"
                     value={config.endCondition.timeLimitSeconds}
                     onChange={(event) =>
                       setConfig((current) => ({
                         ...current,
                         endCondition: {
                           type: "time_limit",
-                          timeLimitSeconds: clampTimeLimitSeconds(
-                            event.target.value,
-                          ),
+                          timeLimitSeconds: Number(event.target.value),
                         },
                       }))
                     }
-                  />
+                  >
+                    {timeLimitOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option} 秒
+                      </option>
+                    ))}
+                  </select>
                 </Field>
               )}
             </div>

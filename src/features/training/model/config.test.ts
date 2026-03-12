@@ -3,6 +3,8 @@ import test from "node:test";
 
 const {
   TRAINING_CONFIG_LIMITS,
+  getQuestionCountSelectOptions,
+  getTimeLimitSecondsSelectOptions,
   normalizeTrainingConfig,
   normalizeTrainingConfigOrDefault,
   validateIntervalRange,
@@ -155,5 +157,24 @@ test("validateTimeLimitSeconds rejects values outside documented bounds", () => 
   assert.equal(
     validateTimeLimitSeconds(TRAINING_CONFIG_LIMITS.timeLimitSeconds.min - 1),
     `timeLimitSeconds must be between ${TRAINING_CONFIG_LIMITS.timeLimitSeconds.min} and ${TRAINING_CONFIG_LIMITS.timeLimitSeconds.max}.`,
+  );
+});
+
+test("getQuestionCountSelectOptions keeps preset values sorted and includes saved custom values", () => {
+  assert.deepEqual(getQuestionCountSelectOptions(10), [5, 10, 15, 20, 30, 50]);
+  assert.deepEqual(
+    getQuestionCountSelectOptions(12),
+    [5, 10, 12, 15, 20, 30, 50],
+  );
+});
+
+test("getTimeLimitSecondsSelectOptions keeps preset values sorted and includes saved custom values", () => {
+  assert.deepEqual(
+    getTimeLimitSecondsSelectOptions(180),
+    [60, 120, 180, 300, 600, 900, 1800],
+  );
+  assert.deepEqual(
+    getTimeLimitSecondsSelectOptions(240),
+    [60, 120, 180, 240, 300, 600, 900, 1800],
   );
 });
