@@ -47,15 +47,15 @@ export default async function HomePage() {
         <div className="ui-grid-cards">
           <TrainModeCard
             href="/train/distance"
-            eyebrow="Distance"
+            eyebrow="距離モード"
             title="距離モードを始める"
             description="音程名で答える反復練習。誤差と回答速度をすぐ確認できます。"
           />
           <TrainModeCard
             href="/train/keyboard"
-            eyebrow="Keyboard"
+            eyebrow="鍵盤モード"
             title="鍵盤モードを始める"
-            description="鍵盤で target note を答える練習。黒鍵込みで耳コピ寄りに試せます。"
+            description="鍵盤で問題音を答える練習。黒鍵込みで耳コピ寄りに試せます。"
           />
         </div>
       </PageHero>
