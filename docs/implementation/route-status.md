@@ -71,18 +71,6 @@
   - セッション概要、config snapshot、各回答結果を表示する
   - `sessionId` が不正、未保存、または他人のデータなら `notFound()` 扱いにする
 
-### `/auth-test`
-- Status: implemented as developer utility
-- Purpose: Better Auth / 保存疎通確認
-- Current behavior:
-  - shared app shell / hero 上で開発用 utility route と明示する
-  - server current user を JSON 表示する
-  - client session を JSON 表示し、sign-in / sign-out / refresh を試せる
-  - ダミーセッション保存の動作確認を行える
-  - 未認証時の save-test notice と、操作失敗時の error notice を表示する
-- Note:
-  - product route ではなく、開発時の確認用ページ
-
 ## Persistence Snapshot
 
 ### Guest
@@ -103,6 +91,5 @@
 - `docs/product/*` は「どうあるべきか」の正本
 - このファイルは「いま何が実装されているか」の要約
 - 型や persistence contract の精密確認は関連コードを優先する
-- `/auth-test` のような検証用 route を product scope と混同しない
 - 実ブラウザ QA はこの環境では未完了
   - headless Chromium が macOS permission error で起動できず、browser automation は未実施
