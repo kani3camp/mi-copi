@@ -83,8 +83,8 @@ export function formatDurationSecondsLabel(value: number | string): string {
 
 export function formatTrainingModeLabel(value: TrainingMode): string {
   if (value === "distance") {
-    return "Distance";
+    return "距離モード";
   }
 
-  return "Keyboard";
+  return "鍵盤モード";
 }

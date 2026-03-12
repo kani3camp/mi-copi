@@ -80,8 +80,8 @@ test("format helpers round and preserve fallback values for training results", (
   assert.equal(formatDurationSecondsLabel(180), "3 分");
   assert.equal(formatDurationSecondsLabel(95), "1 分 35 秒");
   assert.equal(formatDurationSecondsLabel("invalid"), "invalid 秒");
-  assert.equal(formatTrainingModeLabel("distance"), "Distance");
-  assert.equal(formatTrainingModeLabel("keyboard"), "Keyboard");
+  assert.equal(formatTrainingModeLabel("distance"), "距離モード");
+  assert.equal(formatTrainingModeLabel("keyboard"), "鍵盤モード");
 });
 
 test("formatDateTimeLabel leaves invalid input untouched", () => {
