@@ -412,6 +412,10 @@ a {
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
+.ui-grid-kv--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .ui-grid-fields {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
@@ -478,6 +482,21 @@ a {
   font-size: 15px;
   line-height: 1.55;
   font-weight: 600;
+}
+
+.ui-kv-card--dense {
+  gap: 6px;
+  padding: var(--space-3);
+}
+
+.ui-kv-card--dense .ui-kv-label {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ui-kv-card--dense .ui-kv-value {
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .ui-list {

@@ -183,33 +183,44 @@ function ConfigSnapshotView(props: { config: TrainingConfigSnapshot }) {
   const { config } = props;
 
   return (
-    <KeyValueGrid>
-      <KeyValueCard label="モード" value={formatConfigModeLabel(config.mode)} />
+    <KeyValueGrid className="ui-grid-kv--compact">
       <KeyValueCard
+        className="ui-kv-card--dense"
+        label="モード"
+        value={formatConfigModeLabel(config.mode)}
+      />
+      <KeyValueCard
+        className="ui-kv-card--dense"
         label="音程範囲"
         value={`${config.intervalRange.minSemitone} - ${config.intervalRange.maxSemitone}`}
       />
       <KeyValueCard
+        className="ui-kv-card--dense"
         label="出題方向"
         value={config.directionMode === "up_only" ? "上行のみ" : "上下混在"}
       />
       <KeyValueCard
+        className="ui-kv-card--dense"
         label="基準音モード"
         value={config.baseNoteMode === "fixed" ? "固定" : "ランダム"}
       />
       <KeyValueCard
+        className="ui-kv-card--dense"
         label="固定する基準音"
         value={config.fixedBaseNote ?? "なし"}
       />
       <KeyValueCard
+        className="ui-kv-card--dense"
         label="同音を含める"
         value={config.includeUnison ? "はい" : "いいえ"}
       />
       <KeyValueCard
+        className="ui-kv-card--dense"
         label="オクターブを含める"
         value={config.includeOctave ? "はい" : "いいえ"}
       />
       <KeyValueCard
+        className="ui-kv-card--dense"
         label="終了条件"
         value={
           config.endCondition.type === "question_count"
@@ -219,6 +230,7 @@ function ConfigSnapshotView(props: { config: TrainingConfigSnapshot }) {
       />
       {"intervalGranularity" in config && config.intervalGranularity ? (
         <KeyValueCard
+          className="ui-kv-card--dense"
           label="音程表記の粒度"
           value={
             config.intervalGranularity === "simple" ? "シンプル" : "増減あり"
