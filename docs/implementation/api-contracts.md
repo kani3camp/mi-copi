@@ -96,7 +96,7 @@ Rules:
 - Otherwise return the MVP default config.
 - Return the canonical `TrainingConfig` described in `docs/product/requirements.md`.
 - `referencePitchHz = 440` is a fixed runtime value in the MVP and is not included in this payload.
-- `endCondition.timeLimitMinutes` is a session-wide limit when `type = time_limit`.
+- `endCondition.timeLimitSeconds` is a session-wide limit when `type = time_limit`.
 - In `distance` mode, `intervalGranularity` is `simple` or `aug_dim`.
 - In `keyboard` mode, no extra mode-specific config fields are added.
 
@@ -153,7 +153,7 @@ Rules:
 - Persist only answered questions.
 - Save `training_sessions.finish_reason` from `finishReason`.
 - Save `training_sessions.end_condition_type` plus `planned_question_count` or `planned_time_limit_seconds` from `endCondition`.
-- Persist `planned_time_limit_seconds` as `endCondition.timeLimitMinutes * 60` when `endCondition.type = time_limit`.
+- Persist `planned_time_limit_seconds` from `endCondition.timeLimitSeconds` when `endCondition.type = time_limit`.
 - Save `training_sessions.mode` from `input.config.mode`.
 - Save `training_sessions.config_snapshot` plus session summary values.
 - Summary values should match the canonical persistence summary type in `docs/implementation/ts-types.md`.

@@ -223,7 +223,7 @@ type TrainingMode = 'distance' | 'keyboard'
 type SessionEndConditionType = 'question_count' | 'time_limit'
 type SessionFinishReason = 'target_reached' | 'time_up' | 'manual_end'
 type BaseNoteMode = 'fixed' | 'random'
-type DirectionMode = 'up_only' | 'with_down' | 'mixed'
+type DirectionMode = 'up_only' | 'mixed'
 type NotationStyle = 'ja' | 'abbr' | 'mixed'
 type IntervalGranularity = 'simple' | 'aug_dim'
 ```
@@ -259,7 +259,7 @@ type Question = {
   targetNoteName: string
   targetMidi: number
   targetIntervalSemitones: number
-  direction: 'up' | 'down' | 'unison'
+  direction: 'up' | 'down'
   presentedAt: number
 }
 ```
@@ -290,7 +290,6 @@ type QuestionResultDraft = {
 - `includeUnison = false` のとき 0 半音を除外する
 - `includeOctave = false` のとき 12 半音を除外する
 - `directionMode = up_only` のとき正方向のみ採用する
-- `directionMode = with_down` は「上行 + 下行を含む」ではなく、本設計では `mixed` と同義にしない
 - `directionMode = mixed` のとき上行 / 下行を両方採用する
 
 ### 方針補足
@@ -381,6 +380,8 @@ MVP では設定 UI の文言は要件に合わせるが、内部値は曖昧さ
 - 6 度: 1.36
 - 7 度: 1.48
 - 8 度: 1.60
+
+※ `targetIntervalSemitones` から difficulty bucket へ落とす詳細対応は `docs/implementation/scoring.md` を正本とする。
 
 ### 実装ルール
 - 内部計算結果は小数で保持する
@@ -565,18 +566,18 @@ MVP では設定 UI の文言は要件に合わせるが、内部値は曖昧さ
 - `updateUserSettings(input)`
 
 ### training
-- `getInitialTrainingConfig(mode)`
+- `getInitialTrainingConfig()`
 - `saveTrainingSession(input)`
 
 ### stats
-- `getStatsOverview(mode?)`
-- `getRecentQuestionTrends(mode?)`
-- `getDailyTrends(mode?)`
+- `getStatsOverview(input?)`
+- `getRecentQuestionTrends(input?)`
+- `getDailyTrends(input?)`
 
 ## 12.3 saveTrainingSession input
 ```ts
 type SaveTrainingSessionInput = {
-  mode: 'distance' | 'keyboard'
+  config: TrainingConfig
   startedAt: string
   endedAt: string
   finishReason: 'target_reached' | 'time_up' | 'manual_end'
@@ -585,26 +586,37 @@ type SaveTrainingSessionInput = {
     questionCount?: number
     timeLimitSeconds?: number
   }
-  configSnapshot: TrainingConfig
-  scoreFormulaVersion: string
-  questions: Array<{
+  summary: {
+    plannedQuestionCount?: number
+    answeredQuestionCount: number
+    correctQuestionCount: number
+    sessionScore: number
+    avgScorePerQuestion: number
+    accuracyRate: number
+    avgErrorAbs: number
+    avgResponseTimeMs: number
+  }
+  results: Array<{
     questionIndex: number
+    presentedAt: string
     answeredAt: string
+    mode: 'distance' | 'keyboard'
     baseNoteName: string
     baseMidi: number
     targetNoteName: string
     targetMidi: number
-    answerNoteName?: string
-    answerMidi?: number
+    answerNoteName: string
+    answerMidi: number
     targetIntervalSemitones: number
-    answerIntervalSemitones?: number
-    direction: 'up' | 'down' | 'unison'
+    answerIntervalSemitones: number
+    direction: 'up' | 'down'
     isCorrect: boolean
     errorSemitones: number
     responseTimeMs: number
     replayBaseCount: number
     replayTargetCount: number
     score: number
+    scoreFormulaVersion: 'v1'
   }>
 }
 ```
@@ -801,4 +813,3 @@ src/
 
 ---
 本書は v0.2 の基本設計完成版であり、次工程はテーブル定義と型定義、主要ユースケース単位の実装タスク分解とする。
-

@@ -1,6 +1,27 @@
 # TypeScript Types
 
-This document defines the main TypeScript shapes that implementation should align with.
+Canonical source:
+- This document defines the implementation-facing TypeScript shapes derived from the product docs.
+- Product policy is set by `docs/product/requirements.md`, `docs/product/basic-design.md`, and `docs/product/ui-system.md`.
+- DB-facing field names must stay aligned with `docs/implementation/db-schema.md` and `docs/implementation/api-contracts.md`.
+
+Related docs:
+- `docs/product/requirements.md`
+- `docs/product/basic-design.md`
+- `docs/implementation/api-contracts.md`
+- `docs/implementation/db-schema.md`
+- `docs/implementation/training-flow.md`
+- `docs/implementation/scoring.md`
+
+This document decides:
+- canonical union names used in training, persistence, and stats
+- runtime state shapes for the train route
+- end-of-session save payload and DB insert shapes
+
+This document does not decide:
+- visual component props
+- exact reducer implementation details
+- future non-MVP expansion types
 
 ## Core Unions
 
@@ -15,14 +36,17 @@ export type SessionPhase =
 
 export type TrainingMode = "distance" | "keyboard";
 export type DirectionMode = "up_only" | "mixed";
+export type QuestionDirection = "up" | "down";
 export type BaseNoteMode = "fixed" | "random";
 export type SessionEndConditionType = "question_count" | "time_limit";
 export type SessionFinishReason =
   | "target_reached"
   | "time_up"
   | "manual_end";
-export type QuestionDirection = "up" | "down";
-export type NotationStyle = "sharp";
+export type IntervalNotationStyle = "ja" | "abbr" | "mixed";
+export type IntervalGranularity = "simple" | "aug_dim";
+export type ScoreFormulaVersion = "v1";
+
 export type NoteClass =
   | "C"
   | "C#"
@@ -36,32 +60,29 @@ export type NoteClass =
   | "A"
   | "A#"
   | "B";
-export type IntervalGranularity = "simple" | "aug_dim";
-
-export type ScoreFormulaVersion = "v1";
 ```
 
 ## Training Config
 
 ```ts
 export interface IntervalRange {
-  minSemitones: number;
-  maxSemitones: number;
+  minSemitone: number;
+  maxSemitone: number;
 }
 
-export interface TrainingEndConditionByQuestionCount {
+export interface QuestionCountEndCondition {
   type: "question_count";
   questionCount: number;
 }
 
-export interface TrainingEndConditionByTimeLimit {
+export interface TimeLimitEndCondition {
   type: "time_limit";
-  timeLimitMinutes: number;
+  timeLimitSeconds: number;
 }
 
 export type TrainingEndCondition =
-  | TrainingEndConditionByQuestionCount
-  | TrainingEndConditionByTimeLimit;
+  | QuestionCountEndCondition
+  | TimeLimitEndCondition;
 
 export interface TrainingConfigBase {
   mode: TrainingMode;
@@ -84,45 +105,95 @@ export interface KeyboardTrainingConfig extends TrainingConfigBase {
 }
 
 export type TrainingConfig = DistanceTrainingConfig | KeyboardTrainingConfig;
+export type TrainingConfigSnapshot = TrainingConfig;
 ```
 
-## Question And Answer
+## Training Route State
+
+`SessionPhase` is the canonical internal state for the train route.
 
 ```ts
-export interface Question {
+export interface QuestionPrompt {
   questionIndex: number;
   direction: QuestionDirection;
-  baseNote: NoteClass;
-  targetNote: NoteClass;
-  distanceSemitones: number;
-  notationStyle: NotationStyle;
+  baseNoteName: NoteClass;
+  baseMidi: number;
+  targetNoteName: NoteClass;
+  targetMidi: number;
+  targetIntervalSemitones: number;
+  presentedAtMs: number;
 }
 
-export interface AnswerSubmission {
-  questionIndex: number;
-  mode: TrainingMode;
-  answeredDistanceSemitones: number | null;
-  answeredNote: NoteClass | null;
+export interface ActiveQuestionState {
+  prompt: QuestionPrompt;
+  playbackCompletedAtMs: number | null;
+  replayBaseCount: number;
+  replayTargetCount: number;
+}
+
+export interface SessionState {
+  phase: SessionPhase;
+  config: TrainingConfig;
+  startedAtMs: number | null;
+  deadlineAtMs: number | null;
+  currentQuestionIndex: number;
+  activeQuestion: ActiveQuestionState | null;
+  answeredResults: EvaluatedQuestionResult[];
+  finishReason: SessionFinishReason | null;
 }
 ```
 
-## Question Result
+## Answers And Evaluation
 
 ```ts
+export interface DistanceAnswerSubmission {
+  mode: "distance";
+  questionIndex: number;
+  answerIntervalSemitones: number;
+}
+
+export interface KeyboardAnswerSubmission {
+  mode: "keyboard";
+  questionIndex: number;
+  answerNoteName: NoteClass;
+  answerMidi: number;
+}
+
+export type AnswerSubmission =
+  | DistanceAnswerSubmission
+  | KeyboardAnswerSubmission;
+
 export interface EvaluatedQuestionResult {
   questionIndex: number;
-  question: Question;
-  answer: AnswerSubmission;
-  pitchErrorCents: number;
+  presentedAtMs: number;
+  answeredAtMs: number;
+  mode: TrainingMode;
+  baseNoteName: NoteClass;
+  baseMidi: number;
+  targetNoteName: NoteClass;
+  targetMidi: number;
+  answerNoteName: NoteClass;
+  answerMidi: number;
+  targetIntervalSemitones: number;
+  answerIntervalSemitones: number;
+  direction: QuestionDirection;
+  isCorrect: boolean;
+  errorSemitones: number;
   responseTimeMs: number;
-  replayCount: number;
-  distanceSemitones: number;
+  replayBaseCount: number;
+  replayTargetCount: number;
   score: number;
   scoreFormulaVersion: ScoreFormulaVersion;
 }
 ```
 
-## Persistence Types
+`EvaluatedQuestionResult.errorSemitones` is the canonical signed error field.
+Do not use legacy cent-based error field names in MVP docs or code.
+
+## Save Payload
+
+`SaveTrainingSessionInput` is used only for authenticated end-of-session saves.
+Guest sessions keep the same in-memory result shape, but they never submit this payload.
 
 ```ts
 export interface SaveQuestionResultInput {
@@ -161,6 +232,22 @@ export interface SessionSummaryMetrics {
 
 export type SaveTrainingSessionSummaryInput = SessionSummaryMetrics;
 
+export interface SaveTrainingSessionInput {
+  config: TrainingConfigSnapshot;
+  finishReason: SessionFinishReason;
+  endCondition: TrainingEndCondition;
+  startedAt: string;
+  endedAt: string;
+  summary: SaveTrainingSessionSummaryInput;
+  results: SaveQuestionResultInput[];
+}
+```
+
+## Persistence Shapes
+
+These shapes align with the explicit DB column names in `docs/implementation/db-schema.md`.
+
+```ts
 export interface PlannedSessionInsertFields {
   endConditionType: SessionEndConditionType;
   plannedQuestionCount: number | null;
@@ -180,12 +267,12 @@ export interface TrainingSessionInsertShape extends PlannedSessionInsertFields {
   accuracyRate: number;
   avgErrorAbs: number;
   avgResponseTimeMs: number;
-  configSnapshot: TrainingConfig;
+  configSnapshot: TrainingConfigSnapshot;
   scoreFormulaVersion: ScoreFormulaVersion;
 }
 
 export interface QuestionResultInsertShape {
-  sessionId: string;
+  trainingSessionId: string;
   userId: string;
   questionIndex: number;
   presentedAt: string;
@@ -208,41 +295,11 @@ export interface QuestionResultInsertShape {
   score: number;
   scoreFormulaVersion: ScoreFormulaVersion;
 }
-
-export interface SessionSummary extends SessionSummaryMetrics {
-  finishReason: SessionFinishReason;
-}
-
-export interface SaveTrainingSessionInput {
-  config: TrainingConfig;
-  finishReason: SessionFinishReason;
-  endCondition: TrainingEndCondition;
-  startedAt: string;
-  endedAt: string;
-  summary: SaveTrainingSessionSummaryInput;
-  results: SaveQuestionResultInput[];
-}
 ```
 
-## Session State
+## Settings
 
 ```ts
-export interface SessionState {
-  phase: SessionPhase;
-  config: TrainingConfig;
-  startedAt: string | null;
-  finishReason: SessionFinishReason | null;
-  currentQuestionIndex: number;
-  currentQuestion: Question | null;
-  results: EvaluatedQuestionResult[];
-}
-```
-
-## Settings And Summary
-
-```ts
-export type IntervalNotationStyle = "ja" | "abbr" | "mixed";
-
 export interface GlobalUserSettings {
   masterVolume: number;
   soundEffectsEnabled: boolean;
@@ -255,55 +312,87 @@ export interface UserSettings {
   lastDistanceConfig: DistanceTrainingConfig;
   lastKeyboardConfig: KeyboardTrainingConfig;
 }
-
-export interface StatsOverview {
-  sessionsCount: number;
-  answeredQuestionsCount: number;
-  averageScore: number;
-  averagePitchErrorCents: number;
-  averageResponseTimeMs: number;
-  bestScore: number;
-}
 ```
 
-## Trends
+## Stats Read Models
 
 ```ts
+export interface PerformanceSummary {
+  questionCount: number;
+  correctRate: number;
+  averageScore: number;
+  averageErrorAbs: number;
+  averageResponseTimeMs: number;
+}
+
+export interface IntervalPerformanceSummary extends PerformanceSummary {
+  targetIntervalSemitones: number;
+}
+
+export interface ModeStatsOverview {
+  sessionCount: number;
+  answeredQuestionCount: number;
+  cumulativeScore: number;
+  correctRate: number;
+  averageErrorAbs: number;
+  medianErrorAbs: number;
+  averageResponseTimeMs: number;
+}
+
+export interface ErrorBiasSummary {
+  higherRate: number;
+  lowerRate: number;
+  onTargetRate: number;
+}
+
+export interface RecentQuestionSummary {
+  questionCount: number;
+  correctRate: number;
+  averageScore: number;
+  averageErrorAbs: number;
+  averageResponseTimeMs: number;
+}
+
+export interface StatsOverview {
+  answeredQuestionCount: number;
+  cumulativeScore: number;
+  overallCorrectRate: number;
+  averageErrorAbs: number;
+  medianErrorAbs: number;
+  averageResponseTimeMs: number;
+  recent10: RecentQuestionSummary;
+  recent30: RecentQuestionSummary;
+  byInterval: IntervalPerformanceSummary[];
+  byDirection: Record<QuestionDirection, PerformanceSummary>;
+  errorBias: ErrorBiasSummary;
+  byMode: Record<TrainingMode, ModeStatsOverview>;
+}
+
 export interface RecentQuestionTrend {
   trainingSessionId: string;
   questionIndex: number;
+  mode: TrainingMode;
   score: number;
-  pitchErrorCents: number;
+  errorSemitones: number;
   responseTimeMs: number;
-  createdAt: string;
+  answeredAt: string;
 }
 
 export interface DailyTrendPoint {
   date: string;
-  sessionsCount: number;
-  answeredQuestionsCount: number;
+  answeredQuestionCount: number;
+  correctRate: number;
   averageScore: number;
+  averageErrorAbs: number;
+  averageResponseTimeMs: number;
 }
 ```
 
 ## Notes
 
-- Score values are `number` in TypeScript and are persisted rounded to three fractional digits.
-- UI display may round score values to whole numbers, but implementation must preserve decimals internally.
-- `SaveTrainingSessionInput.results` contains only answered questions that survived timeout handling.
-- `SaveTrainingSessionInput` is used only for authenticated end-of-session saves.
-- `SaveTrainingSessionInput.summary` carries the persisted session-level aggregates used by result/home/stats views.
-- `SessionSummaryMetrics` maps directly to the summary columns stored in `training_sessions`.
-- `SaveTrainingSessionInput.finishReason` maps to `training_sessions.finish_reason`.
-- `SaveTrainingSessionInput.endCondition` maps to `training_sessions.end_condition_type` plus `planned_question_count` or `planned_time_limit_seconds`.
-- `planned_time_limit_seconds` is derived from `endCondition.timeLimitMinutes * 60` at persistence time.
-- Persistence mappers convert `SaveTrainingSessionInput` into `TrainingSessionInsertShape` and `QuestionResultInsertShape[]` before DB insert.
-- Guest sessions keep the same in-memory result shape but do not submit this contract to the server.
-- `referencePitchHz` is fixed at `440` in the MVP and is not part of `TrainingConfig`.
-- `fixedBaseNote` uses note class values and is only active when `baseNoteMode = "fixed"`.
-- `endCondition.timeLimitMinutes` is a session-wide limit and is not interpreted per question.
+- `referencePitchHz = 440` is a fixed runtime value and is not part of `TrainingConfig`.
 - `intervalGranularity` exists only for `distance` mode.
-- `intervalGranularity = "simple"` means minor / major / perfect only.
-- `intervalGranularity = "aug_dim"` adds augmented fourth and diminished fifth.
-- `keyboard` mode has no additional MVP-only config fields.
-- Domain evaluation types and persistence DTOs are intentionally separated.
+- `TrainingConfig.endCondition.timeLimitSeconds` is session-wide, not per-question.
+- `SaveTrainingSessionInput.results` contains only answered questions that survived timeout handling.
+- `plannedTimeLimitSeconds` is derived directly from `endCondition.timeLimitSeconds`.
+- Score values stay decimal in memory and in DB persistence; only display layers round more aggressively.

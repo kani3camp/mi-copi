@@ -19,10 +19,11 @@ ChatGPT は **仕様不足・仕様変更・設計相談・ブロッカー解消
 3. `docs/product/requirements.md`
 4. `docs/product/basic-design.md`
 5. `docs/product/tech-stack.md`
-6. `docs/delivery/acceptance-criteria.md`
-7. `docs/delivery/pr-plan.md`
-8. `AGENTS.md`
-9. 関連する既存コード・型・テスト
+6. `docs/product/ui-system.md`
+7. `docs/delivery/acceptance-criteria.md`
+8. `docs/delivery/pr-plan.md`
+9. `AGENTS.md`
+10. 関連する既存コード・型・テスト
 
 ## 3. Plan-First Workflow
 非自明な作業では、実装前に Plan mode を使うこと。

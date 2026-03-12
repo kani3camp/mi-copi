@@ -1,84 +1,141 @@
 # Scoring
 
+Canonical source:
+- This document defines the exact v1 score formula used by `score_formula_version = "v1"`.
+- Product intent comes from `docs/product/requirements.md` and `docs/product/basic-design.md`.
+- Persistence field names come from `docs/implementation/db-schema.md` and `docs/implementation/ts-types.md`.
+
+Related docs:
+- `docs/product/requirements.md`
+- `docs/product/basic-design.md`
+- `docs/implementation/training-flow.md`
+- `docs/implementation/db-schema.md`
+- `docs/implementation/ts-types.md`
+
+This document decides:
+- per-question score inputs and multiplier tables
+- session summary aggregate formulas
+- rounding and persistence rules
+
+This document does not decide:
+- replay penalties
+- adaptive difficulty
+- rank / badge / skill systems
+
 ## Score Version
 
 - `score_formula_version = "v1"`
 
-## Canonical Formula Shape
+## v1 Intent
+
+The MVP score is not a pure correct-rate metric.
+It weights three axes together so that close errors, slow answers, and harder intervals are all visible in the result:
+
+- `errorSemitones`
+- `responseTimeMs`
+- `targetIntervalSemitones`
+
+## Per-Question Formula
 
 For each answered question:
 
 ```txt
-question_score =
+questionScore =
   round3(
     100
-    * accuracy_multiplier
-    * speed_multiplier
-    * distance_multiplier
+    * errorMultiplier
+    * timeMultiplier
+    * intervalDifficultyMultiplier
   )
 ```
 
 Where:
 
-- `accuracy_multiplier`: reflects pitch accuracy
-- `speed_multiplier`: reflects answer speed
-- `distance_multiplier`: reflects target interval distance
+- `errorMultiplier` uses `abs(errorSemitones)`
+- `timeMultiplier` uses `responseTimeMs`
+- `intervalDifficultyMultiplier` uses `abs(targetIntervalSemitones)`
 
 ## Multiplier Tables
 
-### `accuracy_multiplier`
+### `errorMultiplier`
 
-Absolute `pitch_error_cents` is mapped as follows:
-
-| Condition | Multiplier |
+| Absolute `errorSemitones` | Multiplier |
 | --- | --- |
-| `<= 5` | `1.000` |
-| `<= 10` | `0.950` |
-| `<= 20` | `0.850` |
-| `<= 35` | `0.700` |
-| `<= 50` | `0.500` |
-| `> 50` | `0.250` |
+| `0` | `1.000` |
+| `1` | `0.550` |
+| `2` | `0.250` |
+| `>= 3` | `0.000` |
 
-### `speed_multiplier`
+### `timeMultiplier`
 
-`response_time_ms` measured from playback end, including manual replay time, is mapped as follows:
+`responseTimeMs` is measured from the end of target-tone playback and includes manual replay time.
 
-| Condition | Multiplier |
+| `responseTimeMs` | Multiplier |
 | --- | --- |
-| `<= 1_000` | `1.000` |
-| `<= 2_000` | `0.950` |
-| `<= 3_500` | `0.850` |
-| `<= 5_000` | `0.700` |
-| `<= 8_000` | `0.500` |
-| `> 8_000` | `0.250` |
+| `<= 2_000` | `1.200` |
+| `<= 4_000` | `1.000` |
+| `<= 7_000` | `0.850` |
+| `> 7_000` | `0.700` |
 
-### `distance_multiplier`
+### `intervalDifficultyMultiplier`
 
-Absolute `distance_semitones` is mapped as follows:
+`targetIntervalSemitones` is mapped into the v1 interval bucket below.
+Because the MVP treats augmented fourth / diminished fifth as one unified answer candidate, `6` semitones shares the fifth-class bucket in v1 instead of introducing a separate multiplier.
 
-| Condition | Multiplier |
-| --- | --- |
-| `<= 2` | `1.000` |
-| `<= 5` | `1.050` |
-| `<= 8` | `1.100` |
-| `>= 9` | `1.150` |
+| Absolute `targetIntervalSemitones` | Interval bucket | Multiplier |
+| --- | --- | --- |
+| `0` | unison | `1.000` |
+| `1..2` | second | `1.050` |
+| `3..4` | third | `1.100` |
+| `5` | fourth | `1.180` |
+| `6..7` | tritone / fifth | `1.260` |
+| `8..9` | sixth | `1.360` |
+| `10..11` | seventh | `1.480` |
+| `12` | octave | `1.600` |
 
-## Calculation Rules
+## Session Summary Formulas
 
-- All multipliers are decimal values.
-- `question_score = round3(100 * accuracy_multiplier * speed_multiplier * distance_multiplier)`.
-- Persist multiplier outputs and final score semantics with up to three fractional digits.
-- Final stored `score` is rounded to the third decimal place.
-- UI may round the final score to an integer for display only.
-- Internal calculations and DB persistence both keep decimal scores to three fractional digits.
+Only answered questions are aggregated.
+Timed-out unanswered questions are discarded before scoring and are not included in summary values.
 
-## Session-Level Values
+```txt
+sessionScore =
+  round3(sum(questionScore))
 
-- `total_score` is the sum of saved per-question scores.
-- `average_score` is the arithmetic mean of saved per-question scores.
-- Timed-out unanswered questions do not contribute a score.
+avgScorePerQuestion =
+  round3(sessionScore / answeredQuestionCount)
 
-## Storage Rules
+accuracyRate =
+  round3(correctQuestionCount / answeredQuestionCount)
 
-- Persist per-question `score` as `numeric(..., 3)`.
+avgErrorAbs =
+  round3(sum(abs(errorSemitones)) / answeredQuestionCount)
+
+avgResponseTimeMs =
+  round3(sum(responseTimeMs) / answeredQuestionCount)
+```
+
+If `answeredQuestionCount = 0`, all average-style summary values are `0`.
+
+## Rounding Rules
+
+- All internal calculations use decimal numbers.
+- `round3(value)` means rounding to three fractional digits.
+- DB persistence keeps score values to three fractional digits.
+- UI display may round score values for presentation only.
+- Do not round intermediate multipliers before the final `round3(...)` step.
+
+## Persistence Rules
+
+- Persist per-question `score` to `question_results.score`.
+- Persist session-level `sessionScore` to `training_sessions.session_score`.
+- Persist `avgScorePerQuestion`, `accuracyRate`, `avgErrorAbs`, and `avgResponseTimeMs` to their explicit session summary columns.
 - Persist `score_formula_version = "v1"` on both `training_sessions` and `question_results`.
+- Replay counts are saved for analysis, but they do not affect the v1 formula.
+
+## Intentionally Out Of Scope
+
+- replay-based penalties or bonuses
+- adaptive score scaling by user history
+- mode-specific alternate formulas
+- recalculating old rows into a new formula version

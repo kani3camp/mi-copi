@@ -58,7 +58,7 @@ Session time-limit handling:
 - `responseTimeMs` starts at the end of playback.
 - `responseTimeMs` stops when the user submits an answer.
 - Manual replay time counts toward `responseTimeMs`.
-- `endCondition.timeLimitMinutes` applies to the whole session.
+- `endCondition.timeLimitSeconds` applies to the whole session.
 - Timed-out unanswered questions are excluded from persisted results and score totals.
 
 ## Persistence Rules
