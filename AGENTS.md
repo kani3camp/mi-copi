@@ -12,62 +12,51 @@ ChatGPT は **仕様不足・仕様変更・設計相談・ブロッカー解消
 
 ---
 
-## 2. Source of Truth
+## 2. Canonical Reading Order
+作業前に、以下の順で確認すること。
+1. `docs/product/current-constraints.md`
+2. `docs/product/decision-log.md`
+3. `docs/product/requirements.md`
+4. `docs/product/basic-design.md`
+5. `docs/product/tech-stack.md`
+6. `docs/delivery/acceptance-criteria.md`
+7. `docs/delivery/pr-plan.md`
+8. `AGENTS.md`
+9. 関連する既存コード・型・テスト
 
-作業前に、以下の順で確認してください。
+## 3. Plan-First Workflow
+非自明な作業では、実装前に Plan mode を使うこと。
 
-1. `docs/tasks/active-task.md`
-2. `docs/product/current-constraints.md`
-3. `docs/product/decision-log.md`
-4. `docs/product/requirements.md`
-5. `docs/product/basic-design.md`
-6. `docs/product/tech-stack.md`
-7. `AGENTS.md`
-8. 既存コード・型・テスト
+Plan を立て始める前に、まず `git status` と必要な差分確認を行い、作業ツリーに前の対応の未コミット差分が残っていないか確認すること。
 
-### 参照ルール
-- 今回の作業範囲・done は `docs/tasks/active-task.md` を最優先する
-- 現在有効な固定制約は `docs/product/current-constraints.md` を優先する
-- 仕様判断の履歴は `docs/product/decision-log.md` を参照する
-- 実装が既存コードと仕様で矛盾する場合は、既存コードではなく仕様ファイルを優先する
-- 仕様ファイル同士で矛盾がある場合は、勝手に広げず、より新しく・より具体的な記述を優先する
-- それでも判断不能な場合のみ、人間確認事項として明示する
+前の対応の未コミット差分がある場合の扱い:
+- repo 追跡対象の変更や、前の対応に明らかに属する untracked file が、直前の1タスクとして自然にまとまっているなら、先に適切な Conventional Commit でコミットしてから新しい Plan に進む
+- 差分が混在している、次の作業準備と見分けがつかない、意図を推定しきれない、コミットしてよいか自信が持てない場合は、人間に判断を求める
+- 前の対応の整理コミットには、その差分だけを含める。新しい作業や無関係な変更を抱き合わせない
+- この確認対象は、新しい Plan を始める前から存在していた差分であり、現在の Plan 作成中に加えた編集は含めない
 
-### task ファイルの例外
-- 原則として task 正本は `docs/tasks/active-task.md`
-- もしそれが存在せず `docs/product/active-task.md` が存在する場合は一時的にそれを参照してよい
-- ただし、その場合は人間確認事項に一度だけ明示すること
+非自明な作業の目安:
+- 30分以上かかりそうな変更
+- 複数ディレクトリ / 複数責務にまたがる変更
+- UIだけでなくロジックや保存契約も触る変更
+- 根本原因が明確でないバグ修正
+- Approval Boundaries に近い変更
 
----
+Plan には最低限、以下を含める:
+- Goal
+- Why now
+- References
+- In scope
+- Out of scope
+- Files likely touched
+- Verification
+- Human approval needed?
 
-## 3. Autonomy Policy
+小さく明確な修正では、repo 内に plan ファイルを作らず、Codex の Plan mode 出力だけで進めてよい。
 
-### 基本方針
-- デフォルトは **自律実行**
-- 通常の実装作業で逐次承認を求めない
-- 自分でタスクを分解し、小さく安全に進める
-- 必要な検証を自分で実行する
-- 失敗したら自分で修正を試みる
-- 中間確認を求めず、まず完了まで前進する
-- 不明点があっても、仕様の範囲で成立する最小実装を優先する
-- 「相談した方がよさそう」レベルでは止まらず、まず前に進める
-
-### 止まってよい条件
-以下の場合のみ、人間または ChatGPT に相談してよいです。
-
-- Source of Truth に必要な仕様が存在しない
-- Source of Truth 同士が矛盾している
-- 承認が必要な変更に踏み込む
-- 2〜3回の修正ループでも前進できない
-- 実装ではなく仕様決定そのものが必要
-- データ互換性や意味変更が避けられない
-
-### 止まってはいけないこと
-- 単なる実装上の迷い
-- 些細な命名相談
-- 軽微な設計判断
-- 自分で確認できる範囲の検証不足
-- 「一応確認したい」という理由だけの停止
+複数セッションにまたがる作業、または multi-hour の作業だけ、
+`docs/plans/YYYY-MM-DD-<slug>.md`
+を作成または更新して進めること。
 
 ---
 
@@ -296,5 +285,9 @@ ChatGPT を前提にしすぎないこと。
 - 通常の作業完了時は、Codex が自律的にコミットしてよい
 - コミットメッセージは Conventional Commits を基本とする
 - 人間にコミットメッセージ案を毎回提示する必要はない
+- 新しい Plan の前に前タスク由来の未コミット差分が見つかった場合、その差分が明確に1つの完了済み作業としてまとまっているなら、Codex が適切な Conventional Commit で先にコミットしてよい
+- 上記の差分に含めてよいのは、repo 追跡対象の変更と、前タスクに明らかに属する untracked file のみとする
+- 差分の責務境界が曖昧、複数タスクが混在、あるいはコミット可否の判断に自信がない場合は、Codex は推測で進めず人間に判断を求める
+- 前タスク整理のコミットでは、対象差分だけをステージし、新しい作業や無関係な変更を混ぜない
 - commit / push / PR 作成が環境や承認設定でブロックされた場合のみ、その事実を人間確認事項として短く報告する
 - 破壊的な Git 操作（rebase のやり直し、reset、history rewrite など）は人間確認なしで行わない
