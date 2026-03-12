@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
 import { getAuthClient } from "../../lib/auth/client";
+import { Button, Notice, SectionHeader, Surface } from "../ui/primitives";
 
 interface AuthTestControlsProps {
   isAuthenticated: boolean;
@@ -20,50 +21,83 @@ export function AuthTestControls({
   const [saveResult, setSaveResult] =
     useState<SaveTrainingSessionResult | null>(null);
   const [isSavePending, startSaveTransition] = useTransition();
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function handleGoogleSignIn() {
-    await authClient.signIn.social({
-      provider: "google",
-      callbackURL: "/auth-test",
-    });
+    setActionError(null);
+
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/auth-test",
+      });
+    } catch {
+      setActionError(
+        "Google ログインを開始できませんでした。もう一度お試しください。",
+      );
+    }
   }
 
   async function handleSignOut() {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          refetch();
-          router.refresh();
+    setActionError(null);
+
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            refetch();
+            router.refresh();
+          },
         },
-      },
-    });
+      });
+    } catch {
+      setActionError("サインアウトに失敗しました。もう一度お試しください。");
+    }
+  }
+
+  function handleRefreshSession() {
+    setActionError(null);
+
+    try {
+      refetch();
+      router.refresh();
+    } catch {
+      setActionError(
+        "セッション再取得に失敗しました。時間をおいてもう一度お試しください。",
+      );
+    }
   }
 
   function handleSaveDummyTrainingSession() {
+    setActionError(null);
+    setSaveResult(null);
+
     startSaveTransition(async () => {
-      const result = await saveDummyTrainingSession();
-      setSaveResult(result);
-      router.refresh();
+      try {
+        const result = await saveDummyTrainingSession();
+        setSaveResult(result);
+        router.refresh();
+      } catch {
+        setActionError(
+          "ダミーセッション保存の呼び出しに失敗しました。認証状態と DB 接続を確認してください。",
+        );
+      }
     });
   }
 
   return (
-    <>
-      <section style={{ display: "grid", gap: "12px" }}>
-        <div>
-          <strong>Client session</strong>
-        </div>
-        <pre
-          style={{
-            margin: 0,
-            padding: "12px",
-            border: "1px solid #d4d4d8",
-            borderRadius: "8px",
-            overflowX: "auto",
-            background: "#fafafa",
-            fontSize: "12px",
-          }}
-        >
+    <div className="ui-stack-lg">
+      {actionError ? <Notice tone="error">{actionError}</Notice> : null}
+      {error?.message ? (
+        <Notice tone="error">Client session hook error: {error.message}</Notice>
+      ) : null}
+
+      <Surface>
+        <SectionHeader
+          title="Client session"
+          description="Client hook から見えている session state と、認証操作の結果確認に使います。"
+        />
+        <pre className="ui-code-block">
           {JSON.stringify(
             {
               isPending,
@@ -74,47 +108,41 @@ export function AuthTestControls({
             2,
           )}
         </pre>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <button type="button" onClick={handleGoogleSignIn}>
+        <div className="ui-action-row">
+          <Button type="button" onClick={handleGoogleSignIn} variant="primary">
             Sign in with Google
-          </button>
-          <button type="button" onClick={handleSignOut}>
+          </Button>
+          <Button type="button" onClick={handleSignOut} variant="secondary">
             Sign out
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              refetch();
-              router.refresh();
-            }}
-          >
+          </Button>
+          <Button type="button" onClick={handleRefreshSession} variant="ghost">
             Refresh session
-          </button>
+          </Button>
         </div>
-      </section>
+      </Surface>
 
-      <section style={{ display: "grid", gap: "12px" }}>
-        <div>
-          <strong>Save test</strong>
+      <Surface>
+        <SectionHeader
+          title="Save test"
+          description="サインイン済みのときだけ、保存 entrypoint にダミーセッションを送って疎通確認できます。"
+        />
+        {!isAuthenticated ? (
+          <Notice>
+            Save test は server current user
+            ベースで有効化しています。先にログインしてから再読み込みしてください。
+          </Notice>
+        ) : null}
+        <div className="ui-action-row">
+          <Button
+            type="button"
+            disabled={!isAuthenticated || isSavePending}
+            onClick={handleSaveDummyTrainingSession}
+            variant="primary"
+          >
+            {isSavePending ? "Saving..." : "Save dummy training session"}
+          </Button>
         </div>
-        <button
-          type="button"
-          disabled={!isAuthenticated || isSavePending}
-          onClick={handleSaveDummyTrainingSession}
-        >
-          {isSavePending ? "Saving..." : "Save dummy training session"}
-        </button>
-        <pre
-          style={{
-            margin: 0,
-            padding: "12px",
-            border: "1px solid #d4d4d8",
-            borderRadius: "8px",
-            overflowX: "auto",
-            background: "#fafafa",
-            fontSize: "12px",
-          }}
-        >
+        <pre className="ui-code-block">
           {JSON.stringify(
             saveResult ?? {
               ok: null,
@@ -126,7 +154,7 @@ export function AuthTestControls({
             2,
           )}
         </pre>
-      </section>
-    </>
+      </Surface>
+    </div>
   );
 }

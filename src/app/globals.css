@@ -518,6 +518,20 @@ a {
   font-size: var(--font-body-sm-size);
 }
 
+.ui-code-block {
+  margin: 0;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(217, 222, 216, 0.95);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--color-text);
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .ui-input,
 .ui-select,
 .ui-range {

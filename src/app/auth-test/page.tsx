@@ -2,6 +2,14 @@ import type { SaveTrainingSessionInput } from "../../features/training/model/typ
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
 import { saveTrainingSessionForCurrentUser } from "../../features/training/server/saveTrainingSession.entry";
 import { getCurrentUserOrNull } from "../../lib/auth/server";
+import {
+  AppShell,
+  ButtonLink,
+  Notice,
+  PageHero,
+  SectionHeader,
+  Surface,
+} from "../ui/primitives";
 import { AuthTestControls } from "./auth-test-controls";
 
 export default async function AuthTestPage() {
@@ -14,46 +22,39 @@ export default async function AuthTestPage() {
   }
 
   return (
-    <main
-      style={{
-        maxWidth: "860px",
-        margin: "0 auto",
-        padding: "40px 20px",
-        display: "grid",
-        gap: "24px",
-      }}
-    >
-      <header style={{ display: "grid", gap: "8px" }}>
-        <h1 style={{ margin: 0 }}>Auth Test</h1>
-        <p style={{ margin: 0 }}>
-          Better Auth / Google OAuth の疎通確認専用ページです。
-        </p>
-      </header>
+    <AppShell narrow>
+      <PageHero
+        title="Auth Test"
+        eyebrow="Developer Utility"
+        subtitle="Better Auth / Google OAuth と保存疎通を確認するための開発用ページです。product route ではありません。"
+        actions={
+          <>
+            <ButtonLink href="/">ホームへ戻る</ButtonLink>
+            <ButtonLink href="/login">ログイン画面へ</ButtonLink>
+          </>
+        }
+      />
 
-      <section style={{ display: "grid", gap: "12px" }}>
-        <div>
-          <strong>Server current user</strong>
-        </div>
-        <pre
-          style={{
-            margin: 0,
-            padding: "12px",
-            border: "1px solid #d4d4d8",
-            borderRadius: "8px",
-            overflowX: "auto",
-            background: "#fafafa",
-            fontSize: "12px",
-          }}
-        >
+      <Notice>
+        開発用の検証 route です。日常利用の UI polish はここではなく product
+        route を優先します。
+      </Notice>
+
+      <Surface tone="accent">
+        <SectionHeader
+          title="Server current user"
+          description="Server Component から見えている current user をそのまま表示します。"
+        />
+        <pre className="ui-code-block">
           {JSON.stringify(currentUser, null, 2)}
         </pre>
-      </section>
+      </Surface>
 
       <AuthTestControls
         isAuthenticated={Boolean(currentUser)}
         saveDummyTrainingSession={saveDummyTrainingSession}
       />
-    </main>
+    </AppShell>
   );
 }
 
