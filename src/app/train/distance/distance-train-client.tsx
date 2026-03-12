@@ -8,7 +8,6 @@ import {
   buildDistanceGuestSummary,
   type DistanceGuestResult,
   evaluateDistanceAnswer,
-  generateDistanceQuestion,
   getDistanceAnswerChoices,
   getDistanceQuestionCount,
   getNoteFrequency,
@@ -25,6 +24,11 @@ import {
   formatSignedSemitoneLabel,
   getIntervalLabel,
 } from "../../../features/training/model/interval-notation";
+import {
+  createQuestionGeneratorState,
+  type QuestionGeneratorState,
+  takeNextQuestion,
+} from "../../../features/training/model/question-generator";
 import {
   hasTrainingResultSavePayload,
   shouldAutoSaveTrainingResult,
@@ -135,6 +139,7 @@ export function DistanceTrainClient({
   const playedNonceRef = useRef<number | null>(null);
   const playbackLockRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const questionGeneratorStateRef = useRef<QuestionGeneratorState | null>(null);
   const sessionDeadlineAtRef = useRef<number | null>(null);
   const timeoutHandledRef = useRef(false);
   const plannedQuestionCount = getDistanceQuestionCount(config);
@@ -345,7 +350,10 @@ export function DistanceTrainClient({
         ? config.endCondition.timeLimitMinutes * 60 * 1000
         : null,
     );
-    setActiveQuestion(createActiveQuestion(config, 0, playbackIdRef));
+    questionGeneratorStateRef.current = createQuestionGeneratorState(config);
+    setActiveQuestion(
+      createActiveQuestion(config, 0, playbackIdRef, questionGeneratorStateRef),
+    );
     setPhase("preparing");
   }
 
@@ -455,6 +463,7 @@ export function DistanceTrainClient({
         config,
         activeQuestion.question.questionIndex + 1,
         playbackIdRef,
+        questionGeneratorStateRef,
       ),
     );
     setPhase("playing");
@@ -474,6 +483,7 @@ export function DistanceTrainClient({
     setSaveResult(null);
     persistedConfigSessionRef.current = null;
     autoSaveAttemptedSessionRef.current = null;
+    questionGeneratorStateRef.current = null;
     sessionDeadlineAtRef.current = null;
     timeoutHandledRef.current = false;
     setRemainingTimeMs(null);
@@ -1144,9 +1154,23 @@ function createActiveQuestion(
   config: DistanceTrainingConfig,
   questionIndex: number,
   playbackIdRef: React.MutableRefObject<number>,
+  questionGeneratorStateRef: React.MutableRefObject<QuestionGeneratorState | null>,
 ): ActiveQuestionState {
+  if (!questionGeneratorStateRef.current) {
+    throw new Error(
+      "Question generator state must be initialized before play.",
+    );
+  }
+
+  const nextQuestion = takeNextQuestion(
+    config,
+    questionGeneratorStateRef.current,
+    questionIndex,
+  );
+  questionGeneratorStateRef.current = nextQuestion.state;
+
   return {
-    question: generateDistanceQuestion(config, questionIndex),
+    question: nextQuestion.question,
     presentedAt: new Date().toISOString(),
     answeringStartedAt: null,
     replayBaseCount: 0,

@@ -22,13 +22,17 @@ import {
   type buildKeyboardGuestSaveInput,
   buildKeyboardGuestSummary,
   evaluateKeyboardAnswer,
-  generateKeyboardQuestion,
   getKeyboardAnswerChoices,
   getKeyboardQuestionCount,
   getNoteFrequency,
   type KeyboardGuestResult,
   validateKeyboardTrainingConfig,
 } from "../../../features/training/model/keyboard-guest";
+import {
+  createQuestionGeneratorState,
+  type QuestionGeneratorState,
+  takeNextQuestion,
+} from "../../../features/training/model/question-generator";
 import {
   hasTrainingResultSavePayload,
   shouldAutoSaveTrainingResult,
@@ -152,6 +156,7 @@ export function KeyboardTrainClient({
   const playedNonceRef = useRef<number | null>(null);
   const playbackLockRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const questionGeneratorStateRef = useRef<QuestionGeneratorState | null>(null);
   const sessionDeadlineAtRef = useRef<number | null>(null);
   const timeoutHandledRef = useRef(false);
   const plannedQuestionCount = getKeyboardQuestionCount(config);
@@ -355,7 +360,10 @@ export function KeyboardTrainClient({
         ? config.endCondition.timeLimitMinutes * 60 * 1000
         : null,
     );
-    setActiveQuestion(createActiveQuestion(config, 0, playbackIdRef));
+    questionGeneratorStateRef.current = createQuestionGeneratorState(config);
+    setActiveQuestion(
+      createActiveQuestion(config, 0, playbackIdRef, questionGeneratorStateRef),
+    );
     setPhase("preparing");
   }
 
@@ -465,6 +473,7 @@ export function KeyboardTrainClient({
         config,
         activeQuestion.question.questionIndex + 1,
         playbackIdRef,
+        questionGeneratorStateRef,
       ),
     );
     setPhase("playing");
@@ -484,6 +493,7 @@ export function KeyboardTrainClient({
     setSaveResult(null);
     persistedConfigSessionRef.current = null;
     autoSaveAttemptedSessionRef.current = null;
+    questionGeneratorStateRef.current = null;
     sessionDeadlineAtRef.current = null;
     timeoutHandledRef.current = false;
     setRemainingTimeMs(null);
@@ -1086,9 +1096,23 @@ function createActiveQuestion(
   config: KeyboardTrainingConfig,
   questionIndex: number,
   playbackIdRef: React.MutableRefObject<number>,
+  questionGeneratorStateRef: React.MutableRefObject<QuestionGeneratorState | null>,
 ): ActiveQuestionState {
+  if (!questionGeneratorStateRef.current) {
+    throw new Error(
+      "Question generator state must be initialized before play.",
+    );
+  }
+
+  const nextQuestion = takeNextQuestion(
+    config,
+    questionGeneratorStateRef.current,
+    questionIndex,
+  );
+  questionGeneratorStateRef.current = nextQuestion.state;
+
   return {
-    question: generateKeyboardQuestion(config, questionIndex),
+    question: nextQuestion.question,
     presentedAt: new Date().toISOString(),
     answeringStartedAt: null,
     replayBaseCount: 0,
