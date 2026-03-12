@@ -248,7 +248,7 @@ export default async function StatsPage() {
             {stats.intervalPerformance.length > 0 ? (
               <div className="ui-stack-lg">
                 <div className="ui-grid-chart-panels">
-                  <MetricLineChart
+                  <MetricBarChart
                     title="正答率"
                     valueRangeLabel={formatRangeLabel(
                       stats.intervalPerformance.map(
@@ -267,7 +267,7 @@ export default async function StatsPage() {
                       value: interval.correctRate,
                     }))}
                   />
-                  <MetricLineChart
+                  <MetricBarChart
                     title="平均誤差"
                     valueRangeLabel={formatRangeLabel(
                       stats.intervalPerformance.map(
@@ -286,7 +286,7 @@ export default async function StatsPage() {
                       value: interval.averageError,
                     }))}
                   />
-                  <MetricLineChart
+                  <MetricBarChart
                     title="平均回答時間"
                     valueRangeLabel={formatRangeLabel(
                       stats.intervalPerformance.map(
@@ -305,7 +305,7 @@ export default async function StatsPage() {
                       value: interval.averageResponseTimeMs,
                     }))}
                   />
-                  <MetricLineChart
+                  <MetricBarChart
                     title="平均スコア"
                     valueRangeLabel={formatRangeLabel(
                       stats.intervalPerformance.map(
@@ -703,6 +703,89 @@ function MetricLineChart(props: {
               );
             })}
           </svg>
+        </div>
+      </div>
+      <div
+        className="ui-chart-label-row"
+        style={createChartColumnsStyle(props.points.length)}
+        aria-hidden="true"
+      >
+        {props.points.map((point, index) => {
+          const showLabel =
+            !props.denseLabels ||
+            shouldShowDenseChartLabel(index, props.points.length);
+
+          return (
+            <span
+              key={point.key}
+              className="ui-chart-label-row__item"
+              data-visible={showLabel}
+            >
+              {showLabel ? point.label : ""}
+            </span>
+          );
+        })}
+      </div>
+      <ScreenReaderText as="p">
+        {props.points.map((point) => point.assistiveLabel).join("、")}
+      </ScreenReaderText>
+    </div>
+  );
+}
+
+function MetricBarChart(props: {
+  title: string;
+  valueRangeLabel: string;
+  valueFormatter: (value: number) => string;
+  points: ChartPoint[];
+  denseLabels?: boolean;
+}) {
+  const maxValue = Math.max(...props.points.map((point) => point.value), 1);
+
+  return (
+    <div className="ui-panel-card ui-chart-card">
+      <div className="ui-inline-split">
+        <strong>{props.title}</strong>
+        <span className="ui-muted">{props.valueRangeLabel}</span>
+      </div>
+      <div className="ui-bar-chart">
+        <div className="ui-bar-chart__axis">
+          <span>{props.valueFormatter(maxValue)}</span>
+          <span>{props.valueFormatter(0)}</span>
+        </div>
+        <div className="ui-bar-chart__plot" aria-hidden="true">
+          <div className="ui-bar-chart__grid">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div
+            className="ui-bar-chart__bars"
+            style={createChartColumnsStyle(props.points.length)}
+          >
+            {props.points.map((point) => {
+              const height = Math.max(
+                12,
+                Math.round((point.value / maxValue) * 104),
+              );
+
+              return (
+                <div key={point.key} className="ui-bar-chart__bar">
+                  <span className="ui-bar-chart__value">
+                    {props.valueFormatter(point.value)}
+                  </span>
+                  <div
+                    className="ui-bar-chart__column"
+                    style={
+                      {
+                        "--bar-height": `${height}px`,
+                      } as CSSProperties
+                    }
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
       <div

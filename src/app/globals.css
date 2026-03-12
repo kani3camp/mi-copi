@@ -797,6 +797,74 @@ a {
   stroke-width: 1.8;
 }
 
+.ui-bar-chart {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: stretch;
+}
+
+.ui-bar-chart__axis {
+  display: grid;
+  align-content: space-between;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.ui-bar-chart__plot {
+  position: relative;
+  min-height: 140px;
+}
+
+.ui-bar-chart__grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: space-between;
+  pointer-events: none;
+}
+
+.ui-bar-chart__grid span {
+  border-top: 1px solid rgba(169, 201, 177, 0.42);
+}
+
+.ui-bar-chart__bars {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 6px;
+  height: 100%;
+  min-height: 140px;
+  align-items: end;
+}
+
+.ui-bar-chart__bar {
+  display: grid;
+  gap: 8px;
+  align-content: end;
+  justify-items: center;
+  min-width: 0;
+}
+
+.ui-bar-chart__value {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.ui-bar-chart__column {
+  width: 100%;
+  min-height: 12px;
+  height: var(--bar-height, 24px);
+  border-radius: 10px 10px 4px 4px;
+  background: linear-gradient(
+    180deg,
+    var(--color-chart-secondary) 0%,
+    var(--color-chart-primary) 100%
+  );
+}
+
 .ui-chart-label-row,
 .ui-chart-count-row {
   display: grid;
