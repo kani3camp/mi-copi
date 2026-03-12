@@ -331,7 +331,6 @@ export default async function StatsPage() {
                     assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} ${interval.questionCount} 問`,
                     value: `${interval.questionCount}問`,
                   }))}
-                  denseLabels
                 />
               </div>
             ) : (

@@ -872,6 +872,7 @@ a {
 .ui-chart-label-row__item {
   color: var(--color-text-muted);
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .ui-chart-count-card {
@@ -886,11 +887,13 @@ a {
 .ui-chart-count-row__item span {
   color: var(--color-text-muted);
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .ui-chart-count-row__item strong {
   font-size: 12px;
   color: var(--color-text);
+  white-space: nowrap;
 }
 
 .ui-comparison-bars {
