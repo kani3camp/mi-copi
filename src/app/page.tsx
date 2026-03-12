@@ -86,6 +86,7 @@ export default async function HomePage() {
                     ? formatTrainingModeLabel(summary.lastUsedMode)
                     : "-"
                 }
+                compactValue
               />
               <MetricCard
                 label="直近セッションスコア"
