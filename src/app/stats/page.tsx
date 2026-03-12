@@ -632,11 +632,13 @@ function MetricLineChart(props: {
   const range = Math.max(maxValue - minValue, 1);
   const polylinePoints = props.points
     .map((point, index) => {
-      const x =
-        props.points.length === 1
-          ? 50
-          : (index / (props.points.length - 1)) * 100;
-      const y = 64 - ((point.value - minValue) / range) * 48;
+      const { x, y } = getLineChartCoordinates(
+        index,
+        props.points.length,
+        point.value,
+        minValue,
+        range,
+      );
 
       return `${x},${y}`;
     })
@@ -686,11 +688,13 @@ function MetricLineChart(props: {
               className="ui-line-chart__polyline"
             />
             {props.points.map((point, index) => {
-              const x =
-                props.points.length === 1
-                  ? 50
-                  : (index / (props.points.length - 1)) * 100;
-              const y = 64 - ((point.value - minValue) / range) * 48;
+              const { x, y } = getLineChartCoordinates(
+                index,
+                props.points.length,
+                point.value,
+                minValue,
+                range,
+              );
 
               return (
                 <circle
@@ -993,4 +997,25 @@ function createChartColumnsStyle(columnCount: number): CSSProperties {
 
 function formatQuestionCountLabel(value: number): string {
   return `${value}問`;
+}
+
+function getLineChartCoordinates(
+  index: number,
+  total: number,
+  value: number,
+  minValue: number,
+  range: number,
+): { x: number; y: number } {
+  const horizontalPadding = 4;
+  const left = horizontalPadding;
+  const right = 100 - horizontalPadding;
+  const bottom = 64;
+  const top = 16;
+  const usableWidth = right - left;
+  const usableHeight = bottom - top;
+
+  const x = total === 1 ? 50 : left + (index / (total - 1)) * usableWidth;
+  const y = bottom - ((value - minValue) / range) * usableHeight;
+
+  return { x, y };
 }
