@@ -259,9 +259,8 @@ export default async function StatsPage() {
                     valueFormatter={formatAccuracyLabel}
                     points={stats.intervalPerformance.map((interval) => ({
                       key: `${interval.intervalSemitones}-accuracy`,
-                      label: getIntervalLabel(
+                      label: getCompactIntervalChartLabel(
                         interval.intervalSemitones,
-                        intervalNotationStyle,
                       ),
                       assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} 正答率 ${formatAccuracyLabel(interval.correctRate)} / ${interval.questionCount} 問`,
                       value: interval.correctRate,
@@ -278,9 +277,8 @@ export default async function StatsPage() {
                     valueFormatter={formatAvgErrorLabel}
                     points={stats.intervalPerformance.map((interval) => ({
                       key: `${interval.intervalSemitones}-error`,
-                      label: getIntervalLabel(
+                      label: getCompactIntervalChartLabel(
                         interval.intervalSemitones,
-                        intervalNotationStyle,
                       ),
                       assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} 平均誤差 ${formatAvgErrorLabel(interval.averageError)} / ${interval.questionCount} 問`,
                       value: interval.averageError,
@@ -297,9 +295,8 @@ export default async function StatsPage() {
                     valueFormatter={formatResponseTimeMsLabel}
                     points={stats.intervalPerformance.map((interval) => ({
                       key: `${interval.intervalSemitones}-response`,
-                      label: getIntervalLabel(
+                      label: getCompactIntervalChartLabel(
                         interval.intervalSemitones,
-                        intervalNotationStyle,
                       ),
                       assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} 平均回答時間 ${formatResponseTimeMsLabel(interval.averageResponseTimeMs)} / ${interval.questionCount} 問`,
                       value: interval.averageResponseTimeMs,
@@ -316,9 +313,8 @@ export default async function StatsPage() {
                     valueFormatter={formatScoreLabel}
                     points={stats.intervalPerformance.map((interval) => ({
                       key: `${interval.intervalSemitones}-score`,
-                      label: getIntervalLabel(
+                      label: getCompactIntervalChartLabel(
                         interval.intervalSemitones,
-                        intervalNotationStyle,
                       ),
                       assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} 平均スコア ${formatScoreLabel(interval.averageScore)} / ${interval.questionCount} 問`,
                       value: interval.averageScore,
@@ -771,9 +767,6 @@ function MetricBarChart(props: {
 
               return (
                 <div key={point.key} className="ui-bar-chart__bar">
-                  <span className="ui-bar-chart__value">
-                    {props.valueFormatter(point.value)}
-                  </span>
                   <div
                     className="ui-bar-chart__column"
                     style={
@@ -983,6 +976,26 @@ function formatCompactDateLabel(value: string): string {
   }
 
   return `${month}/${day}`;
+}
+
+function getCompactIntervalChartLabel(semitones: number): string {
+  const labels: Record<number, string> = {
+    0: "完1",
+    1: "短2",
+    2: "長2",
+    3: "短3",
+    4: "長3",
+    5: "完4",
+    6: "増4/減5",
+    7: "完5",
+    8: "短6",
+    9: "長6",
+    10: "短7",
+    11: "長7",
+    12: "完8",
+  };
+
+  return labels[semitones] ?? `${semitones}半`;
 }
 
 function shouldShowDenseChartLabel(index: number, total: number): boolean {
