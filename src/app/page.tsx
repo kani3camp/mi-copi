@@ -78,6 +78,7 @@ export default async function HomePage() {
                 }
                 compactValue
                 accent
+                className="ui-metric-card--home-summary"
               />
               <MetricCard
                 label="最後に使ったモード"
@@ -87,6 +88,7 @@ export default async function HomePage() {
                     : "-"
                 }
                 compactValue
+                className="ui-metric-card--home-summary"
               />
               <MetricCard
                 label="直近セッションスコア"
