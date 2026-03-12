@@ -1,6 +1,7 @@
 This file is the repository-level implementation sequence, not the current task file.
 Most milestones below are already represented in the current repo.
-Use `docs/tasks/active-task.md` and `docs/implementation/route-status.md` to choose the next bundle now, and treat this file as historical sequencing guidance rather than a live backlog.
+Use `docs/tasks/active-task.md` for the live bundle memo and `docs/implementation/route-status.md` for current shipped status.
+Treat this file as historical sequencing guidance, not as the live backlog or product truth.
 
 # PR Plan
 

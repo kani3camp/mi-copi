@@ -1,43 +1,50 @@
 # Docs Overview
 
-`docs/` contains the repository source of truth and implementation bridge.
+`docs/` は product truth、implementation bridge、delivery memo を分けて置くためのディレクトリです。
 
-Start with `AGENTS.md` when you need repo execution rules, approval boundaries, or Codex operating policy.
-After that, use the canonical docs below for product truth.
+repo の実行ルール、承認境界、報告形式は先に `AGENTS.md` を読みます。そのうえで、仕様判断は canonical docs から行ってください。
 
-## Canonical Order
-1. `docs/product/current-constraints.md`
-2. `docs/product/decision-log.md`
-3. `docs/product/requirements.md`
-4. `docs/product/basic-design.md`
-5. `docs/product/tech-stack.md`
-6. `docs/product/ui-system.md`
-7. `docs/delivery/acceptance-criteria.md`
-8. `docs/delivery/pr-plan.md`
-9. `AGENTS.md`
+## Read Order
 
-`docs/product/*` が仕様と UX 方針の正本、`docs/implementation/*` がその実装ブリッジです。
-UI の見た目・トークン・参照基準を判断するときは `docs/product/ui-system.md` を追加で読むこと。
+1. `AGENTS.md`
+2. `docs/product/current-constraints.md`
+3. `docs/product/decision-log.md`
+4. `docs/product/requirements.md`
+5. `docs/product/basic-design.md`
+6. `docs/product/tech-stack.md`
+7. `docs/product/ui-system.md`
+8. `docs/delivery/acceptance-criteria.md`
+9. `docs/delivery/pr-plan.md`
 
-## Plans
-- Non-trivial work should start with Codex Plan mode.
-- Only long-running or multi-session work should create a persistent plan under `docs/plans/*.md`.
-- `docs/tasks/active-task.md` is the current bundle memo for Codex. Product truth is still decided by the canonical docs above.
+## Doc Roles
 
-## Supporting Docs
+- `docs/product/*`
+  - 仕様、固定制約、UX 方針の正本
+  - 実装が違って見えた場合でも、まずこちらを優先して確認する
+- `docs/implementation/*`
+  - product docs をコードに落とすための bridge
+  - `docs/implementation/route-status.md` は現在の route / persistence / page-level 実装の見取り図
+- `docs/delivery/*`
+  - 受け入れ条件や PR 分割などの delivery 補助メモ
+  - 現在の backlog や product scope の正本ではない
+- `docs/tasks/active-task.md`
+  - いま進める bundle の memo
+  - product truth ではない
+- `docs/plans/*`
+  - 長時間または複数セッションにまたがる作業の plan
+- `docs/architecture/*`
+  - 旧リンク互換用の補助配置
+  - canonical docs としては扱わない
 
-- `docs/implementation/*.md`
-  - Implementation-level contracts and design details derived from the product docs.
-  - `docs/implementation/route-status.md` is the current implementation map for routes, persistence behavior, and page-level status.
-- `docs/product/ui-system.md`
-  - Shared UI/UX criteria and initial design tokens for humans and Codex.
-- `docs/delivery/*.md`
-  - Delivery process notes, acceptance templates, and PR planning aids. They help bundle work, but they are not product truth.
-- `docs/architecture/*.md`
-  - Legacy compatibility pointers kept only so older links still resolve. Do not treat them as canonical.
+## Working Notes
+
+- non-trivial work は Plan mode から始める
+- 長時間または複数セッション作業だけ `docs/plans/*.md` を持つ
+- route の現在地、保存挙動、実装済み画面の確認は `docs/implementation/route-status.md` を起点にする
+- UI の見た目、トークン、参照基準を判断するときは `docs/product/ui-system.md` を追加で読む
 
 ## Verification
 
-- Standard repo scripts live in `package.json`.
-- Daily Codex verification should use `npm run verify`.
-- Biome write/read-only checks are split into `npm run format`, `npm run lint`, and `npm run check`.
+- 標準 scripts は `package.json` を参照する
+- 日常の総合検証は `npm run verify`
+- Biome の write/read-only チェックは `npm run format`、`npm run lint`、`npm run check` に分かれている

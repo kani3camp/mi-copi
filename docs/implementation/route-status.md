@@ -1,7 +1,6 @@
 # Route Status
 
-このファイルは「現在の実装見取り図」です。
-仕様や UX の正本は引き続き `docs/product/*` を参照してください。
+このファイルは route 単位の「現在の実装見取り図」です。仕様と UX の正本は引き続き `docs/product/*` を参照してください。
 
 ## Read This With
 
@@ -14,36 +13,36 @@
 
 ### `/`
 - Status: implemented
-- Purpose: ホーム。練習開始の入口
+- Purpose: ホーム。次の練習開始と保存済み成長確認の入口
 - Current behavior:
-  - ゲスト時は距離 / 鍵盤モードとログイン導線を表示
-  - ログイン時は保存済みセッション数、最近の平均誤差 / 回答時間、最近のセッション一覧を表示
-  - 保存済みセッション詳細への導線を持つ
+  - ゲスト時は距離 / 鍵盤モード開始とログイン導線を表示
+  - ログイン時は最終学習日時、最後に使ったモード、最近の平均誤差 / 回答時間、最近の保存済みセッション一覧を表示
+  - 保存済みセッション詳細と統計への導線を持つ
 
 ### `/login`
 - Status: implemented
-- Purpose: Google ログインとゲスト開始の入口
+- Purpose: Google ログインとゲスト利用の入口
 - Current behavior:
-  - Google OAuth 開始ボタンを提供
-  - ゲスト利用はホームへ戻る導線で開始
-  - サインイン済みなら current user を表示
+  - Google OAuth 開始 UI を提供
+  - ゲストでもそのまま練習を始められる案内を出す
+  - サインイン済みなら current user の名前とメールアドレスを表示
 
 ### `/settings`
 - Status: implemented
-- Purpose: 全体設定と last-used config の確認
+- Purpose: 全体設定と last-used config の確認 / リセット
 - Current behavior:
-  - 全体設定はゲスト時はブラウザ local storage、ログイン時は `user_settings` に保存
-  - ログイン時は距離 / 鍵盤それぞれの last-used config を表示
-  - Settings から各モードの last-used config を初期値に戻せる
-  - ゲスト時は保存済み設定の案内のみ表示
+  - 全体設定はゲスト時は browser local storage、ログイン時は `user_settings` に保存する
+  - ログイン時は距離 / 鍵盤それぞれの last-used config と更新時刻を表示する
+  - 各モードの last-used config を初期値に戻せる
+  - ゲスト時は保存済み設定がクラウド連携されない案内のみ表示する
 
 ### `/stats`
 - Status: implemented
 - Purpose: 保存済み学習データの read-only 集計表示
 - Current behavior:
-  - ログイン時のみ実データを表示
-  - 全体概要、モード別集計、直近 10 / 30 問、日次推移、音程別、方向別、回答傾向、最近のセッションを表示
-  - ゲスト時は保存不可の notice を表示
+  - ログイン時のみ実データを表示する
+  - 全体概要、スコア推移、モード別集計、直近 10 / 30 問、日次推移、音程別、方向別、最近のセッションを表示する
+  - ゲスト時は保存が必要な画面であることを示す notice を表示する
 
 ### `/train/distance`
 - Status: implemented
@@ -51,34 +50,35 @@
 - Current behavior:
   - 1 URL 内で `config -> preparing -> playing -> answering -> feedback -> result`
   - `question_count` と `time_limit` の終了条件を持つ
-  - replay は base / target 個別、回答時間に含まれる
-  - 結果画面でログイン時のみ自動保存を試行し、失敗時は retry 可能
-  - ログイン時のみ result 到達後に last-used config を保存
+  - replay は base / target 個別で、再生中の重複操作は無視し、回答時間にも含める
+  - result 到達後、ログイン時のみ 1 セッション分をまとめて自動保存する
+  - 自動保存失敗時は result 画面を維持し、retry を提供する
+  - ログイン時のみ last-used config を mode 別に保存する
 
 ### `/train/keyboard`
 - Status: implemented
 - Purpose: 鍵盤で target note を答えるトレーニング
 - Current behavior:
-  - 距離モードと同じ phase 構成
+  - 距離モードと同じ phase 構成と終了条件を持つ
   - 回答 UI は 12 音の on-screen keyboard
-  - 保存、time-limit、last-used config の扱いは距離モードと同じ
+  - result 到達後の自動保存、失敗時 retry、last-used config 保存の扱いは距離モードと同じ
 
 ### `/sessions/[sessionId]`
 - Status: implemented
 - Purpose: 保存済みセッション詳細の確認
 - Current behavior:
   - ログイン中の本人データだけ読める
-  - セッション概要、config snapshot、各回答結果を表示
-  - `sessionId` が不正、または他人のデータなら表示しない
+  - セッション概要、config snapshot、各回答結果を表示する
+  - `sessionId` が不正、未保存、または他人のデータなら `notFound()` 扱いにする
 
 ### `/auth-test`
 - Status: implemented as developer utility
 - Purpose: Better Auth / 保存疎通確認
 - Current behavior:
-  - current user 表示
-  - ダミーセッション保存の動作確認
+  - server current user を JSON 表示する
+  - ダミーセッション保存の動作確認を行える
 - Note:
-  - product route ではなく検証用ページ
+  - product route ではなく、開発時の確認用ページ
 
 ## Persistence Snapshot
 
@@ -89,7 +89,8 @@
 - last-used training config は保存しない
 
 ### Signed-In
-- セッション結果は result 画面で 1 回まとめて保存する
+- セッション結果は result 到達後に 1 回まとめて保存を試行する
+- 保存失敗時は result 画面を維持し、ユーザーが retry できる
 - `training_sessions` と `question_results` を使って home / stats / session detail を表示する
 - 全体設定は `user_settings` に保存する
 - last-used training config は `distance` と `keyboard` を分けて保存する
@@ -98,5 +99,5 @@
 
 - `docs/product/*` は「どうあるべきか」の正本
 - このファイルは「いま何が実装されているか」の要約
-- 型 / persistence contract の精密確認は関連コードを優先する
+- 型や persistence contract の精密確認は関連コードを優先する
 - `/auth-test` のような検証用 route を product scope と混同しない
