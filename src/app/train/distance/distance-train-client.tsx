@@ -366,10 +366,16 @@ export function DistanceTrainClient({
     setActiveQuestion({
       ...activeQuestion,
       replayBaseCount: activeQuestion.replayBaseCount + 1,
-      playbackKind: "base",
-      playNonce: nextPlaybackNonce(playbackIdRef),
     });
-    setPhase("preparing");
+    void playQuestionAudio(
+      activeQuestion.question,
+      "base",
+      audioContextRef,
+      settings.masterVolume,
+      playbackLockRef,
+    ).catch(() => {
+      setAudioError("音声の再生に失敗しました。そのまま続行できます。");
+    });
   }
 
   function handleReplayTarget() {
@@ -380,10 +386,16 @@ export function DistanceTrainClient({
     setActiveQuestion({
       ...activeQuestion,
       replayTargetCount: activeQuestion.replayTargetCount + 1,
-      playbackKind: "target",
-      playNonce: nextPlaybackNonce(playbackIdRef),
     });
-    setPhase("playing");
+    void playQuestionAudio(
+      activeQuestion.question,
+      "target",
+      audioContextRef,
+      settings.masterVolume,
+      playbackLockRef,
+    ).catch(() => {
+      setAudioError("音声の再生に失敗しました。そのまま続行できます。");
+    });
   }
 
   function handleAnswer(answeredDistanceSemitones: number) {
