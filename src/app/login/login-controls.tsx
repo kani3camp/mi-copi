@@ -6,11 +6,7 @@ import { getAuthClient } from "../../lib/auth/client";
 import { ButtonLink } from "../ui/navigation-link";
 import { Button, Notice } from "../ui/primitives";
 
-interface LoginControlsProps {
-  isAuthenticated: boolean;
-}
-
-export function LoginControls({ isAuthenticated }: LoginControlsProps) {
+export function LoginControls() {
   const authClient = getAuthClient();
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -34,21 +30,6 @@ export function LoginControls({ isAuthenticated }: LoginControlsProps) {
       );
       setIsPending(false);
     }
-  }
-
-  if (isAuthenticated) {
-    return (
-      <div className="ui-stack-md">
-        <Notice tone="success">
-          すでにサインイン済みです。ホームからそのまま学習を始められます。
-        </Notice>
-        <div className="ui-nav-row">
-          <ButtonLink href="/" pendingLabel="ホームを開いています...">
-            ホームへ戻る
-          </ButtonLink>
-        </div>
-      </div>
-    );
   }
 
   return (

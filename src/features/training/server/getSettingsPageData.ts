@@ -3,11 +3,12 @@ import {
   type CurrentUserResolverDependencies,
   resolveCurrentUserOrNull,
 } from "../../../lib/auth/server.ts";
+import { withRequestTiming } from "../../../lib/server/request-timing.ts";
+import { getCurrentUserSettingsSnapshot } from "../../settings/server/getCurrentUserSettingsSnapshot.ts";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
 } from "../model/types";
-import { getLastUsedTrainingConfigsForCurrentUser } from "./lastUsedTrainingConfig.ts";
 
 export interface SettingsPageData {
   isAuthenticated: boolean;
@@ -19,35 +20,37 @@ export interface SettingsPageData {
 
 export interface SettingsPageDataDependencies
   extends CurrentUserResolverDependencies {
-  getLastUsedTrainingConfigs?: typeof getLastUsedTrainingConfigsForCurrentUser;
+  getCurrentUserSettingsSnapshot?: typeof getCurrentUserSettingsSnapshot;
 }
 
 export async function getSettingsPageDataForCurrentUser(
   deps: SettingsPageDataDependencies = {},
 ): Promise<SettingsPageData> {
-  const currentUser = await resolveCurrentUserOrNull(deps);
+  return withRequestTiming("training.getSettingsPageData", async () => {
+    const currentUser = await resolveCurrentUserOrNull(deps);
 
-  if (!currentUser) {
+    if (!currentUser) {
+      return {
+        isAuthenticated: false,
+        user: null,
+        lastDistanceConfig: null,
+        lastKeyboardConfig: null,
+        updatedAt: null,
+      };
+    }
+
+    const snapshot = await (
+      deps.getCurrentUserSettingsSnapshot ?? getCurrentUserSettingsSnapshot
+    )({
+      currentUser,
+    });
+
     return {
-      isAuthenticated: false,
-      user: null,
-      lastDistanceConfig: null,
-      lastKeyboardConfig: null,
-      updatedAt: null,
+      isAuthenticated: true,
+      user: currentUser,
+      lastDistanceConfig: snapshot.lastDistanceConfig,
+      lastKeyboardConfig: snapshot.lastKeyboardConfig,
+      updatedAt: snapshot.updatedAt,
     };
-  }
-
-  const lastUsedConfigs = await (
-    deps.getLastUsedTrainingConfigs ?? getLastUsedTrainingConfigsForCurrentUser
-  )({
-    currentUser,
   });
-
-  return {
-    isAuthenticated: true,
-    user: currentUser,
-    lastDistanceConfig: lastUsedConfigs.lastDistanceConfig,
-    lastKeyboardConfig: lastUsedConfigs.lastKeyboardConfig,
-    updatedAt: lastUsedConfigs.updatedAt,
-  };
 }

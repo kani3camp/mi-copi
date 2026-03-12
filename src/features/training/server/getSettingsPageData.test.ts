@@ -22,8 +22,8 @@ test("getSettingsPageDataForCurrentUser returns the guest-safe payload", async (
 });
 
 test("getSettingsPageDataForCurrentUser prefers the provided current user and reuses it for last-used configs", async () => {
-  type LastUsedTrainingConfigsArg = Parameters<
-    NonNullable<SettingsPageDataDependencies["getLastUsedTrainingConfigs"]>
+  type SettingsSnapshotArg = Parameters<
+    NonNullable<SettingsPageDataDependencies["getCurrentUserSettingsSnapshot"]>
   >[0];
   const currentUser = {
     id: "user-1",
@@ -37,12 +37,18 @@ test("getSettingsPageDataForCurrentUser prefers the provided current user and re
     getCurrentUser: async () => {
       throw new Error("getCurrentUser should not be called");
     },
-    getLastUsedTrainingConfigs: async (deps: LastUsedTrainingConfigsArg) => {
+    getCurrentUserSettingsSnapshot: async (deps: SettingsSnapshotArg) => {
       assert.ok(deps);
       assert.equal(deps.currentUser, currentUser);
 
       return {
         isAuthenticated: true,
+        settings: {
+          masterVolume: 80,
+          soundEffectsEnabled: true,
+          intervalNotationStyle: "ja",
+          keyboardNoteLabelsVisible: true,
+        },
         lastDistanceConfig: null,
         lastKeyboardConfig: null,
         updatedAt: "2026-03-12T10:00:00.000Z",

@@ -1,21 +1,15 @@
 import { GlobalUserSettingsProvider } from "../../../features/settings/client/global-user-settings-provider";
-import { getGlobalUserSettingsForCurrentUser } from "../../../features/settings/server/global-user-settings";
-import { createDefaultDistanceTrainingConfig } from "../../../features/training/model/distance-guest";
+import { createDefaultGlobalUserSettings } from "../../../features/settings/model/global-user-settings";
+import { createDefaultDistanceTrainingConfig } from "../../../features/training/model/config";
 import type { DistanceTrainingConfig } from "../../../features/training/model/types";
-import {
-  getLastUsedTrainingConfigsForCurrentUser,
-  tryUpdateLastUsedTrainingConfigForCurrentUser,
-} from "../../../features/training/server/lastUsedTrainingConfig";
+import { getDistanceTrainingPageBootstrapForCurrentUser } from "../../../features/training/server/getTrainingPageBootstrap";
+import { tryUpdateLastUsedTrainingConfigForCurrentUser } from "../../../features/training/server/lastUsedTrainingConfig";
 import { saveTrainingSessionForCurrentUser } from "../../../features/training/server/saveTrainingSession.entry";
-import { getCurrentUserOrNullCached } from "../../../lib/auth/server";
+import { hasSessionTokenCookieCached } from "../../../lib/auth/server";
 import { DistanceTrainClient } from "./distance-train-client";
 
 export default async function DistanceTrainPage() {
-  const currentUser = await getCurrentUserOrNullCached();
-  const [lastUsedConfigs, initialGlobalSettings] = await Promise.all([
-    getLastUsedTrainingConfigsForCurrentUser({ currentUser }),
-    getGlobalUserSettingsForCurrentUser({ currentUser }),
-  ]);
+  const hasSessionToken = await hasSessionTokenCookieCached();
 
   async function saveResultsAction(
     input: Parameters<
@@ -39,21 +33,23 @@ export default async function DistanceTrainPage() {
     await tryUpdateLastUsedTrainingConfigForCurrentUser("distance", config);
   }
 
+  async function loadBootstrapAction() {
+    "use server";
+
+    return getDistanceTrainingPageBootstrapForCurrentUser();
+  }
+
   return (
     <GlobalUserSettingsProvider
-      initialSettings={initialGlobalSettings.settings}
-      initialUpdatedAt={initialGlobalSettings.updatedAt}
-      isAuthenticated={initialGlobalSettings.isAuthenticated}
+      initialSettings={createDefaultGlobalUserSettings()}
+      initialUpdatedAt={null}
+      isAuthenticated={hasSessionToken}
     >
       <DistanceTrainClient
-        isAuthenticated={Boolean(currentUser)}
-        initialConfig={
-          lastUsedConfigs.lastDistanceConfig ??
-          createDefaultDistanceTrainingConfig()
-        }
-        hasStoredConfig={Boolean(
-          currentUser && lastUsedConfigs.lastDistanceConfig,
-        )}
+        isAuthenticated={hasSessionToken}
+        initialConfig={createDefaultDistanceTrainingConfig()}
+        hasStoredConfig={false}
+        loadBootstrapAction={hasSessionToken ? loadBootstrapAction : undefined}
         persistLastUsedConfigAction={persistLastUsedConfigAction}
         saveResultsAction={saveResultsAction}
       />

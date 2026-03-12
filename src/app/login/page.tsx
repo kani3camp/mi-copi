@@ -1,9 +1,15 @@
-import { getCurrentUserOrNullCached } from "../../lib/auth/server";
+import { Suspense } from "react";
+
+import {
+  getCurrentUserOrNullCached,
+  hasSessionTokenCookieCached,
+} from "../../lib/auth/server";
 import { ButtonLink } from "../ui/navigation-link";
 import {
   AppShell,
   KeyValueCard,
   KeyValueGrid,
+  Notice,
   PageHero,
   SectionHeader,
   Surface,
@@ -11,7 +17,7 @@ import {
 import { LoginControls } from "./login-controls";
 
 export default async function LoginPage() {
-  const currentUser = await getCurrentUserOrNullCached();
+  const hasSessionToken = await hasSessionTokenCookieCached();
 
   return (
     <AppShell narrow>
@@ -45,21 +51,52 @@ export default async function LoginPage() {
           title="開始方法"
           description="ミーコピ MVP ではゲストでも練習できます。保存済み履歴や成長確認を使う場合だけログインしてください。"
         />
-        <LoginControls isAuthenticated={Boolean(currentUser)} />
+        <LoginControls />
       </Surface>
 
-      {currentUser ? (
-        <Surface>
-          <SectionHeader title="サインイン中のアカウント" />
-          <KeyValueGrid>
-            <KeyValueCard label="名前" value={currentUser.name ?? "不明"} />
-            <KeyValueCard
-              label="メールアドレス"
-              value={currentUser.email ?? "不明"}
-            />
-          </KeyValueGrid>
-        </Surface>
+      {hasSessionToken ? (
+        <Suspense fallback={<LoginAccountLoading />}>
+          <LoginCurrentUserSection />
+        </Suspense>
       ) : null}
     </AppShell>
+  );
+}
+
+async function LoginCurrentUserSection() {
+  const currentUser = await getCurrentUserOrNullCached();
+
+  if (!currentUser) {
+    return null;
+  }
+
+  return (
+    <Surface>
+      <SectionHeader
+        title="サインイン中のアカウント"
+        description="保存済み履歴と同期設定はこのアカウントに紐づきます。"
+      />
+      <Notice tone="success">
+        すでにサインイン済みです。ホームからそのまま学習を始められます。
+      </Notice>
+      <KeyValueGrid>
+        <KeyValueCard label="名前" value={currentUser.name ?? "不明"} />
+        <KeyValueCard
+          label="メールアドレス"
+          value={currentUser.email ?? "不明"}
+        />
+      </KeyValueGrid>
+    </Surface>
+  );
+}
+
+function LoginAccountLoading() {
+  return (
+    <Surface>
+      <SectionHeader
+        title="アカウント状態を確認中"
+        description="サインイン状態を読み込んでいます。"
+      />
+    </Surface>
   );
 }

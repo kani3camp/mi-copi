@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import {
   formatAccuracyLabel,
   formatAvgErrorLabel,
@@ -7,7 +9,10 @@ import {
   formatTrainingModeLabel,
 } from "../features/training/model/format";
 import { getHomeTrainingSummaryForCurrentUser } from "../features/training/server/getHomeTrainingSummary";
-import { getCurrentUserOrNullCached } from "../lib/auth/server";
+import {
+  getCurrentUserOrNullCached,
+  hasSessionTokenCookieCached,
+} from "../lib/auth/server";
 import { HomeSignOutButton } from "./home-sign-out-button";
 import { ButtonLink, ListLinkCard } from "./ui/navigation-link";
 import {
@@ -24,8 +29,7 @@ import {
 } from "./ui/primitives";
 
 export default async function HomePage() {
-  const currentUser = await getCurrentUserOrNullCached();
-  const summary = await getHomeTrainingSummaryForCurrentUser({ currentUser });
+  const hasSessionToken = await hasSessionTokenCookieCached();
 
   return (
     <AppShell>
@@ -42,9 +46,13 @@ export default async function HomePage() {
               href="/login"
               pendingLabel="ログイン画面を開いています..."
             >
-              {summary.isAuthenticated ? "アカウント" : "ログイン"}
+              {hasSessionToken ? "アカウント" : "ログイン"}
             </ButtonLink>
-            {summary.isAuthenticated ? <HomeSignOutButton /> : null}
+            {hasSessionToken ? (
+              <Suspense fallback={null}>
+                <HomeAccountActions />
+              </Suspense>
+            ) : null}
           </>
         }
       >
@@ -66,145 +74,12 @@ export default async function HomePage() {
         </div>
       </PageHero>
 
-      {summary.isAuthenticated ? (
-        <>
-          <Surface tone="accent">
-            <SectionHeader
-              title="学習サマリー"
-              description="直近の保存済みセッションから、最後の状態と最近の精度感をすばやく確認できます。"
-              actions={<Chip tone="success">保存済みデータあり</Chip>}
-            />
-            <MetricGrid>
-              <MetricCard
-                label="最終学習日時"
-                value={
-                  summary.lastTrainingTime
-                    ? formatDateTimeLabel(summary.lastTrainingTime)
-                    : "-"
-                }
-                compactValue
-                accent
-                className="ui-metric-card--home-summary"
-              />
-              <MetricCard
-                label="最後に使ったモード"
-                value={
-                  summary.lastUsedMode
-                    ? formatTrainingModeLabel(summary.lastUsedMode)
-                    : "-"
-                }
-                compactValue
-                className="ui-metric-card--home-summary"
-              />
-              <MetricCard
-                label="直近セッションスコア"
-                value={
-                  summary.latestSessionScore === null
-                    ? "-"
-                    : formatScoreLabel(summary.latestSessionScore)
-                }
-              />
-              <MetricCard
-                label="最近の平均誤差"
-                value={
-                  summary.recentAverageError === null
-                    ? "-"
-                    : formatAvgErrorLabel(summary.recentAverageError)
-                }
-              />
-              <MetricCard
-                label="最近の平均回答時間"
-                value={
-                  summary.recentAverageResponseTimeMs === null
-                    ? "-"
-                    : formatResponseTimeMsLabel(
-                        summary.recentAverageResponseTimeMs,
-                      )
-                }
-                compactValue
-              />
-              <MetricCard
-                label="累計セッション数"
-                value={summary.totalSessions}
-              />
-              <MetricCard
-                label="保存済み回答数"
-                value={summary.totalSavedQuestionResults}
-              />
-            </MetricGrid>
-          </Surface>
-
-          <Surface>
-            <SectionHeader
-              title="最近の保存済みセッション"
-              description="前回の仕上がりを見てから次の練習に入れます。"
-              actions={
-                <ButtonLink href="/stats" pendingLabel="統計を開いています...">
-                  統計を見る
-                </ButtonLink>
-              }
-            />
-            {summary.recentSessions.length > 0 ? (
-              <List>
-                {summary.recentSessions.map((session) => (
-                  <li key={session.id}>
-                    <ListLinkCard
-                      href={`/sessions/${session.id}`}
-                      pendingLabel="セッション詳細を開いています..."
-                    >
-                      <Chip tone={getTrainingModeChipTone(session.mode)}>
-                        {formatTrainingModeLabel(session.mode)}
-                      </Chip>
-                      <span className="ui-muted">
-                        スコア {formatScoreLabel(session.sessionScore)} / 正答率{" "}
-                        {formatAccuracyLabel(session.accuracyRate)} / 問題数{" "}
-                        {session.answeredQuestionCount}
-                      </span>
-                      <span className="ui-muted">
-                        完了日時 {formatDateTimeLabel(session.endedAt)}
-                      </span>
-                    </ListLinkCard>
-                  </li>
-                ))}
-              </List>
-            ) : (
-              <p className="ui-subtitle">
-                保存済みセッションはまだありません。
-              </p>
-            )}
-          </Surface>
-        </>
+      {hasSessionToken ? (
+        <Suspense fallback={<HomeSummaryLoading />}>
+          <AuthenticatedHomeContent />
+        </Suspense>
       ) : (
-        <Surface>
-          <SectionHeader
-            title="ゲスト利用中"
-            description="練習はすぐ始められますが、ホームと統計の保存サマリーはログイン後に有効になります。"
-          />
-          <KeyValueGrid>
-            <KeyValueCard
-              label="今できること"
-              value="距離モードと鍵盤モードの練習"
-              detail="結果はその場で確認できます。"
-            />
-            <KeyValueCard
-              label="ログイン後に増えること"
-              value="保存、統計、設定のクラウド同期"
-              detail="過去の推移を後から見返せます。"
-            />
-          </KeyValueGrid>
-          <div className="ui-nav-row">
-            <ButtonLink
-              href="/login"
-              variant="primary"
-              pendingLabel="ログイン画面を開いています..."
-            >
-              ログインして履歴を残す
-            </ButtonLink>
-            <ButtonLink href="/settings" pendingLabel="設定を開いています...">
-              設定を見る
-            </ButtonLink>
-          </div>
-        </Surface>
+        <GuestHomeContent />
       )}
     </AppShell>
   );
@@ -227,5 +102,182 @@ function TrainModeCard(props: {
       <strong>{props.title}</strong>
       <span className="ui-muted">{props.description}</span>
     </ListLinkCard>
+  );
+}
+
+async function HomeAccountActions() {
+  const currentUser = await getCurrentUserOrNullCached();
+
+  if (!currentUser) {
+    return null;
+  }
+
+  return <HomeSignOutButton />;
+}
+
+async function AuthenticatedHomeContent() {
+  const currentUser = await getCurrentUserOrNullCached();
+
+  if (!currentUser) {
+    return <GuestHomeContent />;
+  }
+
+  const summary = await getHomeTrainingSummaryForCurrentUser({ currentUser });
+
+  return (
+    <>
+      <Surface tone="accent">
+        <SectionHeader
+          title="学習サマリー"
+          description="直近の保存済みセッションから、最後の状態と最近の精度感をすばやく確認できます。"
+          actions={<Chip tone="success">保存済みデータあり</Chip>}
+        />
+        <MetricGrid>
+          <MetricCard
+            label="最終学習日時"
+            value={
+              summary.lastTrainingTime
+                ? formatDateTimeLabel(summary.lastTrainingTime)
+                : "-"
+            }
+            compactValue
+            accent
+            className="ui-metric-card--home-summary"
+          />
+          <MetricCard
+            label="最後に使ったモード"
+            value={
+              summary.lastUsedMode
+                ? formatTrainingModeLabel(summary.lastUsedMode)
+                : "-"
+            }
+            compactValue
+            className="ui-metric-card--home-summary"
+          />
+          <MetricCard
+            label="直近セッションスコア"
+            value={
+              summary.latestSessionScore === null
+                ? "-"
+                : formatScoreLabel(summary.latestSessionScore)
+            }
+          />
+          <MetricCard
+            label="最近の平均誤差"
+            value={
+              summary.recentAverageError === null
+                ? "-"
+                : formatAvgErrorLabel(summary.recentAverageError)
+            }
+          />
+          <MetricCard
+            label="最近の平均回答時間"
+            value={
+              summary.recentAverageResponseTimeMs === null
+                ? "-"
+                : formatResponseTimeMsLabel(summary.recentAverageResponseTimeMs)
+            }
+            compactValue
+          />
+          <MetricCard label="累計セッション数" value={summary.totalSessions} />
+          <MetricCard
+            label="保存済み回答数"
+            value={summary.totalSavedQuestionResults}
+          />
+        </MetricGrid>
+      </Surface>
+
+      <Surface>
+        <SectionHeader
+          title="最近の保存済みセッション"
+          description="前回の仕上がりを見てから次の練習に入れます。"
+          actions={
+            <ButtonLink href="/stats" pendingLabel="統計を開いています...">
+              統計を見る
+            </ButtonLink>
+          }
+        />
+        {summary.recentSessions.length > 0 ? (
+          <List>
+            {summary.recentSessions.map((session) => (
+              <li key={session.id}>
+                <ListLinkCard
+                  href={`/sessions/${session.id}`}
+                  pendingLabel="セッション詳細を開いています..."
+                >
+                  <Chip tone={getTrainingModeChipTone(session.mode)}>
+                    {formatTrainingModeLabel(session.mode)}
+                  </Chip>
+                  <span className="ui-muted">
+                    スコア {formatScoreLabel(session.sessionScore)} / 正答率{" "}
+                    {formatAccuracyLabel(session.accuracyRate)} / 問題数{" "}
+                    {session.answeredQuestionCount}
+                  </span>
+                  <span className="ui-muted">
+                    完了日時 {formatDateTimeLabel(session.endedAt)}
+                  </span>
+                </ListLinkCard>
+              </li>
+            ))}
+          </List>
+        ) : (
+          <p className="ui-subtitle">保存済みセッションはまだありません。</p>
+        )}
+      </Surface>
+    </>
+  );
+}
+
+function GuestHomeContent() {
+  return (
+    <Surface>
+      <SectionHeader
+        title="ゲスト利用中"
+        description="練習はすぐ始められますが、ホームと統計の保存サマリーはログイン後に有効になります。"
+      />
+      <KeyValueGrid>
+        <KeyValueCard
+          label="今できること"
+          value="距離モードと鍵盤モードの練習"
+          detail="結果はその場で確認できます。"
+        />
+        <KeyValueCard
+          label="ログイン後に増えること"
+          value="保存、統計、設定のクラウド同期"
+          detail="過去の推移を後から見返せます。"
+        />
+      </KeyValueGrid>
+      <div className="ui-nav-row">
+        <ButtonLink
+          href="/login"
+          variant="primary"
+          pendingLabel="ログイン画面を開いています..."
+        >
+          ログインして履歴を残す
+        </ButtonLink>
+        <ButtonLink href="/settings" pendingLabel="設定を開いています...">
+          設定を見る
+        </ButtonLink>
+      </div>
+    </Surface>
+  );
+}
+
+function HomeSummaryLoading() {
+  return (
+    <>
+      <Surface tone="accent">
+        <SectionHeader
+          title="学習サマリーを準備中"
+          description="保存済みデータを確認しています。"
+        />
+      </Surface>
+      <Surface>
+        <SectionHeader
+          title="最近の保存済みセッションを準備中"
+          description="最新の履歴を読み込んでいます。"
+        />
+      </Surface>
+    </>
   );
 }

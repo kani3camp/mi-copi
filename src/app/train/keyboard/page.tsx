@@ -1,24 +1,16 @@
 import { GlobalUserSettingsProvider } from "../../../features/settings/client/global-user-settings-provider";
-import { getGlobalUserSettingsForCurrentUser } from "../../../features/settings/server/global-user-settings";
-import {
-  buildKeyboardGuestSaveInput,
-  createDefaultKeyboardTrainingConfig,
-} from "../../../features/training/model/keyboard-guest";
+import { createDefaultGlobalUserSettings } from "../../../features/settings/model/global-user-settings";
+import { createDefaultKeyboardTrainingConfig } from "../../../features/training/model/config";
+import { buildKeyboardGuestSaveInput } from "../../../features/training/model/keyboard-guest";
 import type { KeyboardTrainingConfig } from "../../../features/training/model/types";
-import {
-  getLastUsedTrainingConfigsForCurrentUser,
-  tryUpdateLastUsedTrainingConfigForCurrentUser,
-} from "../../../features/training/server/lastUsedTrainingConfig";
+import { getKeyboardTrainingPageBootstrapForCurrentUser } from "../../../features/training/server/getTrainingPageBootstrap";
+import { tryUpdateLastUsedTrainingConfigForCurrentUser } from "../../../features/training/server/lastUsedTrainingConfig";
 import { saveTrainingSessionForCurrentUser } from "../../../features/training/server/saveTrainingSession.entry";
-import { getCurrentUserOrNullCached } from "../../../lib/auth/server";
+import { hasSessionTokenCookieCached } from "../../../lib/auth/server";
 import { KeyboardTrainClient } from "./keyboard-train-client";
 
 export default async function KeyboardTrainPage() {
-  const currentUser = await getCurrentUserOrNullCached();
-  const [lastUsedConfigs, initialGlobalSettings] = await Promise.all([
-    getLastUsedTrainingConfigsForCurrentUser({ currentUser }),
-    getGlobalUserSettingsForCurrentUser({ currentUser }),
-  ]);
+  const hasSessionToken = await hasSessionTokenCookieCached();
 
   async function saveResultsAction(
     input: Parameters<typeof buildKeyboardGuestSaveInput>[0],
@@ -36,21 +28,23 @@ export default async function KeyboardTrainPage() {
     await tryUpdateLastUsedTrainingConfigForCurrentUser("keyboard", config);
   }
 
+  async function loadBootstrapAction() {
+    "use server";
+
+    return getKeyboardTrainingPageBootstrapForCurrentUser();
+  }
+
   return (
     <GlobalUserSettingsProvider
-      initialSettings={initialGlobalSettings.settings}
-      initialUpdatedAt={initialGlobalSettings.updatedAt}
-      isAuthenticated={initialGlobalSettings.isAuthenticated}
+      initialSettings={createDefaultGlobalUserSettings()}
+      initialUpdatedAt={null}
+      isAuthenticated={hasSessionToken}
     >
       <KeyboardTrainClient
-        isAuthenticated={Boolean(currentUser)}
-        initialConfig={
-          lastUsedConfigs.lastKeyboardConfig ??
-          createDefaultKeyboardTrainingConfig()
-        }
-        hasStoredConfig={Boolean(
-          currentUser && lastUsedConfigs.lastKeyboardConfig,
-        )}
+        isAuthenticated={hasSessionToken}
+        initialConfig={createDefaultKeyboardTrainingConfig()}
+        hasStoredConfig={false}
+        loadBootstrapAction={hasSessionToken ? loadBootstrapAction : undefined}
         persistLastUsedConfigAction={persistLastUsedConfigAction}
         saveResultsAction={saveResultsAction}
       />

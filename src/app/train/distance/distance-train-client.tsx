@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
+import { shouldApplyDeferredTrainingBootstrap } from "../../../features/training/model/bootstrap";
 import {
   clampIntervalMaxSemitone,
   clampIntervalMinSemitone,
@@ -46,6 +47,7 @@ import type {
   Question,
   SessionFinishReason,
 } from "../../../features/training/model/types";
+import type { DistanceTrainingPageBootstrap } from "../../../features/training/server/getTrainingPageBootstrap";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
 import { ButtonLink } from "../../ui/navigation-link";
 import {
@@ -108,6 +110,7 @@ interface DistanceTrainClientProps {
   isAuthenticated: boolean;
   initialConfig: DistanceTrainingConfig;
   hasStoredConfig: boolean;
+  loadBootstrapAction?: () => Promise<DistanceTrainingPageBootstrap>;
   persistLastUsedConfigAction: (
     config: DistanceTrainingConfig,
   ) => Promise<void>;
@@ -120,10 +123,15 @@ export function DistanceTrainClient({
   isAuthenticated,
   initialConfig,
   hasStoredConfig,
+  loadBootstrapAction,
   persistLastUsedConfigAction,
   saveResultsAction,
 }: DistanceTrainClientProps) {
-  const { settings } = useGlobalUserSettings();
+  const { settings, hydrateFromServer } = useGlobalUserSettings();
+  const [isAuthenticatedState, setIsAuthenticatedState] =
+    useState(isAuthenticated);
+  const [hasStoredConfigState, setHasStoredConfigState] =
+    useState(hasStoredConfig);
   const [config, setConfig] = useState<DistanceTrainingConfig>(initialConfig);
   const [phase, setPhase] = useState<DistanceTrainPhase>("config");
   const [startedAt, setStartedAt] = useState<string | null>(null);
@@ -141,7 +149,9 @@ export function DistanceTrainClient({
   const [audioError, setAudioError] = useState<string | null>(null);
   const [saveResult, setSaveResult] =
     useState<SaveTrainingSessionResult | null>(null);
+  const [bootstrapNotice, setBootstrapNotice] = useState<string | null>(null);
   const [isSavePending, startSaveTransition] = useTransition();
+  const [isBootstrapPending, startBootstrapTransition] = useTransition();
   const persistedConfigSessionRef = useRef<string | null>(null);
   const autoSaveAttemptedSessionRef = useRef<string | null>(null);
   const playbackIdRef = useRef(0);
@@ -151,6 +161,10 @@ export function DistanceTrainClient({
   const questionGeneratorStateRef = useRef<QuestionGeneratorState | null>(null);
   const sessionDeadlineAtRef = useRef<number | null>(null);
   const timeoutHandledRef = useRef(false);
+  const hasEditedConfigRef = useRef(false);
+  const bootstrapRequestedRef = useRef(false);
+  const phaseRef = useRef<DistanceTrainPhase>("config");
+  const startedAtRef = useRef<string | null>(null);
   const plannedQuestionCount = getDistanceQuestionCount(config);
   const questionCountOptions =
     getQuestionCountSelectOptions(plannedQuestionCount);
@@ -169,7 +183,7 @@ export function DistanceTrainClient({
   const recentResults = useMemo(() => results.slice(-3).reverse(), [results]);
   const cannotSaveBecauseNoAnswers = phase === "result" && results.length === 0;
   const saveContext = {
-    isAuthenticated,
+    isAuthenticated: isAuthenticatedState,
     startedAt,
     endedAt,
     finishReason,
@@ -179,6 +193,63 @@ export function DistanceTrainClient({
   const intervalNotationStyle = settings.intervalNotationStyle;
   const formatIntervalName = (semitones: number) =>
     getIntervalLabel(semitones, intervalNotationStyle);
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
+  useEffect(() => {
+    startedAtRef.current = startedAt;
+  }, [startedAt]);
+
+  useEffect(() => {
+    if (!loadBootstrapAction || bootstrapRequestedRef.current) {
+      return;
+    }
+
+    bootstrapRequestedRef.current = true;
+    let cancelled = false;
+
+    startBootstrapTransition(async () => {
+      const bootstrap = await loadBootstrapAction();
+
+      if (cancelled) {
+        return;
+      }
+
+      setIsAuthenticatedState(bootstrap.isAuthenticated);
+      setHasStoredConfigState(bootstrap.hasStoredConfig);
+      hydrateFromServer({
+        isAuthenticated: bootstrap.isAuthenticated,
+        settings: bootstrap.settings,
+        updatedAt: bootstrap.settingsUpdatedAt,
+      });
+
+      if (
+        bootstrap.config &&
+        shouldApplyDeferredTrainingBootstrap({
+          phase: phaseRef.current,
+          startedAt: startedAtRef.current,
+          hasEditedConfig: hasEditedConfigRef.current,
+        })
+      ) {
+        setConfig(bootstrap.config);
+        setBootstrapNotice("前回設定を読み込み済みです。");
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrateFromServer, loadBootstrapAction]);
+
+  function updateConfig(
+    updater: (current: DistanceTrainingConfig) => DistanceTrainingConfig,
+  ) {
+    hasEditedConfigRef.current = true;
+    setBootstrapNotice(null);
+    setConfig((current) => updater(current));
+  }
 
   useEffect(() => {
     if (phase !== "playing" || !activeQuestion) {
@@ -284,7 +355,7 @@ export function DistanceTrainClient({
 
   useEffect(() => {
     const autoSaveContext = {
-      isAuthenticated,
+      isAuthenticated: isAuthenticatedState,
       startedAt,
       endedAt,
       finishReason,
@@ -314,7 +385,7 @@ export function DistanceTrainClient({
     config,
     endedAt,
     finishReason,
-    isAuthenticated,
+    isAuthenticatedState,
     isSavePending,
     results,
     saveResult?.ok,
@@ -358,7 +429,7 @@ export function DistanceTrainClient({
     setActiveQuestion(
       createActiveQuestion(config, 0, playbackIdRef, questionGeneratorStateRef),
     );
-    if (isAuthenticated) {
+    if (isAuthenticatedState) {
       persistedConfigSessionRef.current = nextStartedAt;
       void persistLastUsedConfigAction(config);
     }
@@ -541,7 +612,7 @@ export function DistanceTrainClient({
 
   function handleSaveResults() {
     const retrySaveContext = {
-      isAuthenticated,
+      isAuthenticated: isAuthenticatedState,
       startedAt,
       endedAt,
       finishReason,
@@ -577,7 +648,7 @@ export function DistanceTrainClient({
             <ButtonLink href="/" pendingLabel="ホームを開いています...">
               ホームへ戻る
             </ButtonLink>
-            {!isAuthenticated ? (
+            {!isAuthenticatedState ? (
               <ButtonLink
                 href="/login"
                 pendingLabel="ログイン画面を開いています..."
@@ -605,7 +676,7 @@ export function DistanceTrainClient({
           ) : null}
         </div>
         <p className="ui-subtitle">
-          {isAuthenticated
+          {isAuthenticatedState
             ? "ログイン中は、結果画面に進むとセッション結果を自動保存します。"
             : "ゲストでは結果を画面内にのみ保持し、保存は行いません。"}
         </p>
@@ -626,7 +697,7 @@ export function DistanceTrainClient({
                   className="ui-select"
                   value={config.endCondition.type}
                   onChange={(event) =>
-                    setConfig((current) => ({
+                    updateConfig((current) => ({
                       ...current,
                       endCondition:
                         event.target.value === "time_limit"
@@ -646,7 +717,7 @@ export function DistanceTrainClient({
                     className="ui-select"
                     value={plannedQuestionCount}
                     onChange={(event) =>
-                      setConfig((current) => ({
+                      updateConfig((current) => ({
                         ...current,
                         endCondition: {
                           type: "question_count",
@@ -668,7 +739,7 @@ export function DistanceTrainClient({
                     className="ui-select"
                     value={config.endCondition.timeLimitSeconds}
                     onChange={(event) =>
-                      setConfig((current) => ({
+                      updateConfig((current) => ({
                         ...current,
                         endCondition: {
                           type: "time_limit",
@@ -698,7 +769,7 @@ export function DistanceTrainClient({
                     max={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.max}
                     value={config.intervalRange.minSemitone}
                     onChange={(event) =>
-                      setConfig((current) => {
+                      updateConfig((current) => {
                         const minSemitone = clampIntervalMinSemitone(
                           event.target.value,
                         );
@@ -728,7 +799,7 @@ export function DistanceTrainClient({
                     max={TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.max}
                     value={config.intervalRange.maxSemitone}
                     onChange={(event) =>
-                      setConfig((current) => ({
+                      updateConfig((current) => ({
                         ...current,
                         intervalRange: {
                           ...current.intervalRange,
@@ -748,7 +819,7 @@ export function DistanceTrainClient({
                   className="ui-select"
                   value={config.directionMode}
                   onChange={(event) =>
-                    setConfig((current) => ({
+                    updateConfig((current) => ({
                       ...current,
                       directionMode: event.target
                         .value as DistanceTrainingConfig["directionMode"],
@@ -769,7 +840,7 @@ export function DistanceTrainClient({
                   className="ui-select"
                   value={config.baseNoteMode}
                   onChange={(event) =>
-                    setConfig((current) => ({
+                    updateConfig((current) => ({
                       ...current,
                       baseNoteMode: event.target
                         .value as DistanceTrainingConfig["baseNoteMode"],
@@ -791,7 +862,7 @@ export function DistanceTrainClient({
                     className="ui-select"
                     value={config.fixedBaseNote ?? "C"}
                     onChange={(event) =>
-                      setConfig((current) => ({
+                      updateConfig((current) => ({
                         ...current,
                         fixedBaseNote: event.target.value as NoteClass,
                       }))
@@ -814,7 +885,7 @@ export function DistanceTrainClient({
                   type="checkbox"
                   checked={config.includeUnison}
                   onChange={(event) =>
-                    setConfig((current) => ({
+                    updateConfig((current) => ({
                       ...current,
                       includeUnison: event.target.checked,
                     }))
@@ -828,7 +899,7 @@ export function DistanceTrainClient({
                   type="checkbox"
                   checked={config.includeOctave}
                   onChange={(event) =>
-                    setConfig((current) => ({
+                    updateConfig((current) => ({
                       ...current,
                       includeOctave: event.target.checked,
                     }))
@@ -842,7 +913,7 @@ export function DistanceTrainClient({
                   className="ui-select"
                   value={config.intervalGranularity}
                   onChange={(event) =>
-                    setConfig((current) => ({
+                    updateConfig((current) => ({
                       ...current,
                       intervalGranularity: event.target
                         .value as DistanceTrainingConfig["intervalGranularity"],
@@ -863,8 +934,12 @@ export function DistanceTrainClient({
             </div>
           </div>
 
-          {isAuthenticated && hasStoredConfig ? (
-            <Notice>前回設定を読み込み済みです。</Notice>
+          {isBootstrapPending ? (
+            <Notice>保存済み設定を確認しています...</Notice>
+          ) : null}
+          {bootstrapNotice ? <Notice>{bootstrapNotice}</Notice> : null}
+          {isAuthenticatedState && hasStoredConfigState && !bootstrapNotice ? (
+            <Notice>保存済み設定があります。</Notice>
           ) : null}
 
           {configError ? <Notice tone="error">{configError}</Notice> : null}
@@ -927,7 +1002,7 @@ export function DistanceTrainClient({
           recentResults={recentResults}
           intervalNotationStyle={intervalNotationStyle}
           finishReason={finishReason}
-          isAuthenticated={isAuthenticated}
+          isAuthenticated={isAuthenticatedState}
           canSaveResult={canSaveResult}
           cannotSaveBecauseNoAnswers={cannotSaveBecauseNoAnswers}
           isSavePending={isSavePending}

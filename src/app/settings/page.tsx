@@ -2,10 +2,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { GlobalUserSettingsProvider } from "../../features/settings/client/global-user-settings-provider";
 import type { GlobalUserSettings } from "../../features/settings/model/global-user-settings";
-import {
-  getGlobalUserSettingsForCurrentUser,
-  updateGlobalUserSettingsForCurrentUser,
-} from "../../features/settings/server/global-user-settings";
+import { getCurrentUserSettingsSnapshot } from "../../features/settings/server/getCurrentUserSettingsSnapshot";
+import { updateGlobalUserSettingsForCurrentUser } from "../../features/settings/server/global-user-settings";
 import {
   formatDateTimeLabel,
   formatDurationSecondsLabel,
@@ -39,9 +37,9 @@ export default async function SettingsPage({
   searchParams,
 }: SettingsPageProps) {
   const currentUser = await getCurrentUserOrNullCached();
-  const [data, initialGlobalSettings] = await Promise.all([
+  const [data, userSettingsSnapshot] = await Promise.all([
     getSettingsPageDataForCurrentUser({ currentUser }),
-    getGlobalUserSettingsForCurrentUser({ currentUser }),
+    getCurrentUserSettingsSnapshot({ currentUser }),
   ]);
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const resetTarget = resolvedSearchParams?.reset;
@@ -83,9 +81,9 @@ export default async function SettingsPage({
 
   return (
     <GlobalUserSettingsProvider
-      initialSettings={initialGlobalSettings.settings}
-      initialUpdatedAt={initialGlobalSettings.updatedAt}
-      isAuthenticated={initialGlobalSettings.isAuthenticated}
+      initialSettings={userSettingsSnapshot.settings}
+      initialUpdatedAt={userSettingsSnapshot.updatedAt}
+      isAuthenticated={userSettingsSnapshot.isAuthenticated}
       persistSettingsAction={persistGlobalUserSettingsAction}
     >
       <AppShell narrow>

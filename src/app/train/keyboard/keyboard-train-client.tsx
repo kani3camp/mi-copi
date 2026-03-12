@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
+import { shouldApplyDeferredTrainingBootstrap } from "../../../features/training/model/bootstrap";
 import {
   clampIntervalMaxSemitone,
   clampIntervalMinSemitone,
@@ -44,6 +45,7 @@ import type {
   Question,
   SessionFinishReason,
 } from "../../../features/training/model/types";
+import type { KeyboardTrainingPageBootstrap } from "../../../features/training/server/getTrainingPageBootstrap";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
 import { ButtonLink } from "../../ui/navigation-link";
 import {
@@ -107,6 +109,7 @@ interface KeyboardTrainClientProps {
   isAuthenticated: boolean;
   initialConfig: KeyboardTrainingConfig;
   hasStoredConfig: boolean;
+  loadBootstrapAction?: () => Promise<KeyboardTrainingPageBootstrap>;
   persistLastUsedConfigAction: (
     config: KeyboardTrainingConfig,
   ) => Promise<void>;
@@ -119,10 +122,15 @@ export function KeyboardTrainClient({
   isAuthenticated,
   initialConfig,
   hasStoredConfig,
+  loadBootstrapAction,
   persistLastUsedConfigAction,
   saveResultsAction,
 }: KeyboardTrainClientProps) {
-  const { settings } = useGlobalUserSettings();
+  const { settings, hydrateFromServer } = useGlobalUserSettings();
+  const [isAuthenticatedState, setIsAuthenticatedState] =
+    useState(isAuthenticated);
+  const [hasStoredConfigState, setHasStoredConfigState] =
+    useState(hasStoredConfig);
   const [config, setConfig] = useState<KeyboardTrainingConfig>(initialConfig);
   const [phase, setPhase] = useState<KeyboardTrainPhase>("config");
   const [startedAt, setStartedAt] = useState<string | null>(null);
@@ -140,7 +148,9 @@ export function KeyboardTrainClient({
   const [audioError, setAudioError] = useState<string | null>(null);
   const [saveResult, setSaveResult] =
     useState<SaveTrainingSessionResult | null>(null);
+  const [bootstrapNotice, setBootstrapNotice] = useState<string | null>(null);
   const [isSavePending, startSaveTransition] = useTransition();
+  const [isBootstrapPending, startBootstrapTransition] = useTransition();
   const persistedConfigSessionRef = useRef<string | null>(null);
   const autoSaveAttemptedSessionRef = useRef<string | null>(null);
   const playbackIdRef = useRef(0);
@@ -150,6 +160,10 @@ export function KeyboardTrainClient({
   const questionGeneratorStateRef = useRef<QuestionGeneratorState | null>(null);
   const sessionDeadlineAtRef = useRef<number | null>(null);
   const timeoutHandledRef = useRef(false);
+  const hasEditedConfigRef = useRef(false);
+  const bootstrapRequestedRef = useRef(false);
+  const phaseRef = useRef<KeyboardTrainPhase>("config");
+  const startedAtRef = useRef<string | null>(null);
   const plannedQuestionCount = getKeyboardQuestionCount(config);
   const questionCountOptions =
     getQuestionCountSelectOptions(plannedQuestionCount);
@@ -164,13 +178,70 @@ export function KeyboardTrainClient({
   const summary = useMemo(() => buildKeyboardGuestSummary(results), [results]);
   const cannotSaveBecauseNoAnswers = phase === "result" && results.length === 0;
   const saveContext = {
-    isAuthenticated,
+    isAuthenticated: isAuthenticatedState,
     startedAt,
     endedAt,
     finishReason,
     resultsCount: results.length,
   };
   const canSaveResult = hasTrainingResultSavePayload(saveContext);
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
+  useEffect(() => {
+    startedAtRef.current = startedAt;
+  }, [startedAt]);
+
+  useEffect(() => {
+    if (!loadBootstrapAction || bootstrapRequestedRef.current) {
+      return;
+    }
+
+    bootstrapRequestedRef.current = true;
+    let cancelled = false;
+
+    startBootstrapTransition(async () => {
+      const bootstrap = await loadBootstrapAction();
+
+      if (cancelled) {
+        return;
+      }
+
+      setIsAuthenticatedState(bootstrap.isAuthenticated);
+      setHasStoredConfigState(bootstrap.hasStoredConfig);
+      hydrateFromServer({
+        isAuthenticated: bootstrap.isAuthenticated,
+        settings: bootstrap.settings,
+        updatedAt: bootstrap.settingsUpdatedAt,
+      });
+
+      if (
+        bootstrap.config &&
+        shouldApplyDeferredTrainingBootstrap({
+          phase: phaseRef.current,
+          startedAt: startedAtRef.current,
+          hasEditedConfig: hasEditedConfigRef.current,
+        })
+      ) {
+        setConfig(bootstrap.config);
+        setBootstrapNotice("前回設定を読み込み済みです。");
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrateFromServer, loadBootstrapAction]);
+
+  function updateConfig(
+    updater: (current: KeyboardTrainingConfig) => KeyboardTrainingConfig,
+  ) {
+    hasEditedConfigRef.current = true;
+    setBootstrapNotice(null);
+    setConfig((current) => updater(current));
+  }
 
   useEffect(() => {
     if (phase !== "playing" || !activeQuestion) {
@@ -276,7 +347,7 @@ export function KeyboardTrainClient({
 
   useEffect(() => {
     const autoSaveContext = {
-      isAuthenticated,
+      isAuthenticated: isAuthenticatedState,
       startedAt,
       endedAt,
       finishReason,
@@ -306,7 +377,7 @@ export function KeyboardTrainClient({
     config,
     endedAt,
     finishReason,
-    isAuthenticated,
+    isAuthenticatedState,
     isSavePending,
     results,
     saveResult?.ok,
@@ -350,7 +421,7 @@ export function KeyboardTrainClient({
     setActiveQuestion(
       createActiveQuestion(config, 0, playbackIdRef, questionGeneratorStateRef),
     );
-    if (isAuthenticated) {
+    if (isAuthenticatedState) {
       persistedConfigSessionRef.current = nextStartedAt;
       void persistLastUsedConfigAction(config);
     }
@@ -533,7 +604,7 @@ export function KeyboardTrainClient({
 
   function handleSaveResults() {
     const retrySaveContext = {
-      isAuthenticated,
+      isAuthenticated: isAuthenticatedState,
       startedAt,
       endedAt,
       finishReason,
@@ -595,7 +666,7 @@ export function KeyboardTrainClient({
           ) : null}
         </div>
         <p className="ui-subtitle">
-          {isAuthenticated
+          {isAuthenticatedState
             ? "ログイン中は、結果画面に進むとセッション結果を自動保存します。"
             : "ゲストでは結果を画面内にのみ保持し、保存は行いません。"}
         </p>
@@ -616,7 +687,7 @@ export function KeyboardTrainClient({
                   className="ui-select"
                   value={config.endCondition.type}
                   onChange={(event) =>
-                    setConfig((current) => ({
+                    updateConfig((current) => ({
                       ...current,
                       endCondition:
                         event.target.value === "time_limit"
@@ -636,7 +707,7 @@ export function KeyboardTrainClient({
                     className="ui-select"
                     value={plannedQuestionCount}
                     onChange={(event) =>
-                      setConfig((current) => ({
+                      updateConfig((current) => ({
                         ...current,
                         endCondition: {
                           type: "question_count",
@@ -658,7 +729,7 @@ export function KeyboardTrainClient({
                     className="ui-select"
                     value={config.endCondition.timeLimitSeconds}
                     onChange={(event) =>
-                      setConfig((current) => ({
+                      updateConfig((current) => ({
                         ...current,
                         endCondition: {
                           type: "time_limit",
@@ -688,7 +759,7 @@ export function KeyboardTrainClient({
                     max={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.max}
                     value={config.intervalRange.minSemitone}
                     onChange={(event) =>
-                      setConfig((current) => {
+                      updateConfig((current) => {
                         const minSemitone = clampIntervalMinSemitone(
                           event.target.value,
                         );
@@ -718,7 +789,7 @@ export function KeyboardTrainClient({
                     max={TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.max}
                     value={config.intervalRange.maxSemitone}
                     onChange={(event) =>
-                      setConfig((current) => ({
+                      updateConfig((current) => ({
                         ...current,
                         intervalRange: {
                           ...current.intervalRange,
@@ -738,7 +809,7 @@ export function KeyboardTrainClient({
                   className="ui-select"
                   value={config.directionMode}
                   onChange={(event) =>
-                    setConfig((current) => ({
+                    updateConfig((current) => ({
                       ...current,
                       directionMode: event.target
                         .value as KeyboardTrainingConfig["directionMode"],
@@ -759,7 +830,7 @@ export function KeyboardTrainClient({
                   className="ui-select"
                   value={config.baseNoteMode}
                   onChange={(event) =>
-                    setConfig((current) => ({
+                    updateConfig((current) => ({
                       ...current,
                       baseNoteMode: event.target
                         .value as KeyboardTrainingConfig["baseNoteMode"],
@@ -781,7 +852,7 @@ export function KeyboardTrainClient({
                     className="ui-select"
                     value={config.fixedBaseNote ?? "C"}
                     onChange={(event) =>
-                      setConfig((current) => ({
+                      updateConfig((current) => ({
                         ...current,
                         fixedBaseNote: event.target.value as NoteClass,
                       }))
@@ -804,7 +875,7 @@ export function KeyboardTrainClient({
                   type="checkbox"
                   checked={config.includeUnison}
                   onChange={(event) =>
-                    setConfig((current) => ({
+                    updateConfig((current) => ({
                       ...current,
                       includeUnison: event.target.checked,
                     }))
@@ -818,7 +889,7 @@ export function KeyboardTrainClient({
                   type="checkbox"
                   checked={config.includeOctave}
                   onChange={(event) =>
-                    setConfig((current) => ({
+                    updateConfig((current) => ({
                       ...current,
                       includeOctave: event.target.checked,
                     }))
@@ -845,8 +916,12 @@ export function KeyboardTrainClient({
             </div>
           </div>
 
-          {isAuthenticated && hasStoredConfig ? (
-            <Notice>前回設定を読み込み済みです。</Notice>
+          {isBootstrapPending ? (
+            <Notice>保存済み設定を確認しています...</Notice>
+          ) : null}
+          {bootstrapNotice ? <Notice>{bootstrapNotice}</Notice> : null}
+          {isAuthenticatedState && hasStoredConfigState && !bootstrapNotice ? (
+            <Notice>保存済み設定があります。</Notice>
           ) : null}
 
           {configError ? <Notice tone="error">{configError}</Notice> : null}
@@ -908,7 +983,7 @@ export function KeyboardTrainClient({
         <KeyboardResultPanel
           summary={summary}
           finishReason={finishReason}
-          isAuthenticated={isAuthenticated}
+          isAuthenticated={isAuthenticatedState}
           canSaveResult={canSaveResult}
           cannotSaveBecauseNoAnswers={cannotSaveBecauseNoAnswers}
           isSavePending={isSavePending}

@@ -30,6 +30,11 @@ interface GlobalUserSettingsContextValue {
   saveState: GlobalUserSettingsSaveState;
   updateSettings: (patch: Partial<GlobalUserSettings>) => void;
   retrySave: () => void;
+  hydrateFromServer: (payload: {
+    isAuthenticated: boolean;
+    settings: GlobalUserSettings;
+    updatedAt: string | null;
+  }) => void;
 }
 
 const GlobalUserSettingsContext =
@@ -52,6 +57,8 @@ export function GlobalUserSettingsProvider({
   initialUpdatedAt,
   persistSettingsAction,
 }: GlobalUserSettingsProviderProps) {
+  const [isAuthenticatedState, setIsAuthenticatedState] =
+    useState(isAuthenticated);
   const [settings, setSettings] = useState<GlobalUserSettings>(
     normalizeGlobalUserSettings(initialSettings),
   );
@@ -70,7 +77,7 @@ export function GlobalUserSettingsProvider({
   }, [settings]);
 
   useEffect(() => {
-    if (isAuthenticated || typeof window === "undefined") {
+    if (isAuthenticatedState || typeof window === "undefined") {
       return;
     }
 
@@ -89,6 +96,10 @@ export function GlobalUserSettingsProvider({
       updatedAt: null,
       message: "このブラウザに保存しました。",
     });
+  }, [isAuthenticatedState]);
+
+  useEffect(() => {
+    setIsAuthenticatedState(isAuthenticated);
   }, [isAuthenticated]);
 
   function updateSettings(patch: Partial<GlobalUserSettings>) {
@@ -100,7 +111,8 @@ export function GlobalUserSettingsProvider({
 
       settingsRef.current = nextSettings;
 
-      if (!isAuthenticated) {
+      if (!isAuthenticatedState) {
+        setIsAuthenticatedState(false);
         if (typeof window !== "undefined") {
           window.localStorage.setItem(
             GLOBAL_USER_SETTINGS_STORAGE_KEY,
@@ -135,7 +147,7 @@ export function GlobalUserSettingsProvider({
   }
 
   function retrySave() {
-    if (!isAuthenticated) {
+    if (!isAuthenticatedState) {
       return;
     }
 
@@ -146,7 +158,7 @@ export function GlobalUserSettingsProvider({
 
   async function syncPendingSettings(): Promise<void> {
     if (
-      !isAuthenticated ||
+      !isAuthenticatedState ||
       !persistSettingsAction ||
       isSyncingRef.current ||
       !pendingSettingsRef.current
@@ -198,14 +210,34 @@ export function GlobalUserSettingsProvider({
     }
   }
 
+  function hydrateFromServer(payload: {
+    isAuthenticated: boolean;
+    settings: GlobalUserSettings;
+    updatedAt: string | null;
+  }) {
+    const normalizedSettings = normalizeGlobalUserSettings(payload.settings);
+
+    pendingSettingsRef.current = null;
+    retrySettingsRef.current = null;
+    settingsRef.current = normalizedSettings;
+    setIsAuthenticatedState(payload.isAuthenticated);
+    setSettings(normalizedSettings);
+    setSaveState({
+      status: "idle",
+      updatedAt: payload.updatedAt,
+      message: null,
+    });
+  }
+
   return (
     <GlobalUserSettingsContext.Provider
       value={{
-        isAuthenticated,
+        isAuthenticated: isAuthenticatedState,
         settings,
         saveState,
         updateSettings,
         retrySave,
+        hydrateFromServer,
       }}
     >
       {children}

@@ -7,6 +7,7 @@ import {
   resolveCurrentUserOrNull,
 } from "../../../lib/auth/server.ts";
 import { createDefaultGlobalUserSettings } from "../../settings/model/global-user-settings.ts";
+import { getCurrentUserSettingsSnapshot } from "../../settings/server/getCurrentUserSettingsSnapshot.ts";
 import { isRecoverableUserSettingsStorageError } from "../../settings/server/user-settings-storage.ts";
 import {
   createDefaultDistanceTrainingConfig,
@@ -40,12 +41,6 @@ type UserSettingsTables = {
   userSettings: AppSchemaModule["userSettings"];
 };
 
-interface UserSettingsReadRow {
-  lastDistanceConfig: unknown;
-  lastKeyboardConfig: unknown;
-  updatedAt: Date;
-}
-
 interface UserSettingsUpsertExistingRow {
   masterVolume: number;
   soundEffectsEnabled: boolean;
@@ -58,62 +53,13 @@ interface UserSettingsUpsertExistingRow {
 export async function getLastUsedTrainingConfigsForCurrentUser(
   deps: LastUsedTrainingConfigDependencies = {},
 ): Promise<LastUsedTrainingConfigs> {
-  const currentUser = await resolveCurrentUserOrNull(deps);
-
-  if (!currentUser) {
-    return {
-      isAuthenticated: false,
-      lastDistanceConfig: null,
-      lastKeyboardConfig: null,
-      updatedAt: null,
-    };
-  }
-
-  const db = (deps.db ?? (await getDb())) as SelectOnlyDb;
-  const { userSettings } = deps.db
-    ? getPlaceholderUserSettingsTable()
-    : await getUserSettingsTable();
-  let settings: {
-    lastDistanceConfig: DistanceTrainingConfig;
-    lastKeyboardConfig: KeyboardTrainingConfig;
-    updatedAt: Date;
-  } | null = null;
-
-  try {
-    const [existing] = (await db
-      .select({
-        lastDistanceConfig: userSettings.lastDistanceConfig,
-        lastKeyboardConfig: userSettings.lastKeyboardConfig,
-        updatedAt: userSettings.updatedAt,
-      })
-      .from(userSettings)
-      .where(eq(userSettings.userId, currentUser.id))
-      .limit(1)) as UserSettingsReadRow[];
-
-    settings = existing
-      ? {
-          lastDistanceConfig: normalizeTrainingConfigOrDefault(
-            existing.lastDistanceConfig,
-            "distance",
-          ),
-          lastKeyboardConfig: normalizeTrainingConfigOrDefault(
-            existing.lastKeyboardConfig,
-            "keyboard",
-          ),
-          updatedAt: existing.updatedAt,
-        }
-      : null;
-  } catch (error) {
-    if (!isRecoverableUserSettingsStorageError(error)) {
-      throw error;
-    }
-  }
+  const snapshot = await getCurrentUserSettingsSnapshot(deps);
 
   return {
-    isAuthenticated: true,
-    lastDistanceConfig: settings?.lastDistanceConfig ?? null,
-    lastKeyboardConfig: settings?.lastKeyboardConfig ?? null,
-    updatedAt: settings?.updatedAt?.toISOString() ?? null,
+    isAuthenticated: snapshot.isAuthenticated,
+    lastDistanceConfig: snapshot.lastDistanceConfig,
+    lastKeyboardConfig: snapshot.lastKeyboardConfig,
+    updatedAt: snapshot.updatedAt,
   };
 }
 
