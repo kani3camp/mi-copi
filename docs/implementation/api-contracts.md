@@ -141,6 +141,13 @@ type SaveTrainingSessionResult =
     };
 ```
 
+Failure shape notes:
+
+- The failure payload shape is fixed to `{ ok: false, code, message }`.
+- `code` is one of `UNAUTHORIZED`, `INVALID_INPUT`, or `SAVE_FAILED`.
+- `message` is a human-readable string produced by the current server implementation, not a structured field-error object.
+- The authoritative runtime types live in `src/features/training/server/saveTrainingSession.ts` and the current-user entrypoint behavior lives in `src/features/training/server/saveTrainingSession.entry.ts`.
+
 Rules:
 
 - Require an authenticated current user.
@@ -173,58 +180,17 @@ Rules:
 
 ## Stats
 
-### `getStatsOverview`
+### `getTrainingStatsForCurrentUser`
 
-- Role: return aggregate stats for the current user
-- Input:
+- Role: return the current signed-in user's full stats view payload for the MVP stats route
+- Input: none
+- Output: `TrainingStats`
 
-```ts
-type GetStatsOverviewInput = {
-  days?: number;
-};
-```
+Rules:
 
-- Output:
-
-```ts
-type GetStatsOverviewResult = StatsOverview;
-```
-
-### `getRecentQuestionTrends`
-
-- Role: return recent answered-question level trend points
-- Input:
-
-```ts
-type GetRecentQuestionTrendsInput = {
-  limit?: number;
-};
-```
-
-- Output:
-
-```ts
-type GetRecentQuestionTrendsResult = RecentQuestionTrend[];
-```
-
-### `getDailyTrends`
-
-- Role: return day-level aggregates for the current user
-- Input:
-
-```ts
-type GetDailyTrendsInput = {
-  days?: number;
-};
-```
-
-- Output:
-
-```ts
-type GetDailyTrendsResult = DailyTrendPoint[];
-```
-
-## Open Points
-
-- TODO: confirm the exact error shape shared across Server Actions / Server Functions.
-- TODO: confirm whether stats endpoints default to all-time or a fixed recent window when `days` is omitted.
+- The current server implementation does not expose `days` or `limit` parameters at the route contract level.
+- Stats reads are all-time by default for the signed-in user.
+- `recentQuestionSummaries` are fixed windows of `10` and `30` answered questions in the current implementation.
+- `scoreTrends`, `dailyTrends`, `intervalPerformance`, `directionPerformance`, and `recentSessions` are all derived from the full saved dataset for the current user.
+- If the user is not authenticated, the function returns the guest-safe empty `TrainingStats` shape instead of throwing.
+- The authoritative runtime contract for this payload lives in `src/features/training/server/getTrainingStats.ts`.
