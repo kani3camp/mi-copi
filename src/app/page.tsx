@@ -137,7 +137,9 @@ export default async function HomePage() {
                 {summary.recentSessions.map((session) => (
                   <li key={session.id}>
                     <ListLinkCard href={`/sessions/${session.id}`}>
-                      <strong>{formatTrainingModeLabel(session.mode)}</strong>
+                      <Chip tone={getTrainingModeChipTone(session.mode)}>
+                        {formatTrainingModeLabel(session.mode)}
+                      </Chip>
                       <span className="ui-muted">
                         スコア {formatScoreLabel(session.sessionScore)} / 正答率{" "}
                         {formatAccuracyLabel(session.accuracyRate)} / 問題数{" "}
@@ -185,6 +187,10 @@ export default async function HomePage() {
       )}
     </AppShell>
   );
+}
+
+function getTrainingModeChipTone(mode: "distance" | "keyboard") {
+  return mode === "distance" ? "info" : "active";
 }
 
 function TrainModeCard(props: {
