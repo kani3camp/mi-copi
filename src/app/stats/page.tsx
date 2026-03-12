@@ -631,6 +631,8 @@ function MetricLineChart(props: {
               points={polylinePoints}
               className="ui-line-chart__polyline"
             />
+          </svg>
+          <div className="ui-line-chart__dots" aria-hidden="true">
             {props.points.map((point, index) => {
               const { x, y } = getLineChartCoordinates(
                 index,
@@ -641,16 +643,19 @@ function MetricLineChart(props: {
               );
 
               return (
-                <circle
+                <span
                   key={point.key}
-                  cx={x}
-                  cy={y}
-                  r="2.4"
                   className="ui-line-chart__dot"
+                  style={
+                    {
+                      left: `${x}%`,
+                      top: `${(y / 72) * 100}%`,
+                    } as CSSProperties
+                  }
                 />
               );
             })}
-          </svg>
+          </div>
         </div>
       </div>
       <div

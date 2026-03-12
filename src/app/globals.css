@@ -769,6 +769,7 @@ a {
 }
 
 .ui-line-chart__plot {
+  position: relative;
   min-height: 120px;
 }
 
@@ -791,10 +792,21 @@ a {
   stroke-linejoin: round;
 }
 
+.ui-line-chart__dots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .ui-line-chart__dot {
-  fill: #ffffff;
-  stroke: var(--color-chart-primary);
-  stroke-width: 1.8;
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 3px solid var(--color-chart-primary);
+  background: #ffffff;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
 }
 
 .ui-bar-chart {
