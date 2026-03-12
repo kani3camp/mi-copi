@@ -54,6 +54,12 @@
 
 route ごとの詳細な実装見取り図は `docs/implementation/route-status.md` を参照してください。
 
+補足:
+
+- `docs/implementation/route-status.md` は current route behavior の要約です
+- 実ブラウザ QA はこの環境では未完了です
+  - headless Chromium が macOS permission error で起動できず、browser automation は未実施です
+
 ## Setup
 
 前提:
