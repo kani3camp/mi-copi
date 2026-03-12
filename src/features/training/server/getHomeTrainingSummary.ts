@@ -1,10 +1,8 @@
 import { count, desc, eq } from "drizzle-orm";
 
-import { getCurrentUserOrNull } from "../../../lib/auth/server";
-import { getDb } from "../../../lib/db/client";
-import { questionResults, trainingSessions } from "../../../lib/db/schema/app";
-import { summarizeHomeHeadline } from "../model/stats-aggregation";
-import type { TrainingMode } from "../model/types";
+import type { CurrentUser } from "../../../lib/auth/server.ts";
+import { summarizeHomeHeadline } from "../model/stats-aggregation.ts";
+import type { TrainingMode } from "../model/types.ts";
 
 export interface RecentTrainingSessionSummary {
   id: string;
@@ -27,8 +25,17 @@ export interface HomeTrainingSummary {
   recentSessions: RecentTrainingSessionSummary[];
 }
 
-export async function getHomeTrainingSummaryForCurrentUser(): Promise<HomeTrainingSummary> {
-  const currentUser = await getCurrentUserOrNull();
+export interface HomeTrainingSummaryDependencies {
+  db?: {
+    select: (...args: unknown[]) => any;
+  };
+  getCurrentUser?: () => Promise<CurrentUser | null>;
+}
+
+export async function getHomeTrainingSummaryForCurrentUser(
+  deps: HomeTrainingSummaryDependencies = {},
+): Promise<HomeTrainingSummary> {
+  const currentUser = await (deps.getCurrentUser ?? getCurrentUserOrNull)();
 
   if (!currentUser) {
     return {
@@ -44,7 +51,10 @@ export async function getHomeTrainingSummaryForCurrentUser(): Promise<HomeTraini
     };
   }
 
-  const db = getDb();
+  const db = deps.db ?? (await getDb());
+  const { questionResults, trainingSessions }: any = deps.db
+    ? getPlaceholderHomeTables()
+    : await getHomeTables();
   const [sessionCountRow] = await db
     .select({ count: count() })
     .from(trainingSessions)
@@ -69,7 +79,7 @@ export async function getHomeTrainingSummaryForCurrentUser(): Promise<HomeTraini
     .orderBy(desc(trainingSessions.endedAt))
     .limit(5);
   const headlineSummary = summarizeHomeHeadline(
-    recentSessions.map((session) => ({
+    recentSessions.map((session: any) => ({
       mode: session.mode,
       answeredQuestionCount: session.answeredQuestionCount,
       sessionScore: session.sessionScore,
@@ -88,7 +98,7 @@ export async function getHomeTrainingSummaryForCurrentUser(): Promise<HomeTraini
     latestSessionScore: headlineSummary.latestSessionScore,
     recentAverageError: headlineSummary.recentAverageError,
     recentAverageResponseTimeMs: headlineSummary.recentAverageResponseTimeMs,
-    recentSessions: recentSessions.map((session) => ({
+    recentSessions: recentSessions.map((session: any) => ({
       id: session.id,
       mode: session.mode,
       answeredQuestionCount: session.answeredQuestionCount,
@@ -96,5 +106,46 @@ export async function getHomeTrainingSummaryForCurrentUser(): Promise<HomeTraini
       accuracyRate: Number(session.accuracyRate),
       endedAt: session.endedAt.toISOString(),
     })),
+  };
+}
+
+async function getCurrentUserOrNull(): Promise<CurrentUser | null> {
+  const { getCurrentUserOrNull: resolveCurrentUserOrNull } = await import(
+    "../../../lib/auth/server.ts"
+  );
+
+  return resolveCurrentUserOrNull();
+}
+
+async function getDb() {
+  const { getDb: resolveDb } = await import("../../../lib/db/client.ts");
+
+  return resolveDb();
+}
+
+async function getHomeTables() {
+  const { questionResults, trainingSessions } = await import(
+    "../../../lib/db/schema/app.ts"
+  );
+
+  return { questionResults, trainingSessions };
+}
+
+function getPlaceholderHomeTables() {
+  return {
+    questionResults: {
+      userId: "question_results.user_id",
+    },
+    trainingSessions: {
+      id: "training_sessions.id",
+      userId: "training_sessions.user_id",
+      mode: "training_sessions.mode",
+      answeredQuestionCount: "training_sessions.answered_question_count",
+      sessionScore: "training_sessions.session_score",
+      accuracyRate: "training_sessions.accuracy_rate",
+      avgErrorAbs: "training_sessions.avg_error_abs",
+      avgResponseTimeMs: "training_sessions.avg_response_time_ms",
+      endedAt: "training_sessions.ended_at",
+    },
   };
 }

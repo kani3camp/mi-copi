@@ -22,6 +22,10 @@ export interface CompleteTrainingResultSaveContext
   finishReason: SessionFinishReason;
 }
 
+export interface TrainingResultRetryContext extends TrainingResultSaveContext {
+  hasSavedResult: boolean;
+}
+
 export function hasTrainingResultSavePayload(
   context: TrainingResultSaveContext,
 ): context is CompleteTrainingResultSaveContext {
@@ -53,4 +57,18 @@ export function shouldAutoSaveTrainingResult(
   }
 
   return context.attemptedSessionId !== context.startedAt;
+}
+
+export function canRetryTrainingResultSave(
+  context: TrainingResultRetryContext,
+): context is CompleteTrainingResultSaveContext & { hasSavedResult: false } {
+  if (!context.isAuthenticated) {
+    return false;
+  }
+
+  if (!hasTrainingResultSavePayload(context)) {
+    return false;
+  }
+
+  return !context.hasSavedResult;
 }

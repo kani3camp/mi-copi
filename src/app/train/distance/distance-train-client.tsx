@@ -40,9 +40,15 @@ import {
   takeNextQuestion,
 } from "../../../features/training/model/question-generator";
 import {
+  canRetryTrainingResultSave,
   hasTrainingResultSavePayload,
   shouldAutoSaveTrainingResult,
 } from "../../../features/training/model/result-save";
+import {
+  getNextReplayCount,
+  resolvePostFeedbackProgress,
+  resolveTimeLimitExpiry,
+} from "../../../features/training/model/session-flow";
 import type {
   DistanceTrainingConfig,
   NoteClass,
@@ -252,12 +258,15 @@ export function DistanceTrainClient({
 
       if (nextRemaining === 0 && !timeoutHandledRef.current) {
         timeoutHandledRef.current = true;
+        const timedOutSession = resolveTimeLimitExpiry(
+          new Date().toISOString(),
+        );
         setActiveQuestion(null);
         setFeedbackResult(null);
-        setLastAnsweredWasFinal(true);
-        setFinishReason("time_up");
-        setEndedAt(new Date().toISOString());
-        setPhase("result");
+        setLastAnsweredWasFinal(timedOutSession.lastAnsweredWasFinal);
+        setFinishReason(timedOutSession.finishReason);
+        setEndedAt(timedOutSession.endedAt);
+        setPhase(timedOutSession.phase);
       }
     };
 
@@ -381,7 +390,10 @@ export function DistanceTrainClient({
           current
             ? {
                 ...current,
-                replayBaseCount: current.replayBaseCount + 1,
+                replayBaseCount: getNextReplayCount(
+                  current.replayBaseCount,
+                  didStartPlayback,
+                ),
               }
             : current,
         );
@@ -412,7 +424,10 @@ export function DistanceTrainClient({
           current
             ? {
                 ...current,
-                replayTargetCount: current.replayTargetCount + 1,
+                replayTargetCount: getNextReplayCount(
+                  current.replayTargetCount,
+                  didStartPlayback,
+                ),
               }
             : current,
         );
@@ -481,16 +496,18 @@ export function DistanceTrainClient({
       return;
     }
 
-    const nextQuestionIndex = activeQuestion.question.questionIndex + 1;
-    const reachedTarget =
-      config.endCondition.type === "question_count" &&
-      nextQuestionIndex >= config.endCondition.questionCount;
+    const nextProgress = resolvePostFeedbackProgress({
+      endCondition: config.endCondition,
+      currentQuestionIndex: activeQuestion.question.questionIndex,
+      lastAnsweredWasFinal,
+      answeredAt: feedbackResult.answeredAt,
+    });
 
-    if (lastAnsweredWasFinal || reachedTarget) {
+    if (nextProgress.phase === "result") {
       setActiveQuestion(null);
-      setFinishReason("target_reached");
-      setEndedAt(feedbackResult.answeredAt);
-      setPhase("result");
+      setFinishReason(nextProgress.finishReason);
+      setEndedAt(nextProgress.endedAt);
+      setPhase(nextProgress.phase);
       return;
     }
 
@@ -498,12 +515,12 @@ export function DistanceTrainClient({
     setActiveQuestion(
       createActiveQuestion(
         config,
-        activeQuestion.question.questionIndex + 1,
+        nextProgress.nextQuestionIndex,
         playbackIdRef,
         questionGeneratorStateRef,
       ),
     );
-    setPhase("playing");
+    setPhase(nextProgress.phase);
   }
 
   function handleReset() {
@@ -533,9 +550,10 @@ export function DistanceTrainClient({
       endedAt,
       finishReason,
       resultsCount: results.length,
+      hasSavedResult: Boolean(saveResult?.ok),
     };
 
-    if (!hasTrainingResultSavePayload(retrySaveContext) || saveResult?.ok) {
+    if (!canRetryTrainingResultSave(retrySaveContext)) {
       return;
     }
 
