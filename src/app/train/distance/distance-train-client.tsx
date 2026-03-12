@@ -18,7 +18,6 @@ import {
   evaluateDistanceAnswer,
   getDistanceAnswerChoices,
   getDistanceQuestionCount,
-  getNoteFrequency,
   validateDistanceTrainingConfig,
 } from "../../../features/training/model/distance-guest";
 import { formatDateTimeLabel } from "../../../features/training/model/format";
@@ -59,6 +58,11 @@ import {
   SectionHeader,
   Surface,
 } from "../../ui/primitives";
+import {
+  type PlaybackKind,
+  playFeedbackEffect,
+  playQuestionAudio,
+} from "../audio-playback";
 import { formatRemainingTimeLabel } from "../train-ui-shared";
 import { TrainingPageHero } from "../training-page-shell";
 import {
@@ -74,8 +78,6 @@ type DistanceTrainPhase =
   | "answering"
   | "feedback"
   | "result";
-
-type PlaybackKind = "question" | "base" | "target";
 
 interface ActiveQuestionState {
   question: Question;
@@ -974,142 +976,6 @@ function nextPlaybackNonce(
   playbackIdRef.current += 1;
 
   return playbackIdRef.current;
-}
-
-async function playQuestionAudio(
-  question: Question,
-  playbackKind: PlaybackKind,
-  audioContextRef: React.MutableRefObject<AudioContext | null>,
-  masterVolume: number,
-  playbackLockRef: React.MutableRefObject<boolean>,
-): Promise<boolean> {
-  return runGuardedPlayback(playbackLockRef, async () => {
-    const audioContext = await getAudioContext(audioContextRef);
-
-    if (playbackKind === "base") {
-      await playNote(audioContext, question.baseMidi, masterVolume);
-      return;
-    }
-
-    if (playbackKind === "target") {
-      await playNote(audioContext, question.targetMidi, masterVolume);
-      return;
-    }
-
-    await playNote(audioContext, question.baseMidi, masterVolume);
-    await wait(140);
-    await playNote(audioContext, question.targetMidi, masterVolume);
-  });
-}
-
-function playTone(
-  audioContext: AudioContext,
-  frequency: number,
-  durationSeconds: number,
-  masterVolume: number,
-): Promise<void> {
-  return new Promise((resolve) => {
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    const now = audioContext.currentTime;
-    const peakGain = Math.max(
-      0.0001,
-      (Math.min(100, Math.max(0, masterVolume)) / 100) * 0.15,
-    );
-
-    oscillator.type = "sine";
-    oscillator.frequency.value = frequency;
-    gainNode.gain.setValueAtTime(0.0001, now);
-    gainNode.gain.exponentialRampToValueAtTime(peakGain, now + 0.02);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + durationSeconds);
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    oscillator.start(now);
-    oscillator.stop(now + durationSeconds);
-    oscillator.onended = () => resolve();
-  });
-}
-
-async function playFeedbackEffect(
-  audioContextRef: React.MutableRefObject<AudioContext | null>,
-  masterVolume: number,
-  soundEffectsEnabled: boolean,
-  isCorrect: boolean,
-  playbackLockRef: React.MutableRefObject<boolean>,
-): Promise<void> {
-  if (!soundEffectsEnabled || typeof window === "undefined") {
-    return;
-  }
-
-  await runGuardedPlayback(playbackLockRef, async () => {
-    const audioContext = await getAudioContext(audioContextRef);
-
-    await playTone(
-      audioContext,
-      isCorrect ? 880 : 220,
-      0.08,
-      Math.max(12, Math.round(masterVolume * 0.5)),
-    );
-  });
-}
-
-async function getAudioContext(
-  audioContextRef: React.MutableRefObject<AudioContext | null>,
-): Promise<AudioContext> {
-  if (typeof window === "undefined") {
-    throw new Error("AudioContext is not available.");
-  }
-
-  const AudioContextClass =
-    window.AudioContext ||
-    (window as typeof window & { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext;
-
-  if (!AudioContextClass) {
-    throw new Error("AudioContext is not available.");
-  }
-
-  const audioContext = audioContextRef.current ?? new AudioContextClass();
-  audioContextRef.current = audioContext;
-
-  if (audioContext.state === "suspended") {
-    await audioContext.resume();
-  }
-
-  return audioContext;
-}
-
-async function playNote(
-  audioContext: AudioContext,
-  midi: number,
-  masterVolume: number,
-): Promise<void> {
-  await playTone(audioContext, getNoteFrequency(midi), 0.35, masterVolume);
-}
-
-async function runGuardedPlayback(
-  playbackLockRef: React.MutableRefObject<boolean>,
-  playback: () => Promise<void>,
-): Promise<boolean> {
-  if (playbackLockRef.current) {
-    return false;
-  }
-
-  playbackLockRef.current = true;
-
-  try {
-    await playback();
-    return true;
-  } finally {
-    playbackLockRef.current = false;
-  }
-}
-
-function wait(durationMs: number): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, durationMs);
-  });
 }
 
 function formatPhaseLabel(phase: DistanceTrainPhase): string {
