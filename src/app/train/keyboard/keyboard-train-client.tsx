@@ -377,19 +377,30 @@ export function KeyboardTrainClient({
       return;
     }
 
-    setActiveQuestion({
-      ...activeQuestion,
-      replayBaseCount: activeQuestion.replayBaseCount + 1,
-    });
     void playQuestionAudio(
       activeQuestion.question,
       "base",
       audioContextRef,
       settings.masterVolume,
       playbackLockRef,
-    ).catch(() => {
-      setAudioError("音声の再生に失敗しました。そのまま続行できます。");
-    });
+    )
+      .then((didStartPlayback) => {
+        if (!didStartPlayback) {
+          return;
+        }
+
+        setActiveQuestion((current) =>
+          current
+            ? {
+                ...current,
+                replayBaseCount: current.replayBaseCount + 1,
+              }
+            : current,
+        );
+      })
+      .catch(() => {
+        setAudioError("音声の再生に失敗しました。そのまま続行できます。");
+      });
   }
 
   function handleReplayTarget() {
@@ -397,19 +408,30 @@ export function KeyboardTrainClient({
       return;
     }
 
-    setActiveQuestion({
-      ...activeQuestion,
-      replayTargetCount: activeQuestion.replayTargetCount + 1,
-    });
     void playQuestionAudio(
       activeQuestion.question,
       "target",
       audioContextRef,
       settings.masterVolume,
       playbackLockRef,
-    ).catch(() => {
-      setAudioError("音声の再生に失敗しました。そのまま続行できます。");
-    });
+    )
+      .then((didStartPlayback) => {
+        if (!didStartPlayback) {
+          return;
+        }
+
+        setActiveQuestion((current) =>
+          current
+            ? {
+                ...current,
+                replayTargetCount: current.replayTargetCount + 1,
+              }
+            : current,
+        );
+      })
+      .catch(() => {
+        setAudioError("音声の再生に失敗しました。そのまま続行できます。");
+      });
   }
 
   function handleAnswer(answeredNote: NoteClass) {
@@ -722,7 +744,9 @@ export function KeyboardTrainClient({
                     }))
                   }
                 >
-                  <option value="mixed">{formatDirectionModeLabel("mixed")}</option>
+                  <option value="mixed">
+                    {formatDirectionModeLabel("mixed")}
+                  </option>
                   <option value="up_only">
                     {formatDirectionModeLabel("up_only")}
                   </option>
@@ -887,7 +911,9 @@ export function KeyboardTrainClient({
                 <div className="ui-replay-panel">
                   <div className="ui-stack-sm">
                     <strong>もう一度聞く</strong>
-                    <span className="ui-muted">再生中の追加タップは無効です。</span>
+                    <span className="ui-muted">
+                      再生中の追加タップは無効です。
+                    </span>
                   </div>
                   <div className="ui-replay-panel__row">
                     <Button
@@ -1151,8 +1177,8 @@ async function playQuestionAudio(
   audioContextRef: React.MutableRefObject<AudioContext | null>,
   masterVolume: number,
   playbackLockRef: React.MutableRefObject<boolean>,
-): Promise<void> {
-  await runGuardedPlayback(playbackLockRef, async () => {
+): Promise<boolean> {
+  return runGuardedPlayback(playbackLockRef, async () => {
     const audioContext = await getAudioContext(audioContextRef);
 
     if (playbackKind === "base") {
@@ -1271,15 +1297,16 @@ async function playNote(
 async function runGuardedPlayback(
   playbackLockRef: React.MutableRefObject<boolean>,
   playback: () => Promise<void>,
-): Promise<void> {
+): Promise<boolean> {
   if (playbackLockRef.current) {
-    return;
+    return false;
   }
 
   playbackLockRef.current = true;
 
   try {
     await playback();
+    return true;
   } finally {
     playbackLockRef.current = false;
   }
@@ -1666,6 +1693,7 @@ function PlaybackIcon() {
   return (
     <span className="ui-icon-button__icon" aria-hidden="true">
       <svg viewBox="0 0 20 20" width="20" height="20" fill="none">
+        <title>再生</title>
         <path
           d="M4 7.5a1 1 0 0 1 1.6-.8l7 5a1 1 0 0 1 0 1.6l-7 5A1 1 0 0 1 4 17.5v-10Z"
           fill="currentColor"

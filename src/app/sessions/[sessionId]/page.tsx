@@ -110,7 +110,9 @@ export default async function TrainingSessionDetailPage({
           />
           <KeyValueCard
             label="出題方向"
-            value={formatDirectionModeLabel(detail.configSnapshot.directionMode)}
+            value={formatDirectionModeLabel(
+              detail.configSnapshot.directionMode,
+            )}
           />
           <KeyValueCard
             label="基準音モード"

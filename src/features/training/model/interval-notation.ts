@@ -1,5 +1,5 @@
-import type { DirectionMode, QuestionDirection } from "./types";
 import type { IntervalNotationStyle } from "../../settings/model/global-user-settings";
+import type { DirectionMode, QuestionDirection } from "./types";
 
 const INTERVAL_LABELS: Record<
   number,
