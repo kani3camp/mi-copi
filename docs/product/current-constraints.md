@@ -31,7 +31,7 @@
 - 表示時のみ必要に応じて丸める
 
 ## App Design
-- train 画面はルート内の状態切り替えで進行する
+- train 画面は `/train/distance` / `/train/keyboard` の mode route 内で状態切り替えして進行する
 - UI と純粋ロジックは分離する
 - 純粋ロジックは `features/training/model` に寄せる
 - training は client-heavy、保存・設定・統計・ホームは server-first を基本とする
