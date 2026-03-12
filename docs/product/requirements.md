@@ -18,6 +18,7 @@
 ## Product Policy
 
 - Focus the MVP on short, repeatable training sessions with fast feedback loops.
+- Treat the product as relative-pitch training with a reference tone, not as an absolute-pitch test.
 - Treat pitch error and answer speed as the core evaluation axes.
 - Use a product-specific score as the primary headline metric, while preserving raw data for future recalculation.
 - Generate and play sound on the client with the Web Audio API.
@@ -97,6 +98,10 @@
 ### Keyboard Mode
 - The user answers by selecting the target note on an on-screen keyboard.
 - The keyboard must include black keys.
+- During answering, the keyboard must visually indicate the reference-tone key position.
+- The reference-key indication applies to both fixed and randomized base-note configurations.
+- In randomized base-note sessions, the user must still be able to identify which key corresponded to the first played reference tone while answering.
+- The reference-key indication exists to support relative-pitch answering and must not be described as an absolute-pitch aid.
 - Feedback must distinguish the answered key from the correct key.
 - Feedback must also show note names in text.
 
@@ -188,6 +193,10 @@ Time-limit rule:
 ### Keyboard Mode
 - The answer is the target note on the keyboard UI.
 - Full chromatic keyboard input is assumed, including black keys.
+- During answering, the reference-tone key position must remain visually highlighted on the keyboard.
+- The correct target-key position must not be shown before the user answers.
+- The reference-key visual indication must work even when keyboard note-label visibility is turned off.
+- Reference-key indication and keyboard note-label visibility are separate specifications and must not be coupled.
 
 ## Feedback Requirements
 
