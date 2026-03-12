@@ -15,6 +15,7 @@ import {
   getIntervalLabel,
 } from "../../../features/training/model/interval-notation";
 import { getTrainingSessionDetailForCurrentUser } from "../../../features/training/server/getTrainingSessionDetail";
+import { getCurrentUserOrNullCached } from "../../../lib/auth/server";
 import { ButtonLink } from "../../ui/navigation-link";
 import {
   AppShell,
@@ -36,9 +37,10 @@ export default async function TrainingSessionDetailPage({
   params,
 }: TrainingSessionDetailPageProps) {
   const { sessionId } = await params;
+  const currentUser = await getCurrentUserOrNullCached();
   const [detail, globalSettings] = await Promise.all([
-    getTrainingSessionDetailForCurrentUser(sessionId),
-    getGlobalUserSettingsForCurrentUser(),
+    getTrainingSessionDetailForCurrentUser(sessionId, { currentUser }),
+    getGlobalUserSettingsForCurrentUser({ currentUser }),
   ]);
 
   if (!detail) {

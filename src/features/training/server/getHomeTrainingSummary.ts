@@ -1,6 +1,7 @@
 import { count, desc, eq } from "drizzle-orm";
 
-import type { CurrentUser } from "../../../lib/auth/server.ts";
+import type { CurrentUserResolverDependencies } from "../../../lib/auth/server.ts";
+import { resolveCurrentUserOrNull } from "../../../lib/auth/server.ts";
 import { summarizeHomeHeadline } from "../model/stats-aggregation.ts";
 import type { TrainingMode } from "../model/types.ts";
 import type { SelectOnlyDb } from "./query-types.ts";
@@ -28,7 +29,8 @@ export interface HomeTrainingSummary {
 
 export interface HomeTrainingSummaryDependencies {
   db?: SelectOnlyDb;
-  getCurrentUser?: () => Promise<CurrentUser | null>;
+  currentUser?: CurrentUserResolverDependencies["currentUser"];
+  getCurrentUser?: CurrentUserResolverDependencies["getCurrentUser"];
 }
 
 type AppSchemaModule = typeof import("../../../lib/db/schema/app.ts");
@@ -56,7 +58,7 @@ interface RecentSessionRow {
 export async function getHomeTrainingSummaryForCurrentUser(
   deps: HomeTrainingSummaryDependencies = {},
 ): Promise<HomeTrainingSummary> {
-  const currentUser = await (deps.getCurrentUser ?? getCurrentUserOrNull)();
+  const currentUser = await resolveCurrentUserOrNull(deps);
 
   if (!currentUser) {
     return {
@@ -128,14 +130,6 @@ export async function getHomeTrainingSummaryForCurrentUser(
       endedAt: session.endedAt.toISOString(),
     })),
   };
-}
-
-async function getCurrentUserOrNull(): Promise<CurrentUser | null> {
-  const { getCurrentUserOrNull: resolveCurrentUserOrNull } = await import(
-    "../../../lib/auth/server.ts"
-  );
-
-  return resolveCurrentUserOrNull();
 }
 
 async function getDb() {

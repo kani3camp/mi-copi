@@ -1,3 +1,5 @@
+import { GlobalUserSettingsProvider } from "../../../features/settings/client/global-user-settings-provider";
+import { getGlobalUserSettingsForCurrentUser } from "../../../features/settings/server/global-user-settings";
 import { createDefaultDistanceTrainingConfig } from "../../../features/training/model/distance-guest";
 import type { DistanceTrainingConfig } from "../../../features/training/model/types";
 import {
@@ -5,12 +7,15 @@ import {
   tryUpdateLastUsedTrainingConfigForCurrentUser,
 } from "../../../features/training/server/lastUsedTrainingConfig";
 import { saveTrainingSessionForCurrentUser } from "../../../features/training/server/saveTrainingSession.entry";
-import { getCurrentUserOrNull } from "../../../lib/auth/server";
+import { getCurrentUserOrNullCached } from "../../../lib/auth/server";
 import { DistanceTrainClient } from "./distance-train-client";
 
 export default async function DistanceTrainPage() {
-  const currentUser = await getCurrentUserOrNull();
-  const lastUsedConfigs = await getLastUsedTrainingConfigsForCurrentUser();
+  const currentUser = await getCurrentUserOrNullCached();
+  const [lastUsedConfigs, initialGlobalSettings] = await Promise.all([
+    getLastUsedTrainingConfigsForCurrentUser({ currentUser }),
+    getGlobalUserSettingsForCurrentUser({ currentUser }),
+  ]);
 
   async function saveResultsAction(
     input: Parameters<
@@ -35,17 +40,23 @@ export default async function DistanceTrainPage() {
   }
 
   return (
-    <DistanceTrainClient
-      isAuthenticated={Boolean(currentUser)}
-      initialConfig={
-        lastUsedConfigs.lastDistanceConfig ??
-        createDefaultDistanceTrainingConfig()
-      }
-      hasStoredConfig={Boolean(
-        currentUser && lastUsedConfigs.lastDistanceConfig,
-      )}
-      persistLastUsedConfigAction={persistLastUsedConfigAction}
-      saveResultsAction={saveResultsAction}
-    />
+    <GlobalUserSettingsProvider
+      initialSettings={initialGlobalSettings.settings}
+      initialUpdatedAt={initialGlobalSettings.updatedAt}
+      isAuthenticated={initialGlobalSettings.isAuthenticated}
+    >
+      <DistanceTrainClient
+        isAuthenticated={Boolean(currentUser)}
+        initialConfig={
+          lastUsedConfigs.lastDistanceConfig ??
+          createDefaultDistanceTrainingConfig()
+        }
+        hasStoredConfig={Boolean(
+          currentUser && lastUsedConfigs.lastDistanceConfig,
+        )}
+        persistLastUsedConfigAction={persistLastUsedConfigAction}
+        saveResultsAction={saveResultsAction}
+      />
+    </GlobalUserSettingsProvider>
   );
 }

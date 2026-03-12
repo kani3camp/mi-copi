@@ -1,4 +1,4 @@
-import { getCurrentUserOrNull } from "../../lib/auth/server";
+import { getCurrentUserOrNullCached } from "../../lib/auth/server";
 import { ButtonLink } from "../ui/navigation-link";
 import {
   AppShell,
@@ -11,7 +11,7 @@ import {
 import { LoginControls } from "./login-controls";
 
 export default async function LoginPage() {
-  const currentUser = await getCurrentUserOrNull();
+  const currentUser = await getCurrentUserOrNullCached();
 
   return (
     <AppShell narrow>

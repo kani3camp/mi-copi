@@ -11,6 +11,7 @@ import {
 } from "../../features/training/model/format";
 import { getIntervalLabel } from "../../features/training/model/interval-notation";
 import { getTrainingStatsForCurrentUser } from "../../features/training/server/getTrainingStats";
+import { getCurrentUserOrNullCached } from "../../lib/auth/server";
 import { ButtonLink, ListLinkCard } from "../ui/navigation-link";
 import {
   AppShell,
@@ -25,9 +26,10 @@ import {
 } from "../ui/primitives";
 
 export default async function StatsPage() {
+  const currentUser = await getCurrentUserOrNullCached();
   const [stats, globalSettings] = await Promise.all([
-    getTrainingStatsForCurrentUser(),
-    getGlobalUserSettingsForCurrentUser(),
+    getTrainingStatsForCurrentUser({ currentUser }),
+    getGlobalUserSettingsForCurrentUser({ currentUser }),
   ]);
   const intervalNotationStyle = globalSettings.settings.intervalNotationStyle;
 

@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 
-import type { CurrentUser } from "../../../lib/auth/server.ts";
+import type { CurrentUserResolverDependencies } from "../../../lib/auth/server.ts";
+import { resolveCurrentUserOrNull } from "../../../lib/auth/server.ts";
 import {
   buildAnswerBiasSummary,
   buildDailyTrendSummaries,
@@ -109,7 +110,8 @@ export interface TrainingStats {
 
 export interface TrainingStatsDependencies {
   db?: SelectOnlyDb;
-  getCurrentUser?: () => Promise<CurrentUser | null>;
+  currentUser?: CurrentUserResolverDependencies["currentUser"];
+  getCurrentUser?: CurrentUserResolverDependencies["getCurrentUser"];
 }
 
 type AppSchemaModule = typeof import("../../../lib/db/schema/app.ts");
@@ -144,7 +146,7 @@ interface StatsQuestionResultRow {
 export async function getTrainingStatsForCurrentUser(
   deps: TrainingStatsDependencies = {},
 ): Promise<TrainingStats> {
-  const currentUser = await (deps.getCurrentUser ?? getCurrentUserOrNull)();
+  const currentUser = await resolveCurrentUserOrNull(deps);
 
   if (!currentUser) {
     return {
@@ -314,14 +316,6 @@ export async function getTrainingStatsForCurrentUser(
       endedAt: session.endedAt.toISOString(),
     })),
   };
-}
-
-async function getCurrentUserOrNull(): Promise<CurrentUser | null> {
-  const { getCurrentUserOrNull: resolveCurrentUserOrNull } = await import(
-    "../../../lib/auth/server.ts"
-  );
-
-  return resolveCurrentUserOrNull();
 }
 
 async function getDb() {

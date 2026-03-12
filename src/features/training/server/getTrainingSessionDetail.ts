@@ -1,6 +1,7 @@
 import { and, asc, eq } from "drizzle-orm";
 
-import type { CurrentUser } from "../../../lib/auth/server.ts";
+import type { CurrentUserResolverDependencies } from "../../../lib/auth/server.ts";
+import { resolveCurrentUserOrNull } from "../../../lib/auth/server.ts";
 import { normalizeTrainingConfigOrDefault } from "../model/config.ts";
 import type {
   NoteClass,
@@ -41,7 +42,8 @@ export interface TrainingSessionDetail {
 
 export interface TrainingSessionDetailDependencies {
   db?: SelectOnlyDb;
-  getCurrentUser?: () => Promise<CurrentUser | null>;
+  currentUser?: CurrentUserResolverDependencies["currentUser"];
+  getCurrentUser?: CurrentUserResolverDependencies["getCurrentUser"];
 }
 
 type AppSchemaModule = typeof import("../../../lib/db/schema/app.ts");
@@ -83,7 +85,7 @@ export async function getTrainingSessionDetailForCurrentUser(
   sessionId: string,
   deps: TrainingSessionDetailDependencies = {},
 ): Promise<TrainingSessionDetail | null> {
-  const currentUser = await (deps.getCurrentUser ?? getCurrentUserOrNull)();
+  const currentUser = await resolveCurrentUserOrNull(deps);
 
   if (!currentUser || !isUuid(sessionId)) {
     return null;
@@ -178,14 +180,6 @@ function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
-}
-
-async function getCurrentUserOrNull(): Promise<CurrentUser | null> {
-  const { getCurrentUserOrNull: resolveCurrentUserOrNull } = await import(
-    "../../../lib/auth/server.ts"
-  );
-
-  return resolveCurrentUserOrNull();
 }
 
 async function getDb() {

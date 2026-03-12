@@ -2,7 +2,10 @@
 
 import { eq } from "drizzle-orm";
 
-import type { CurrentUser } from "../../../lib/auth/server.ts";
+import {
+  type CurrentUserResolverDependencies,
+  resolveCurrentUserOrNull,
+} from "../../../lib/auth/server.ts";
 import { createDefaultGlobalUserSettings } from "../../settings/model/global-user-settings.ts";
 import { isRecoverableUserSettingsStorageError } from "../../settings/server/user-settings-storage.ts";
 import {
@@ -26,7 +29,8 @@ export interface LastUsedTrainingConfigs {
 
 export interface LastUsedTrainingConfigDependencies {
   db?: SelectOnlyDb & InsertDb;
-  getCurrentUser?: () => Promise<CurrentUser | null>;
+  currentUser?: CurrentUserResolverDependencies["currentUser"];
+  getCurrentUser?: CurrentUserResolverDependencies["getCurrentUser"];
   now?: () => Date;
 }
 
@@ -54,7 +58,7 @@ interface UserSettingsUpsertExistingRow {
 export async function getLastUsedTrainingConfigsForCurrentUser(
   deps: LastUsedTrainingConfigDependencies = {},
 ): Promise<LastUsedTrainingConfigs> {
-  const currentUser = await (deps.getCurrentUser ?? getCurrentUserOrNull)();
+  const currentUser = await resolveCurrentUserOrNull(deps);
 
   if (!currentUser) {
     return {
@@ -167,7 +171,7 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
   config: DistanceTrainingConfig | KeyboardTrainingConfig,
   deps: LastUsedTrainingConfigDependencies = {},
 ): Promise<void> {
-  const currentUser = await (deps.getCurrentUser ?? getCurrentUserOrNull)();
+  const currentUser = await resolveCurrentUserOrNull(deps);
 
   if (!currentUser) {
     return;
@@ -308,14 +312,6 @@ export async function resetLastUsedTrainingConfigForCurrentUser(
     createDefaultKeyboardTrainingConfig(),
     deps,
   );
-}
-
-async function getCurrentUserOrNull(): Promise<CurrentUser | null> {
-  const { getCurrentUserOrNull: resolveCurrentUserOrNull } = await import(
-    "../../../lib/auth/server.ts"
-  );
-
-  return resolveCurrentUserOrNull();
 }
 
 async function getDb() {

@@ -1,12 +1,13 @@
 import {
   type CurrentUser,
-  getCurrentUserOrNull,
-} from "../../../lib/auth/server";
+  type CurrentUserResolverDependencies,
+  resolveCurrentUserOrNull,
+} from "../../../lib/auth/server.ts";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
 } from "../model/types";
-import { getLastUsedTrainingConfigsForCurrentUser } from "./lastUsedTrainingConfig";
+import { getLastUsedTrainingConfigsForCurrentUser } from "./lastUsedTrainingConfig.ts";
 
 export interface SettingsPageData {
   isAuthenticated: boolean;
@@ -16,11 +17,15 @@ export interface SettingsPageData {
   updatedAt: string | null;
 }
 
-export async function getSettingsPageDataForCurrentUser(): Promise<SettingsPageData> {
-  const [currentUser, lastUsedConfigs] = await Promise.all([
-    getCurrentUserOrNull(),
-    getLastUsedTrainingConfigsForCurrentUser(),
-  ]);
+export interface SettingsPageDataDependencies
+  extends CurrentUserResolverDependencies {
+  getLastUsedTrainingConfigs?: typeof getLastUsedTrainingConfigsForCurrentUser;
+}
+
+export async function getSettingsPageDataForCurrentUser(
+  deps: SettingsPageDataDependencies = {},
+): Promise<SettingsPageData> {
+  const currentUser = await resolveCurrentUserOrNull(deps);
 
   if (!currentUser) {
     return {
@@ -31,6 +36,12 @@ export async function getSettingsPageDataForCurrentUser(): Promise<SettingsPageD
       updatedAt: null,
     };
   }
+
+  const lastUsedConfigs = await (
+    deps.getLastUsedTrainingConfigs ?? getLastUsedTrainingConfigsForCurrentUser
+  )({
+    currentUser,
+  });
 
   return {
     isAuthenticated: true,

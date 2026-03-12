@@ -7,6 +7,7 @@ import {
   formatTrainingModeLabel,
 } from "../features/training/model/format";
 import { getHomeTrainingSummaryForCurrentUser } from "../features/training/server/getHomeTrainingSummary";
+import { getCurrentUserOrNullCached } from "../lib/auth/server";
 import { HomeSignOutButton } from "./home-sign-out-button";
 import { ButtonLink, ListLinkCard } from "./ui/navigation-link";
 import {
@@ -23,7 +24,8 @@ import {
 } from "./ui/primitives";
 
 export default async function HomePage() {
-  const summary = await getHomeTrainingSummaryForCurrentUser();
+  const currentUser = await getCurrentUserOrNullCached();
+  const summary = await getHomeTrainingSummaryForCurrentUser({ currentUser });
 
   return (
     <AppShell>

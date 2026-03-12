@@ -2,7 +2,11 @@
 
 import { eq } from "drizzle-orm";
 
-import { getCurrentUserOrNull } from "../../../lib/auth/server";
+import {
+  type CurrentUserResolverDependencies,
+  getCurrentUserOrNull,
+  resolveCurrentUserOrNull,
+} from "../../../lib/auth/server.ts";
 import { getDb } from "../../../lib/db/client";
 import { userSettings } from "../../../lib/db/schema/app";
 import { normalizeTrainingConfigOrDefault } from "../../training/model/config";
@@ -34,6 +38,9 @@ export interface CurrentGlobalUserSettingsResult {
   updatedAt: string | null;
 }
 
+export interface GlobalUserSettingsReadDependencies
+  extends CurrentUserResolverDependencies {}
+
 export type GlobalUserSettingsSaveResult =
   | {
       ok: true;
@@ -45,8 +52,10 @@ export type GlobalUserSettingsSaveResult =
       message: string;
     };
 
-export async function getGlobalUserSettingsForCurrentUser(): Promise<CurrentGlobalUserSettingsResult> {
-  const currentUser = await getCurrentUserOrNull();
+export async function getGlobalUserSettingsForCurrentUser(
+  deps: GlobalUserSettingsReadDependencies = {},
+): Promise<CurrentGlobalUserSettingsResult> {
+  const currentUser = await resolveCurrentUserOrNull(deps);
 
   if (!currentUser) {
     return {

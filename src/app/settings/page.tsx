@@ -1,5 +1,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { GlobalUserSettingsProvider } from "../../features/settings/client/global-user-settings-provider";
+import type { GlobalUserSettings } from "../../features/settings/model/global-user-settings";
+import {
+  getGlobalUserSettingsForCurrentUser,
+  updateGlobalUserSettingsForCurrentUser,
+} from "../../features/settings/server/global-user-settings";
 import {
   formatDateTimeLabel,
   formatDurationSecondsLabel,
@@ -8,6 +14,7 @@ import { formatDirectionModeLabel } from "../../features/training/model/interval
 import type { TrainingConfigSnapshot } from "../../features/training/model/types";
 import { getSettingsPageDataForCurrentUser } from "../../features/training/server/getSettingsPageData";
 import { resetLastUsedTrainingConfigForCurrentUser } from "../../features/training/server/lastUsedTrainingConfig";
+import { getCurrentUserOrNullCached } from "../../lib/auth/server";
 import { ButtonLink } from "../ui/navigation-link";
 import {
   AppShell,
@@ -31,10 +38,20 @@ interface SettingsPageProps {
 export default async function SettingsPage({
   searchParams,
 }: SettingsPageProps) {
-  const data = await getSettingsPageDataForCurrentUser();
+  const currentUser = await getCurrentUserOrNullCached();
+  const [data, initialGlobalSettings] = await Promise.all([
+    getSettingsPageDataForCurrentUser({ currentUser }),
+    getGlobalUserSettingsForCurrentUser({ currentUser }),
+  ]);
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const resetTarget = resolvedSearchParams?.reset;
   const resetError = resolvedSearchParams?.error;
+
+  async function persistGlobalUserSettingsAction(settings: GlobalUserSettings) {
+    "use server";
+
+    return updateGlobalUserSettingsForCurrentUser(settings);
+  }
 
   async function resetDistanceAction() {
     "use server";
@@ -65,130 +82,137 @@ export default async function SettingsPage({
   }
 
   return (
-    <AppShell narrow>
-      <PageHero
-        title="設定"
-        eyebrow="Preferences"
-        subtitle="全体設定の変更と、保存済みの前回設定の確認やリセットを行えます。"
-        actions={
+    <GlobalUserSettingsProvider
+      initialSettings={initialGlobalSettings.settings}
+      initialUpdatedAt={initialGlobalSettings.updatedAt}
+      isAuthenticated={initialGlobalSettings.isAuthenticated}
+      persistSettingsAction={persistGlobalUserSettingsAction}
+    >
+      <AppShell narrow>
+        <PageHero
+          title="設定"
+          eyebrow="Preferences"
+          subtitle="全体設定の変更と、保存済みの前回設定の確認やリセットを行えます。"
+          actions={
+            <>
+              <ButtonLink href="/" pendingLabel="ホームを開いています...">
+                ホームへ戻る
+              </ButtonLink>
+              <ButtonLink
+                href="/train/distance"
+                pendingLabel="距離モードを開いています..."
+              >
+                距離モードへ
+              </ButtonLink>
+              <ButtonLink
+                href="/train/keyboard"
+                pendingLabel="鍵盤モードを開いています..."
+              >
+                鍵盤モードへ
+              </ButtonLink>
+            </>
+          }
+        />
+
+        {resetTarget ? (
+          <Notice tone="success">
+            {resetTarget === "distance"
+              ? "距離モードの設定を初期値に戻しました。"
+              : "鍵盤モードの設定を初期値に戻しました。"}
+          </Notice>
+        ) : null}
+
+        {resetError ? (
+          <Notice tone="error">
+            {resetError === "distance"
+              ? "距離モードの設定をリセットできませんでした。もう一度お試しください。"
+              : "鍵盤モードの設定をリセットできませんでした。もう一度お試しください。"}
+          </Notice>
+        ) : null}
+
+        <GlobalSettingsSection />
+
+        {data.isAuthenticated ? (
           <>
-            <ButtonLink href="/" pendingLabel="ホームを開いています...">
-              ホームへ戻る
-            </ButtonLink>
-            <ButtonLink
-              href="/train/distance"
-              pendingLabel="距離モードを開いています..."
-            >
-              距離モードへ
-            </ButtonLink>
-            <ButtonLink
-              href="/train/keyboard"
-              pendingLabel="鍵盤モードを開いています..."
-            >
-              鍵盤モードへ
-            </ButtonLink>
+            <Surface>
+              <SectionHeader title="アカウント概要" />
+              <KeyValueGrid>
+                <KeyValueCard label="ログイン状態" value="サインイン中" />
+                <KeyValueCard label="名前" value={data.user?.name ?? "不明"} />
+                <KeyValueCard
+                  label="メールアドレス"
+                  value={data.user?.email ?? "不明"}
+                />
+                <KeyValueCard
+                  label="最終更新"
+                  value={
+                    data.updatedAt
+                      ? formatDateTimeLabel(data.updatedAt)
+                      : "まだ保存されていません"
+                  }
+                />
+              </KeyValueGrid>
+            </Surface>
+
+            <Surface>
+              <SectionHeader title="前回の距離モード設定" />
+              {data.lastDistanceConfig ? (
+                <>
+                  <ConfigSnapshotView config={data.lastDistanceConfig} />
+                  <form action={resetDistanceAction}>
+                    <ResetConfigSubmitButton>
+                      距離モードを初期値に戻す
+                    </ResetConfigSubmitButton>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <p className="ui-subtitle">
+                    距離モードの保存済み設定はまだありません。
+                  </p>
+                  <form action={resetDistanceAction}>
+                    <ResetConfigSubmitButton>
+                      距離モードを初期値に戻す
+                    </ResetConfigSubmitButton>
+                  </form>
+                </>
+              )}
+            </Surface>
+
+            <Surface>
+              <SectionHeader title="前回の鍵盤モード設定" />
+              {data.lastKeyboardConfig ? (
+                <>
+                  <ConfigSnapshotView config={data.lastKeyboardConfig} />
+                  <form action={resetKeyboardAction}>
+                    <ResetConfigSubmitButton>
+                      鍵盤モードを初期値に戻す
+                    </ResetConfigSubmitButton>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <p className="ui-subtitle">
+                    鍵盤モードの保存済み設定はまだありません。
+                  </p>
+                  <form action={resetKeyboardAction}>
+                    <ResetConfigSubmitButton>
+                      鍵盤モードを初期値に戻す
+                    </ResetConfigSubmitButton>
+                  </form>
+                </>
+              )}
+            </Surface>
           </>
-        }
-      />
-
-      {resetTarget ? (
-        <Notice tone="success">
-          {resetTarget === "distance"
-            ? "距離モードの設定を初期値に戻しました。"
-            : "鍵盤モードの設定を初期値に戻しました。"}
-        </Notice>
-      ) : null}
-
-      {resetError ? (
-        <Notice tone="error">
-          {resetError === "distance"
-            ? "距離モードの設定をリセットできませんでした。もう一度お試しください。"
-            : "鍵盤モードの設定をリセットできませんでした。もう一度お試しください。"}
-        </Notice>
-      ) : null}
-
-      <GlobalSettingsSection />
-
-      {data.isAuthenticated ? (
-        <>
+        ) : (
           <Surface>
-            <SectionHeader title="アカウント概要" />
-            <KeyValueGrid>
-              <KeyValueCard label="ログイン状態" value="サインイン中" />
-              <KeyValueCard label="名前" value={data.user?.name ?? "不明"} />
-              <KeyValueCard
-                label="メールアドレス"
-                value={data.user?.email ?? "不明"}
-              />
-              <KeyValueCard
-                label="最終更新"
-                value={
-                  data.updatedAt
-                    ? formatDateTimeLabel(data.updatedAt)
-                    : "まだ保存されていません"
-                }
-              />
-            </KeyValueGrid>
+            <p className="ui-subtitle">
+              ゲスト利用中です。保存済み設定はログイン後に利用できるようになります。
+            </p>
           </Surface>
-
-          <Surface>
-            <SectionHeader title="前回の距離モード設定" />
-            {data.lastDistanceConfig ? (
-              <>
-                <ConfigSnapshotView config={data.lastDistanceConfig} />
-                <form action={resetDistanceAction}>
-                  <ResetConfigSubmitButton>
-                    距離モードを初期値に戻す
-                  </ResetConfigSubmitButton>
-                </form>
-              </>
-            ) : (
-              <>
-                <p className="ui-subtitle">
-                  距離モードの保存済み設定はまだありません。
-                </p>
-                <form action={resetDistanceAction}>
-                  <ResetConfigSubmitButton>
-                    距離モードを初期値に戻す
-                  </ResetConfigSubmitButton>
-                </form>
-              </>
-            )}
-          </Surface>
-
-          <Surface>
-            <SectionHeader title="前回の鍵盤モード設定" />
-            {data.lastKeyboardConfig ? (
-              <>
-                <ConfigSnapshotView config={data.lastKeyboardConfig} />
-                <form action={resetKeyboardAction}>
-                  <ResetConfigSubmitButton>
-                    鍵盤モードを初期値に戻す
-                  </ResetConfigSubmitButton>
-                </form>
-              </>
-            ) : (
-              <>
-                <p className="ui-subtitle">
-                  鍵盤モードの保存済み設定はまだありません。
-                </p>
-                <form action={resetKeyboardAction}>
-                  <ResetConfigSubmitButton>
-                    鍵盤モードを初期値に戻す
-                  </ResetConfigSubmitButton>
-                </form>
-              </>
-            )}
-          </Surface>
-        </>
-      ) : (
-        <Surface>
-          <p className="ui-subtitle">
-            ゲスト利用中です。保存済み設定はログイン後に利用できるようになります。
-          </p>
-        </Surface>
-      )}
-    </AppShell>
+        )}
+      </AppShell>
+    </GlobalUserSettingsProvider>
   );
 }
 
