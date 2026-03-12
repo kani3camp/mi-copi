@@ -129,7 +129,18 @@ export async function updateGlobalUserSettingsForCurrentUser(
           updatedAt: now,
         },
       });
-  } catch {
+  } catch (error) {
+    if (isRecoverableUserSettingsStorageError(error)) {
+      return {
+        ok: false,
+        code: "SAVE_FAILED",
+        message:
+          "The settings storage is not ready yet. Apply the latest migrations and try again.",
+      };
+    }
+
+    console.error("Failed to save global user settings.", error);
+
     return {
       ok: false,
       code: "SAVE_FAILED",
