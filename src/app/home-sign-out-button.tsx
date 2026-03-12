@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { getAuthClient } from "../lib/auth/client";
-import { buttonStyle } from "./ui/polish";
+import { Button } from "./ui/primitives";
 
 export function HomeSignOutButton() {
   const authClient = getAuthClient();
@@ -32,13 +32,8 @@ export function HomeSignOutButton() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleSignOut}
-      disabled={isPending}
-      style={buttonStyle("secondary", isPending)}
-    >
+    <Button type="button" onClick={handleSignOut} disabled={isPending}>
       {isPending ? "ログアウト中..." : "ログアウト"}
-    </button>
+    </Button>
   );
 }

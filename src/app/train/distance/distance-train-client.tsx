@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
 import {
@@ -50,24 +49,19 @@ import type {
 } from "../../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
 import {
-  actionRowStyle,
-  buttonStyle,
-  cardStyle,
-  checkboxFieldStyle,
-  compactFieldGridStyle,
-  controlStyle,
-  formFieldStyle,
-  keyValueCardStyle,
-  keyValueGridStyle,
-  navLinkStyle,
-  navRowStyle,
-  noticeStyle,
-  pageHeroStyle,
-  pageShellStyle,
-  phaseBadgeStyle,
-  sectionTitleStyle,
-  subtleTextStyle,
-} from "../../ui/polish";
+  AppShell,
+  Button,
+  ButtonLink,
+  Field,
+  FieldGrid,
+  KeyValueCard,
+  KeyValueGrid,
+  List,
+  Notice,
+  SectionHeader,
+  Surface,
+} from "../../ui/primitives";
+import { TrainingPageHero } from "../training-page-shell";
 
 type DistanceTrainPhase =
   | "config"
@@ -524,582 +518,525 @@ export function DistanceTrainClient({
   }
 
   return (
-    <main style={pageShellStyle}>
-      <header style={pageHeroStyle}>
-        <div
-          style={{
-            display: "grid",
-            gap: "10px",
-          }}
-        >
-          <h1 style={{ ...sectionTitleStyle, fontSize: "34px" }}>距離モード</h1>
-          <span style={phaseBadgeStyle(phase)}>{formatPhaseLabel(phase)}</span>
-        </div>
-        <p style={subtleTextStyle}>
-          設定から結果表示まで、距離モードの MVP セッションを 1
-          画面内で進められます。
-        </p>
-        <div style={navRowStyle}>
-          <Link href="/" style={navLinkStyle}>
-            ホームへ戻る
-          </Link>
-          {!isAuthenticated ? (
-            <Link href="/login" style={navLinkStyle}>
-              ログイン
-            </Link>
-          ) : null}
-        </div>
-      </header>
-
-      <section style={cardStyle}>
-        <div style={keyValueGridStyle}>
-          <div style={keyValueCardStyle}>
-            <strong>進行状態</strong>
-            <span>{formatPhaseLabel(phase)}</span>
-          </div>
+    <AppShell narrow className="ui-train-shell">
+      <TrainingPageHero
+        title="距離モード"
+        subtitle="設定から結果表示まで、距離モードの MVP セッションを 1 画面内で進められます。"
+        phase={phase}
+        phaseLabel={formatPhaseLabel(phase)}
+        actions={
+          <>
+            <ButtonLink href="/">ホームへ戻る</ButtonLink>
+            {!isAuthenticated ? (
+              <ButtonLink href="/login">ログイン</ButtonLink>
+            ) : null}
+          </>
+        }
+      >
+        <div className="ui-train-status-grid">
+          <KeyValueCard label="進行状態" value={formatPhaseLabel(phase)} />
           {startedAt ? (
-            <div style={keyValueCardStyle}>
-              <strong>開始時刻</strong>
-              <span>{formatDateTimeLabel(startedAt)}</span>
-            </div>
+            <KeyValueCard
+              label="開始時刻"
+              value={formatDateTimeLabel(startedAt)}
+            />
           ) : null}
           {config.endCondition.type === "time_limit" &&
           remainingTimeMs !== null ? (
-            <div style={keyValueCardStyle}>
-              <strong>残り時間</strong>
-              <span>{formatRemainingTimeLabel(remainingTimeMs)}</span>
-            </div>
+            <KeyValueCard
+              label="残り時間"
+              value={formatRemainingTimeLabel(remainingTimeMs)}
+            />
           ) : null}
         </div>
-        <p style={subtleTextStyle}>
+        <p className="ui-subtitle">
           {isAuthenticated
             ? "ログイン中は、結果画面に進むとセッション結果を自動保存します。"
             : "ゲストでは結果を画面内にのみ保持し、保存は行いません。"}
         </p>
-        {audioError ? (
-          <div style={noticeStyle("error")}>{audioError}</div>
-        ) : null}
-      </section>
+        {audioError ? <Notice tone="error">{audioError}</Notice> : null}
+      </TrainingPageHero>
 
       {phase === "config" ? (
-        <section style={cardStyle}>
-          <h2 style={sectionTitleStyle}>出題設定</h2>
-          <label style={formFieldStyle}>
-            <span>終了条件</span>
-            <select
-              style={controlStyle}
-              value={config.endCondition.type}
-              onChange={(event) =>
-                setConfig((current) => ({
-                  ...current,
-                  endCondition:
-                    event.target.value === "time_limit"
-                      ? createDefaultTimeLimitEndCondition()
-                      : createDefaultQuestionCountEndCondition(),
-                }))
-              }
-            >
-              <option value="question_count">問題数</option>
-              <option value="time_limit">制限時間</option>
-            </select>
-          </label>
-
-          {config.endCondition.type === "question_count" ? (
-            <label style={formFieldStyle}>
-              <span>問題数</span>
-              <input
-                style={controlStyle}
-                type="number"
-                min={TRAINING_CONFIG_LIMITS.questionCount.min}
-                max={TRAINING_CONFIG_LIMITS.questionCount.max}
-                value={plannedQuestionCount}
-                onChange={(event) =>
-                  setConfig((current) => ({
-                    ...current,
-                    endCondition: {
-                      type: "question_count",
-                      questionCount: clampQuestionCount(event.target.value),
-                    },
-                  }))
-                }
-              />
-            </label>
-          ) : (
-            <label style={formFieldStyle}>
-              <span>制限時間（秒）</span>
-              <input
-                style={controlStyle}
-                type="number"
-                min={TRAINING_CONFIG_LIMITS.timeLimitSeconds.min}
-                max={TRAINING_CONFIG_LIMITS.timeLimitSeconds.max}
-                step={30}
-                value={config.endCondition.timeLimitSeconds}
-                onChange={(event) =>
-                  setConfig((current) => ({
-                    ...current,
-                    endCondition: {
-                      type: "time_limit",
-                      timeLimitSeconds: clampTimeLimitSeconds(
-                        event.target.value,
-                      ),
-                    },
-                  }))
-                }
-              />
-            </label>
-          )}
-
-          <div style={compactFieldGridStyle}>
-            <label style={formFieldStyle}>
-              <span>最小半音数</span>
-              <input
-                style={controlStyle}
-                type="number"
-                min={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.min}
-                max={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.max}
-                value={config.intervalRange.minSemitone}
-                onChange={(event) =>
-                  setConfig((current) => {
-                    const minSemitone = clampIntervalMinSemitone(
-                      event.target.value,
-                    );
-
-                    return {
+        <Surface tone="accent">
+          <SectionHeader
+            title="出題設定"
+            description="終了条件、出題レンジ、答え方をこの画面で整えてから始めます。"
+          />
+          <div className="ui-grid-cards">
+            <div className="ui-panel-card ui-stack-md">
+              <strong>セッション終了</strong>
+              <Field label="終了条件">
+                <select
+                  className="ui-select"
+                  value={config.endCondition.type}
+                  onChange={(event) =>
+                    setConfig((current) => ({
                       ...current,
-                      intervalRange: {
-                        minSemitone,
-                        maxSemitone: clampIntervalMaxSemitone(
-                          current.intervalRange.maxSemitone,
-                          minSemitone,
-                        ),
-                      },
-                    };
-                  })
-                }
+                      endCondition:
+                        event.target.value === "time_limit"
+                          ? createDefaultTimeLimitEndCondition()
+                          : createDefaultQuestionCountEndCondition(),
+                    }))
+                  }
+                >
+                  <option value="question_count">問題数</option>
+                  <option value="time_limit">制限時間</option>
+                </select>
+              </Field>
+
+              {config.endCondition.type === "question_count" ? (
+                <Field label="問題数">
+                  <input
+                    className="ui-input"
+                    type="number"
+                    min={TRAINING_CONFIG_LIMITS.questionCount.min}
+                    max={TRAINING_CONFIG_LIMITS.questionCount.max}
+                    value={plannedQuestionCount}
+                    onChange={(event) =>
+                      setConfig((current) => ({
+                        ...current,
+                        endCondition: {
+                          type: "question_count",
+                          questionCount: clampQuestionCount(event.target.value),
+                        },
+                      }))
+                    }
+                  />
+                </Field>
+              ) : (
+                <Field label="制限時間（秒）">
+                  <input
+                    className="ui-input"
+                    type="number"
+                    min={TRAINING_CONFIG_LIMITS.timeLimitSeconds.min}
+                    max={TRAINING_CONFIG_LIMITS.timeLimitSeconds.max}
+                    step={30}
+                    value={config.endCondition.timeLimitSeconds}
+                    onChange={(event) =>
+                      setConfig((current) => ({
+                        ...current,
+                        endCondition: {
+                          type: "time_limit",
+                          timeLimitSeconds: clampTimeLimitSeconds(
+                            event.target.value,
+                          ),
+                        },
+                      }))
+                    }
+                  />
+                </Field>
+              )}
+            </div>
+
+            <div className="ui-panel-card ui-stack-md">
+              <strong>問題レンジ</strong>
+              <FieldGrid>
+                <Field label="最小半音数">
+                  <input
+                    className="ui-input"
+                    type="number"
+                    min={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.min}
+                    max={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.max}
+                    value={config.intervalRange.minSemitone}
+                    onChange={(event) =>
+                      setConfig((current) => {
+                        const minSemitone = clampIntervalMinSemitone(
+                          event.target.value,
+                        );
+
+                        return {
+                          ...current,
+                          intervalRange: {
+                            minSemitone,
+                            maxSemitone: clampIntervalMaxSemitone(
+                              current.intervalRange.maxSemitone,
+                              minSemitone,
+                            ),
+                          },
+                        };
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="最大半音数">
+                  <input
+                    className="ui-input"
+                    type="number"
+                    min={Math.max(
+                      TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.min,
+                      config.intervalRange.minSemitone,
+                    )}
+                    max={TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.max}
+                    value={config.intervalRange.maxSemitone}
+                    onChange={(event) =>
+                      setConfig((current) => ({
+                        ...current,
+                        intervalRange: {
+                          ...current.intervalRange,
+                          maxSemitone: clampIntervalMaxSemitone(
+                            event.target.value,
+                            current.intervalRange.minSemitone,
+                          ),
+                        },
+                      }))
+                    }
+                  />
+                </Field>
+              </FieldGrid>
+
+              <Field label="出題方向">
+                <select
+                  className="ui-select"
+                  value={config.directionMode}
+                  onChange={(event) =>
+                    setConfig((current) => ({
+                      ...current,
+                      directionMode: event.target
+                        .value as DistanceTrainingConfig["directionMode"],
+                    }))
+                  }
+                >
+                  <option value="mixed">上下混在</option>
+                  <option value="up_only">上行のみ</option>
+                </select>
+              </Field>
+
+              <Field label="基準音モード">
+                <select
+                  className="ui-select"
+                  value={config.baseNoteMode}
+                  onChange={(event) =>
+                    setConfig((current) => ({
+                      ...current,
+                      baseNoteMode: event.target
+                        .value as DistanceTrainingConfig["baseNoteMode"],
+                      fixedBaseNote:
+                        event.target.value === "fixed"
+                          ? (current.fixedBaseNote ?? "C")
+                          : null,
+                    }))
+                  }
+                >
+                  <option value="random">ランダム</option>
+                  <option value="fixed">固定</option>
+                </select>
+              </Field>
+
+              {config.baseNoteMode === "fixed" ? (
+                <Field label="固定する基準音">
+                  <select
+                    className="ui-select"
+                    value={config.fixedBaseNote ?? "C"}
+                    onChange={(event) =>
+                      setConfig((current) => ({
+                        ...current,
+                        fixedBaseNote: event.target.value as NoteClass,
+                      }))
+                    }
+                  >
+                    {NOTE_CLASS_OPTIONS.map((note) => (
+                      <option key={note} value={note}>
+                        {note}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              ) : null}
+            </div>
+
+            <div className="ui-panel-card ui-stack-md">
+              <strong>回答スタイル</strong>
+              <label className="ui-checkbox-card">
+                <input
+                  type="checkbox"
+                  checked={config.includeUnison}
+                  onChange={(event) =>
+                    setConfig((current) => ({
+                      ...current,
+                      includeUnison: event.target.checked,
+                    }))
+                  }
+                />
+                <span>同音を含める</span>
+              </label>
+
+              <label className="ui-checkbox-card">
+                <input
+                  type="checkbox"
+                  checked={config.includeOctave}
+                  onChange={(event) =>
+                    setConfig((current) => ({
+                      ...current,
+                      includeOctave: event.target.checked,
+                    }))
+                  }
+                />
+                <span>オクターブを含める</span>
+              </label>
+
+              <Field label="音程表記の粒度">
+                <select
+                  className="ui-select"
+                  value={config.intervalGranularity}
+                  onChange={(event) =>
+                    setConfig((current) => ({
+                      ...current,
+                      intervalGranularity: event.target
+                        .value as DistanceTrainingConfig["intervalGranularity"],
+                    }))
+                  }
+                >
+                  <option value="simple">シンプル</option>
+                  <option value="aug_dim">増減あり</option>
+                </select>
+              </Field>
+
+              <KeyValueCard
+                label="回答候補"
+                value={answerChoiceValues
+                  .map((choice) => formatIntervalName(choice))
+                  .join(", ")}
               />
-            </label>
-
-            <label style={formFieldStyle}>
-              <span>最大半音数</span>
-              <input
-                style={controlStyle}
-                type="number"
-                min={Math.max(
-                  TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.min,
-                  config.intervalRange.minSemitone,
-                )}
-                max={TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.max}
-                value={config.intervalRange.maxSemitone}
-                onChange={(event) =>
-                  setConfig((current) => ({
-                    ...current,
-                    intervalRange: {
-                      ...current.intervalRange,
-                      maxSemitone: clampIntervalMaxSemitone(
-                        event.target.value,
-                        current.intervalRange.minSemitone,
-                      ),
-                    },
-                  }))
-                }
-              />
-            </label>
-          </div>
-
-          <label style={formFieldStyle}>
-            <span>出題方向</span>
-            <select
-              style={controlStyle}
-              value={config.directionMode}
-              onChange={(event) =>
-                setConfig((current) => ({
-                  ...current,
-                  directionMode: event.target
-                    .value as DistanceTrainingConfig["directionMode"],
-                }))
-              }
-            >
-              <option value="mixed">上下混在</option>
-              <option value="up_only">上行のみ</option>
-            </select>
-          </label>
-
-          <label style={formFieldStyle}>
-            <span>基準音モード</span>
-            <select
-              style={controlStyle}
-              value={config.baseNoteMode}
-              onChange={(event) =>
-                setConfig((current) => ({
-                  ...current,
-                  baseNoteMode: event.target
-                    .value as DistanceTrainingConfig["baseNoteMode"],
-                  fixedBaseNote:
-                    event.target.value === "fixed"
-                      ? (current.fixedBaseNote ?? "C")
-                      : null,
-                }))
-              }
-            >
-              <option value="random">ランダム</option>
-              <option value="fixed">固定</option>
-            </select>
-          </label>
-
-          {config.baseNoteMode === "fixed" ? (
-            <label style={formFieldStyle}>
-              <span>固定する基準音</span>
-              <select
-                style={controlStyle}
-                value={config.fixedBaseNote ?? "C"}
-                onChange={(event) =>
-                  setConfig((current) => ({
-                    ...current,
-                    fixedBaseNote: event.target.value as NoteClass,
-                  }))
-                }
-              >
-                {NOTE_CLASS_OPTIONS.map((note) => (
-                  <option key={note} value={note}>
-                    {note}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
-          <label style={checkboxFieldStyle}>
-            <input
-              style={{
-                width: "20px",
-                height: "20px",
-                margin: 0,
-                flexShrink: 0,
-              }}
-              type="checkbox"
-              checked={config.includeUnison}
-              onChange={(event) =>
-                setConfig((current) => ({
-                  ...current,
-                  includeUnison: event.target.checked,
-                }))
-              }
-            />
-            <span>同音を含める</span>
-          </label>
-
-          <label style={checkboxFieldStyle}>
-            <input
-              style={{
-                width: "20px",
-                height: "20px",
-                margin: 0,
-                flexShrink: 0,
-              }}
-              type="checkbox"
-              checked={config.includeOctave}
-              onChange={(event) =>
-                setConfig((current) => ({
-                  ...current,
-                  includeOctave: event.target.checked,
-                }))
-              }
-            />
-            <span>オクターブを含める</span>
-          </label>
-
-          <label style={formFieldStyle}>
-            <span>音程表記の粒度</span>
-            <select
-              style={controlStyle}
-              value={config.intervalGranularity}
-              onChange={(event) =>
-                setConfig((current) => ({
-                  ...current,
-                  intervalGranularity: event.target
-                    .value as DistanceTrainingConfig["intervalGranularity"],
-                }))
-              }
-            >
-              <option value="simple">シンプル</option>
-              <option value="aug_dim">増減あり</option>
-            </select>
-          </label>
-
-          <div style={keyValueCardStyle}>
-            <strong>回答候補:</strong>{" "}
-            {answerChoiceValues
-              .map((choice) => formatIntervalName(choice))
-              .join(", ")}
+            </div>
           </div>
 
           {isAuthenticated && hasStoredConfig ? (
-            <div style={noticeStyle("info")}>前回設定を読み込み済みです。</div>
+            <Notice>前回設定を読み込み済みです。</Notice>
           ) : null}
 
-          {configError ? (
-            <div style={noticeStyle("error")}>{configError}</div>
-          ) : null}
+          {configError ? <Notice tone="error">{configError}</Notice> : null}
 
-          <div style={actionRowStyle}>
-            <button
-              type="button"
-              onClick={handleStart}
-              style={{
-                ...buttonStyle("primary"),
-                width: "100%",
-                maxWidth: "240px",
-              }}
-            >
+          <div className="ui-sticky-actions">
+            <div className="ui-stack-sm">
+              <strong>準備できたら開始</strong>
+              <span className="ui-muted">
+                開始タップを最初の audio unlock として使います。
+              </span>
+            </div>
+            <Button type="button" onClick={handleStart} variant="primary" block>
               開始
-            </button>
+            </Button>
           </div>
-        </section>
+        </Surface>
       ) : null}
 
       {phase === "preparing" && activeQuestion ? (
-        <section style={cardStyle}>
-          <h2 style={sectionTitleStyle}>準備中</h2>
-          <p style={subtleTextStyle}>
-            次の問題を準備して、基準音と問題音の再生に入ります。
-          </p>
-          <div style={noticeStyle("info")}>
+        <Surface tone="accent">
+          <SectionHeader
+            title="準備中"
+            description="次の問題を準備して、基準音と問題音の再生に入ります。"
+          />
+          <Notice>
             問題 {activeQuestion.question.questionIndex + 1} を準備しています...
-          </div>
-        </section>
+          </Notice>
+        </Surface>
       ) : null}
 
       {(phase === "playing" || phase === "answering") && activeQuestion ? (
-        <section style={cardStyle}>
-          <h2 style={sectionTitleStyle}>
-            問題 {activeQuestion.question.questionIndex + 1}
-          </h2>
-          <p style={subtleTextStyle}>
-            基準音と問題音を聞いて、音程名で回答してください。
-          </p>
-          <div style={keyValueGridStyle}>
-            <div style={keyValueCardStyle}>
-              <strong>方向:</strong>{" "}
-              {formatQuestionDirectionLabel(activeQuestion.question.direction)}
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>基準音の再生回数:</strong>{" "}
-              {activeQuestion.replayBaseCount}
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>問題音の再生回数:</strong>{" "}
-              {activeQuestion.replayTargetCount}
-            </div>
+        <Surface tone="accent">
+          <SectionHeader
+            title={`問題 ${activeQuestion.question.questionIndex + 1}`}
+            description="基準音と問題音を聞いて、音程名で回答してください。"
+          />
+          <div className="ui-train-status-grid">
+            <KeyValueCard
+              label="方向"
+              value={formatQuestionDirectionLabel(
+                activeQuestion.question.direction,
+              )}
+            />
+            <KeyValueCard
+              label="基準音の再生回数"
+              value={activeQuestion.replayBaseCount}
+            />
+            <KeyValueCard
+              label="問題音の再生回数"
+              value={activeQuestion.replayTargetCount}
+            />
           </div>
 
           {phase === "playing" ? (
-            <div style={noticeStyle("info")}>
+            <Notice>
               {getPlaybackStatusLabel(activeQuestion.playbackKind)}
-            </div>
+            </Notice>
           ) : null}
 
           {phase === "answering" ? (
-            <>
-              <div style={actionRowStyle}>
-                <button
-                  type="button"
-                  onClick={handleReplayBase}
-                  style={{ ...buttonStyle(), flex: "1 1 180px" }}
-                >
-                  基準音をもう一度聞く
-                </button>
-                <button
-                  type="button"
-                  onClick={handleReplayTarget}
-                  style={{ ...buttonStyle(), flex: "1 1 180px" }}
-                >
-                  問題音をもう一度聞く
-                </button>
+            <div className="ui-stack-md">
+              <div className="ui-sticky-actions">
+                <div className="ui-stack-sm">
+                  <strong>再生コントロール</strong>
+                  <span className="ui-muted">
+                    再生中の追加タップは無視されます。
+                  </span>
+                </div>
+                <div className="ui-action-row">
+                  <Button type="button" onClick={handleReplayBase} block>
+                    基準音をもう一度聞く
+                  </Button>
+                  <Button type="button" onClick={handleReplayTarget} block>
+                    問題音をもう一度聞く
+                  </Button>
+                </div>
               </div>
-              <div style={answerButtonGridStyle}>
+              <div className="ui-train-answer-grid">
                 {answerChoiceValues.map((choice) => (
-                  <button
+                  <Button
                     key={choice}
                     type="button"
                     onClick={() => handleAnswer(choice)}
-                    style={{
-                      ...buttonStyle("secondary"),
-                      width: "100%",
-                      textAlign: "left",
-                    }}
+                    block
                   >
                     {formatIntervalName(choice)}
-                  </button>
+                  </Button>
                 ))}
               </div>
-            </>
+            </div>
           ) : null}
-        </section>
+        </Surface>
       ) : null}
 
       {phase === "feedback" && feedbackResult ? (
-        <section style={cardStyle}>
-          <h2 style={sectionTitleStyle}>フィードバック</h2>
-          <div
-            style={feedbackStatusBannerStyle(
-              feedbackResult.isCorrect ? "success" : "error",
-            )}
-          >
+        <Surface>
+          <SectionHeader title="フィードバック" />
+          <Notice tone={feedbackResult.isCorrect ? "success" : "error"}>
             <strong>{feedbackResult.isCorrect ? "正解" : "不正解"}</strong>
-            <span>
+            <div>
               {feedbackResult.question.direction === "up" ? "上行" : "下行"}
-            </span>
-          </div>
-          <div style={feedbackIntervalGridStyle}>
-            <div style={feedbackIntervalCardStyle}>
-              <span style={feedbackCardLabelStyle}>正解</span>
-              <strong style={feedbackCardValueStyle}>
-                {formatIntervalName(feedbackResult.question.distanceSemitones)}
-              </strong>
             </div>
-            <div style={feedbackIntervalCardStyle}>
-              <span style={feedbackCardLabelStyle}>あなたの回答</span>
-              <strong style={feedbackCardValueStyle}>
-                {formatIntervalName(feedbackResult.answeredDistanceSemitones)}
-              </strong>
-            </div>
-          </div>
-          <div style={keyValueGridStyle}>
-            <div style={keyValueCardStyle}>
-              <strong>誤差</strong>
-              <span>
-                {formatSignedSemitoneLabel(feedbackResult.errorSemitones)}
-              </span>
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>回答時間</strong>
-              <span>
-                {formatResponseTimeMsLabel(feedbackResult.responseTimeMs)}
-              </span>
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>スコア</strong>
-              <span>{formatScoreLabel(feedbackResult.score)}</span>
-            </div>
-          </div>
-          <div style={actionRowStyle}>
-            <button
-              type="button"
-              onClick={handleReplayCorrectTarget}
-              style={{ ...buttonStyle(), flex: "1 1 180px" }}
-            >
+          </Notice>
+          <FieldGrid>
+            <KeyValueCard
+              label="正解"
+              value={formatIntervalName(
+                feedbackResult.question.distanceSemitones,
+              )}
+            />
+            <KeyValueCard
+              label="あなたの回答"
+              value={formatIntervalName(
+                feedbackResult.answeredDistanceSemitones,
+              )}
+            />
+          </FieldGrid>
+          <KeyValueGrid>
+            <KeyValueCard
+              label="誤差"
+              value={formatSignedSemitoneLabel(feedbackResult.errorSemitones)}
+            />
+            <KeyValueCard
+              label="回答時間"
+              value={formatResponseTimeMsLabel(feedbackResult.responseTimeMs)}
+            />
+            <KeyValueCard
+              label="スコア"
+              value={formatScoreLabel(feedbackResult.score)}
+            />
+          </KeyValueGrid>
+          <div className="ui-sticky-actions">
+            <Button type="button" onClick={handleReplayCorrectTarget} block>
               正解の音をもう一度聞く
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={handleContinue}
-              style={{ ...buttonStyle("primary"), flex: "1 1 180px" }}
+              variant="primary"
+              block
             >
               {lastAnsweredWasFinal ? "結果を見る" : "次の問題へ"}
-            </button>
+            </Button>
           </div>
-        </section>
+        </Surface>
       ) : null}
 
       {phase === "result" ? (
-        <section style={cardStyle}>
-          <h2 style={sectionTitleStyle}>結果</h2>
-          <div style={keyValueGridStyle}>
-            <div style={keyValueCardStyle}>
-              <strong>回答数</strong>
-              <span>{summary.questionCount}</span>
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>終了理由</strong>
-              <span>{formatFinishReasonLabel(finishReason)}</span>
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>正解数</strong>
-              <span>{summary.correctCount}</span>
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>正答率</strong>
-              <span>{formatAccuracyLabel(summary.accuracyRate)}</span>
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>平均誤差</strong>
-              <span>{formatAvgErrorLabel(summary.avgErrorAbs)}</span>
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>平均回答時間</strong>
-              <span>
-                {formatResponseTimeMsLabel(summary.avgResponseTimeMs)}
-              </span>
-            </div>
-            <div style={keyValueCardStyle}>
-              <strong>セッションスコア</strong>
-              <span>{formatScoreLabel(summary.sessionScore)}</span>
-            </div>
-          </div>
+        <Surface>
+          <SectionHeader
+            title="結果"
+            description="今回のセッションの精度と反応速度をまとめています。"
+          />
+          <KeyValueGrid>
+            <KeyValueCard label="回答数" value={summary.questionCount} />
+            <KeyValueCard
+              label="終了理由"
+              value={formatFinishReasonLabel(finishReason)}
+            />
+            <KeyValueCard label="正解数" value={summary.correctCount} />
+            <KeyValueCard
+              label="正答率"
+              value={formatAccuracyLabel(summary.accuracyRate)}
+            />
+            <KeyValueCard
+              label="平均誤差"
+              value={formatAvgErrorLabel(summary.avgErrorAbs)}
+            />
+            <KeyValueCard
+              label="平均回答時間"
+              value={formatResponseTimeMsLabel(summary.avgResponseTimeMs)}
+            />
+            <KeyValueCard
+              label="セッションスコア"
+              value={formatScoreLabel(summary.sessionScore)}
+            />
+          </KeyValueGrid>
 
           {recentResults.length > 0 ? (
-            <div style={{ display: "grid", gap: "10px" }}>
-              <h3 style={{ ...sectionTitleStyle, fontSize: "18px" }}>
-                直近の回答
-              </h3>
-              <div style={{ display: "grid", gap: "10px" }}>
+            <div className="ui-stack-md">
+              <h3 className="ui-section-title">直近の回答</h3>
+              <List as="div">
                 {recentResults.map((result) => (
-                  <div key={result.answeredAt} style={keyValueCardStyle}>
+                  <div key={result.answeredAt} className="ui-kv-card">
                     <strong>問題 {result.question.questionIndex + 1}</strong>
-                    <span>
+                    <span className="ui-muted">
                       正解:{" "}
                       {formatIntervalName(result.question.distanceSemitones)}
                     </span>
-                    <span>
+                    <span className="ui-muted">
                       回答:{" "}
                       {formatIntervalName(result.answeredDistanceSemitones)}
                     </span>
-                    <span>
+                    <span className="ui-muted">
                       {formatSignedSemitoneLabel(result.errorSemitones)} /{" "}
                       {formatResponseTimeMsLabel(result.responseTimeMs)}
                     </span>
                   </div>
                 ))}
-              </div>
+              </List>
             </div>
           ) : null}
 
           {isAuthenticated ? (
             !cannotSaveBecauseNoAnswers ? (
               <>
-                <div
-                  style={
+                <Notice
+                  tone={
                     saveResult?.ok
-                      ? noticeStyle("success")
+                      ? "success"
                       : saveResult
-                        ? noticeStyle("error")
+                        ? "error"
                         : canSaveResult
-                          ? noticeStyle("info")
-                          : noticeStyle("error")
+                          ? "info"
+                          : "error"
                   }
                 >
                   {saveResult?.ok ? (
-                    <div style={{ display: "grid", gap: "10px" }}>
+                    <div className="ui-stack-md">
                       <div>
                         結果を自動保存しました。セッション ID:{" "}
                         <code>{saveResult.sessionId}</code>
                       </div>
-                      <div style={navRowStyle}>
-                        <Link
-                          href={`/sessions/${saveResult.sessionId}`}
-                          style={navLinkStyle}
-                        >
+                      <div className="ui-nav-row">
+                        <ButtonLink href={`/sessions/${saveResult.sessionId}`}>
                           セッション詳細を見る
-                        </Link>
-                        <Link href="/stats" style={navLinkStyle}>
-                          統計を見る
-                        </Link>
+                        </ButtonLink>
+                        <ButtonLink href="/stats">統計を見る</ButtonLink>
                       </div>
                     </div>
                   ) : saveResult ? (
-                    <div style={{ display: "grid", gap: "6px" }}>
+                    <div className="ui-stack-sm">
                       <div>{saveFailureMessage}</div>
-                      <div style={subtleTextStyle}>
+                      <div className="ui-muted">
                         詳細: {saveResult.code} / {saveResult.message}
                       </div>
                     </div>
@@ -1112,68 +1049,62 @@ export function DistanceTrainClient({
                   ) : (
                     <div>セッション情報が不足しているため保存できません。</div>
                   )}
-                </div>
+                </Notice>
 
                 {saveResult && !saveResult.ok && canSaveResult ? (
-                  <div style={actionRowStyle}>
-                    <button
+                  <div className="ui-action-row">
+                    <Button
                       type="button"
                       disabled={isSavePending}
                       onClick={handleSaveResults}
-                      style={{
-                        ...buttonStyle("primary", isSavePending),
-                        flex: "1 1 180px",
-                      }}
+                      variant="primary"
                     >
                       {isSavePending ? "再試行中..." : "保存を再試行"}
-                    </button>
+                    </Button>
                   </div>
                 ) : null}
               </>
             ) : null
           ) : (
-            <div style={{ display: "grid", gap: "12px" }}>
-              <div style={noticeStyle("info")}>
-                ゲスト利用のため、この結果は保存されません。
-              </div>
-              <p style={subtleTextStyle}>
-                ログインすると、次回以降のセッションから結果保存と統計
-                を使えます。この結果は後から保存されません。
+            <div className="ui-stack-md">
+              <Notice>ゲスト利用のため、この結果は保存されません。</Notice>
+              <p className="ui-subtitle">
+                ログインすると、次回以降のセッションから結果保存と統計を使えます。この結果は後から保存されません。
               </p>
-              <div style={navRowStyle}>
-                <Link href="/login" style={navLinkStyle}>
-                  今後の保存用にログイン
-                </Link>
+              <div className="ui-nav-row">
+                <ButtonLink href="/login">今後の保存用にログイン</ButtonLink>
               </div>
             </div>
           )}
 
           {finishReason === "time_up" ? (
-            <div style={noticeStyle("info")}>
+            <Notice>
               制限時間に達したため終了しました。進行中で未回答の問題は集計から除外されています。
-            </div>
+            </Notice>
           ) : null}
 
           {cannotSaveBecauseNoAnswers ? (
-            <div style={noticeStyle("info")}>
+            <Notice>
               回答済みの問題がないため、このセッションは保存できません。時間に余裕を持ってもう一度お試しください。
-            </div>
+            </Notice>
           ) : null}
 
-          <div style={actionRowStyle}>
-            <button
-              type="button"
-              onClick={handleReset}
-              style={{ ...buttonStyle(), flex: "1 1 180px" }}
-            >
+          <div className="ui-sticky-actions">
+            <div className="ui-stack-sm">
+              <strong>次に進む</strong>
+              <span className="ui-muted">
+                結果を確認したら新しいセッションを始められます。
+              </span>
+            </div>
+            <Button type="button" onClick={handleReset} block>
               {cannotSaveBecauseNoAnswers
                 ? "新しいセッションを始める"
                 : "最初からやり直す"}
-            </button>
+            </Button>
           </div>
-        </section>
+        </Surface>
       ) : null}
-    </main>
+    </AppShell>
   );
 }
 
@@ -1419,42 +1350,4 @@ function formatFinishReasonLabel(
     default:
       return "不明";
   }
-}
-
-const answerButtonGridStyle = {
-  display: "grid",
-  gap: "8px",
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-};
-
-const feedbackIntervalGridStyle = {
-  display: "grid",
-  gap: "10px",
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-};
-
-const feedbackIntervalCardStyle = {
-  ...keyValueCardStyle,
-  gap: "8px",
-  padding: "16px",
-};
-
-const feedbackCardLabelStyle = {
-  fontSize: "12px",
-  fontWeight: 700,
-  letterSpacing: "0.06em",
-  textTransform: "uppercase" as const,
-};
-
-const feedbackCardValueStyle = {
-  fontSize: "24px",
-  lineHeight: 1.25,
-};
-
-function feedbackStatusBannerStyle(kind: "success" | "error") {
-  return {
-    ...noticeStyle(kind),
-    display: "grid",
-    gap: "4px",
-  };
 }

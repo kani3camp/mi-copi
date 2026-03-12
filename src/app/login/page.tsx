@@ -1,61 +1,53 @@
-import Link from "next/link";
-
 import { getCurrentUserOrNull } from "../../lib/auth/server";
 import {
-  cardStyle,
-  navLinkStyle,
-  navRowStyle,
-  pageHeroStyle,
-  pageShellStyle,
-  pageSubtitleStyle,
-  pageTitleStyle,
-  sectionTitleStyle,
-  subtleTextStyle,
-} from "../ui/polish";
+  AppShell,
+  ButtonLink,
+  KeyValueCard,
+  KeyValueGrid,
+  PageHero,
+  SectionHeader,
+  Surface,
+} from "../ui/primitives";
 import { LoginControls } from "./login-controls";
 
 export default async function LoginPage() {
   const currentUser = await getCurrentUserOrNull();
 
   return (
-    <main style={pageShellStyle}>
-      <header style={pageHeroStyle}>
-        <h1 style={pageTitleStyle}>ログイン</h1>
-        <p style={pageSubtitleStyle}>
-          Google ログインまたはゲスト開始の入口です。相対音感トレーニングを
-          すぐ始めつつ、必要なら保存機能にも切り替えられます。
-        </p>
-        <div style={navRowStyle}>
-          <Link href="/" style={navLinkStyle}>
-            ホームへ戻る
-          </Link>
-          <Link href="/train/distance" style={navLinkStyle}>
-            距離モードへ
-          </Link>
-          <Link href="/train/keyboard" style={navLinkStyle}>
-            鍵盤モードへ
-          </Link>
-        </div>
-      </header>
+    <AppShell narrow>
+      <PageHero
+        title="ログイン"
+        eyebrow="Account Access"
+        subtitle="Google ログインまたはゲスト開始の入口です。相対音感トレーニングをすぐ始めつつ、必要なときだけ保存機能に切り替えられます。"
+        actions={
+          <>
+            <ButtonLink href="/">ホームへ戻る</ButtonLink>
+            <ButtonLink href="/train/distance">距離モードへ</ButtonLink>
+            <ButtonLink href="/train/keyboard">鍵盤モードへ</ButtonLink>
+          </>
+        }
+      />
 
-      <section style={cardStyle}>
-        <h2 style={sectionTitleStyle}>開始方法</h2>
-        <p style={subtleTextStyle}>
-          ミーコピ MVP ではゲスト
-          でも練習できます。保存済み履歴や成長確認を使う場合だけ
-          ログインしてください。
-        </p>
+      <Surface tone="accent">
+        <SectionHeader
+          title="開始方法"
+          description="ミーコピ MVP ではゲストでも練習できます。保存済み履歴や成長確認を使う場合だけログインしてください。"
+        />
         <LoginControls isAuthenticated={Boolean(currentUser)} />
-      </section>
+      </Surface>
 
       {currentUser ? (
-        <section style={cardStyle}>
-          <h2 style={sectionTitleStyle}>サインイン中のアカウント</h2>
-          <p style={subtleTextStyle}>
-            {currentUser.name ?? "不明"} / {currentUser.email ?? "不明"}
-          </p>
-        </section>
+        <Surface>
+          <SectionHeader title="サインイン中のアカウント" />
+          <KeyValueGrid>
+            <KeyValueCard label="名前" value={currentUser.name ?? "不明"} />
+            <KeyValueCard
+              label="メールアドレス"
+              value={currentUser.email ?? "不明"}
+            />
+          </KeyValueGrid>
+        </Surface>
       ) : null}
-    </main>
+    </AppShell>
   );
 }

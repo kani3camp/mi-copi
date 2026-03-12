@@ -1,4 +1,5 @@
-import Link from "next/link";
+import type { CSSProperties } from "react";
+
 import { getGlobalUserSettingsForCurrentUser } from "../../features/settings/server/global-user-settings";
 import {
   formatAccuracyLabel,
@@ -11,99 +12,83 @@ import {
 import { getIntervalLabel } from "../../features/training/model/interval-notation";
 import { getTrainingStatsForCurrentUser } from "../../features/training/server/getTrainingStats";
 import {
-  cardStyle,
-  listLinkStyle,
-  listStyle,
-  metricCardStyle,
-  metricLabelStyle,
-  metricsGridStyle,
-  metricValueStyle,
-  navLinkStyle,
-  navRowStyle,
-  pageHeroStyle,
-  pageShellStyle,
-  sectionTitleStyle,
-  subtleTextStyle,
-} from "../ui/polish";
+  AppShell,
+  ButtonLink,
+  List,
+  ListLinkCard,
+  MetricCard,
+  MetricGrid,
+  Notice,
+  PageHero,
+  SectionHeader,
+  Surface,
+} from "../ui/primitives";
 
 export default async function StatsPage() {
   const [stats, globalSettings] = await Promise.all([
     getTrainingStatsForCurrentUser(),
     getGlobalUserSettingsForCurrentUser(),
   ]);
-  const compactMetricValueStyle = { ...metricValueStyle, fontSize: "22px" };
   const intervalNotationStyle = globalSettings.settings.intervalNotationStyle;
 
   return (
-    <main style={pageShellStyle}>
-      <header style={pageHeroStyle}>
-        <h1 style={{ ...sectionTitleStyle, fontSize: "40px" }}>統計</h1>
-        <p style={subtleTextStyle}>
-          保存済みの回答とセッションを、全体・モード別・直近・日次の切り口で見渡せます。
-        </p>
-        <div style={navRowStyle}>
-          <Link href="/" style={navLinkStyle}>
-            ホームへ戻る
-          </Link>
-        </div>
-      </header>
+    <AppShell>
+      <PageHero
+        title="統計"
+        eyebrow="Progress View"
+        subtitle="保存済みの回答とセッションを、全体・直近・日次・モード別の切り口で見渡せます。"
+        actions={<ButtonLink href="/">ホームへ戻る</ButtonLink>}
+      />
 
       {stats.isAuthenticated ? (
         <>
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>全体概要</h2>
-            <div style={metricsGridStyle}>
-              <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>累計セッション数</span>
-                <span style={metricValueStyle}>{stats.totalSessions}</span>
-              </div>
-              <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>保存済み回答数</span>
-                <span style={metricValueStyle}>
-                  {stats.totalSavedQuestionResults}
-                </span>
-              </div>
-              <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>累計スコア</span>
-                <span style={metricValueStyle}>
-                  {formatScoreLabel(stats.overview.cumulativeScore)}
-                </span>
-              </div>
-              <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>全体正答率</span>
-                <span style={metricValueStyle}>
-                  {formatAccuracyLabel(stats.overview.correctRate)}
-                </span>
-              </div>
-              <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>平均誤差</span>
-                <span style={metricValueStyle}>
-                  {formatAvgErrorLabel(stats.overview.averageError)}
-                </span>
-              </div>
-              <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>中央値誤差</span>
-                <span style={metricValueStyle}>
-                  {formatAvgErrorLabel(stats.overview.medianError)}
-                </span>
-              </div>
-              <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>平均回答時間</span>
-                <span style={compactMetricValueStyle}>
-                  {formatResponseTimeMsLabel(
-                    stats.overview.averageResponseTimeMs,
-                  )}
-                </span>
-              </div>
-            </div>
-          </section>
+          <Surface tone="accent">
+            <SectionHeader
+              title="全体概要"
+              description="まずは累計スコア、正答率、誤差、回答時間の全体像を確認できます。"
+            />
+            <MetricGrid>
+              <MetricCard
+                label="累計スコア"
+                value={formatScoreLabel(stats.overview.cumulativeScore)}
+                accent
+              />
+              <MetricCard
+                label="全体正答率"
+                value={formatAccuracyLabel(stats.overview.correctRate)}
+              />
+              <MetricCard
+                label="平均誤差"
+                value={formatAvgErrorLabel(stats.overview.averageError)}
+              />
+              <MetricCard
+                label="中央値誤差"
+                value={formatAvgErrorLabel(stats.overview.medianError)}
+              />
+              <MetricCard
+                label="平均回答時間"
+                value={formatResponseTimeMsLabel(
+                  stats.overview.averageResponseTimeMs,
+                )}
+                compactValue
+              />
+              <MetricCard
+                label="累計セッション数"
+                value={stats.totalSessions}
+              />
+              <MetricCard
+                label="保存済み回答数"
+                value={stats.totalSavedQuestionResults}
+              />
+            </MetricGrid>
+          </Surface>
 
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>スコア推移</h2>
-            <p style={subtleTextStyle}>
-              日次平均スコアを、全体・距離モード・鍵盤モードで並べて比較できます。
-            </p>
-            <div style={metricsGridStyle}>
+          <Surface>
+            <SectionHeader
+              title="スコア推移"
+              description="日次平均スコアを、全体・距離モード・鍵盤モードで並べて比較できます。"
+            />
+            <div className="ui-grid-trends">
               <ScoreTrendColumn
                 label="全体"
                 points={stats.scoreTrends.overall.slice(0, 10)}
@@ -117,346 +102,224 @@ export default async function StatsPage() {
                 points={stats.scoreTrends.keyboard.slice(0, 10)}
               />
             </div>
-          </section>
+          </Surface>
 
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>日次推移</h2>
-            <p style={subtleTextStyle}>
-              回答日の単位で平均値をまとめています。スコア、誤差、回答時間、正答率の流れを
-              ざっくり追えます。
-            </p>
+          <Surface>
+            <SectionHeader
+              title="モード別と直近"
+              description="どちらのモードで伸びているか、直近の回答がどの程度安定しているかをまとめて見られます。"
+            />
+            <div className="ui-grid-cards">
+              <ModeSummaryCard
+                label="距離モード"
+                sessionCount={stats.byMode.distance.sessionCount}
+                questionCount={stats.byMode.distance.questionCount}
+                cumulativeScore={stats.byMode.distance.cumulativeScore}
+                correctRate={stats.byMode.distance.correctRate}
+                averageError={stats.byMode.distance.averageError}
+                medianError={stats.byMode.distance.medianError}
+                averageResponseTimeMs={
+                  stats.byMode.distance.averageResponseTimeMs
+                }
+              />
+              <ModeSummaryCard
+                label="鍵盤モード"
+                sessionCount={stats.byMode.keyboard.sessionCount}
+                questionCount={stats.byMode.keyboard.questionCount}
+                cumulativeScore={stats.byMode.keyboard.cumulativeScore}
+                correctRate={stats.byMode.keyboard.correctRate}
+                averageError={stats.byMode.keyboard.averageError}
+                medianError={stats.byMode.keyboard.medianError}
+                averageResponseTimeMs={
+                  stats.byMode.keyboard.averageResponseTimeMs
+                }
+              />
+              <RecentQuestionCard
+                label="直近 10 問"
+                summary={stats.recentQuestionSummaries.recent10}
+              />
+              <RecentQuestionCard
+                label="直近 30 問"
+                summary={stats.recentQuestionSummaries.recent30}
+              />
+            </div>
+          </Surface>
+
+          <Surface>
+            <SectionHeader
+              title="日次推移"
+              description="回答日の単位で平均値をまとめています。日ごとのペースや精度の流れをざっくり追えます。"
+            />
             {stats.dailyTrends.length > 0 ? (
-              <div style={listStyle}>
+              <List as="div">
                 {stats.dailyTrends.map((trend) => (
-                  <article key={trend.date} style={metricCardStyle}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: "12px",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <strong style={{ fontSize: "16px" }}>
-                        {formatDateLabel(trend.date)}
-                      </strong>
-                      <span style={subtleTextStyle}>
-                        {trend.questionCount} 問
-                      </span>
+                  <article key={trend.date} className="ui-panel-card">
+                    <div className="ui-inline-split">
+                      <strong>{formatDateLabel(trend.date)}</strong>
+                      <span className="ui-muted">{trend.questionCount} 問</span>
                     </div>
-                    <div style={metricsGridStyle}>
-                      <div style={metricCardStyle}>
-                        <span style={metricLabelStyle}>平均スコア</span>
-                        <span style={metricValueStyle}>
-                          {formatScoreLabel(trend.averageScore)}
-                        </span>
-                      </div>
-                      <div style={metricCardStyle}>
-                        <span style={metricLabelStyle}>平均誤差</span>
-                        <span style={metricValueStyle}>
-                          {formatAvgErrorLabel(trend.averageError)}
-                        </span>
-                      </div>
-                      <div style={metricCardStyle}>
-                        <span style={metricLabelStyle}>平均回答時間</span>
-                        <span style={compactMetricValueStyle}>
-                          {formatResponseTimeMsLabel(
-                            trend.averageResponseTimeMs,
-                          )}
-                        </span>
-                      </div>
-                      <div style={metricCardStyle}>
-                        <span style={metricLabelStyle}>正答率</span>
-                        <span style={metricValueStyle}>
-                          {formatAccuracyLabel(trend.correctRate)}
-                        </span>
-                      </div>
-                    </div>
+                    <MetricGrid>
+                      <MetricCard
+                        label="平均スコア"
+                        value={formatScoreLabel(trend.averageScore)}
+                      />
+                      <MetricCard
+                        label="平均誤差"
+                        value={formatAvgErrorLabel(trend.averageError)}
+                      />
+                      <MetricCard
+                        label="平均回答時間"
+                        value={formatResponseTimeMsLabel(
+                          trend.averageResponseTimeMs,
+                        )}
+                        compactValue
+                      />
+                      <MetricCard
+                        label="正答率"
+                        value={formatAccuracyLabel(trend.correctRate)}
+                      />
+                    </MetricGrid>
                   </article>
                 ))}
-              </div>
+              </List>
             ) : (
-              <p style={subtleTextStyle}>日次推移データはまだありません。</p>
+              <p className="ui-subtitle">日次推移データはまだありません。</p>
             )}
-          </section>
+          </Surface>
 
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>モード別</h2>
-            <div style={metricsGridStyle}>
-              <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>距離モードのセッション数</span>
-                <span style={metricValueStyle}>
-                  {stats.byMode.distance.sessionCount}
-                </span>
-                <span style={subtleTextStyle}>
-                  問題数 {stats.byMode.distance.questionCount} / 累計スコア{" "}
-                  {formatScoreLabel(stats.byMode.distance.cumulativeScore)}
-                </span>
-                <span style={subtleTextStyle}>
-                  正答率{" "}
-                  {formatAccuracyLabel(stats.byMode.distance.correctRate)}
-                  {" / "}平均誤差{" "}
-                  {formatAvgErrorLabel(stats.byMode.distance.averageError)}
-                  {" / "}中央値誤差{" "}
-                  {formatAvgErrorLabel(stats.byMode.distance.medianError)}
-                  {" / "}平均回答時間{" "}
-                  {formatResponseTimeMsLabel(
-                    stats.byMode.distance.averageResponseTimeMs,
-                  )}
-                </span>
-              </div>
-              <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>鍵盤モードのセッション数</span>
-                <span style={metricValueStyle}>
-                  {stats.byMode.keyboard.sessionCount}
-                </span>
-                <span style={subtleTextStyle}>
-                  問題数 {stats.byMode.keyboard.questionCount} / 累計スコア{" "}
-                  {formatScoreLabel(stats.byMode.keyboard.cumulativeScore)}
-                </span>
-                <span style={subtleTextStyle}>
-                  正答率{" "}
-                  {formatAccuracyLabel(stats.byMode.keyboard.correctRate)}
-                  {" / "}平均誤差{" "}
-                  {formatAvgErrorLabel(stats.byMode.keyboard.averageError)}
-                  {" / "}中央値誤差{" "}
-                  {formatAvgErrorLabel(stats.byMode.keyboard.medianError)}
-                  {" / "}平均回答時間{" "}
-                  {formatResponseTimeMsLabel(
-                    stats.byMode.keyboard.averageResponseTimeMs,
-                  )}
-                </span>
-              </div>
-            </div>
-          </section>
-
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>直近の回答サマリー</h2>
-            <div style={metricsGridStyle}>
-              <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>直近 10 問</span>
-                <span style={metricValueStyle}>
-                  {stats.recentQuestionSummaries.recent10.questionCount}
-                </span>
-                <span style={subtleTextStyle}>
-                  平均スコア{" "}
-                  {formatScoreLabel(
-                    stats.recentQuestionSummaries.recent10.averageScore,
-                  )}
-                  {" / "}正答率{" "}
-                  {formatAccuracyLabel(
-                    stats.recentQuestionSummaries.recent10.correctRate,
-                  )}
-                </span>
-                <span style={subtleTextStyle}>
-                  平均誤差{" "}
-                  {formatAvgErrorLabel(
-                    stats.recentQuestionSummaries.recent10.averageError,
-                  )}
-                  {" / "}平均回答時間{" "}
-                  {formatResponseTimeMsLabel(
-                    stats.recentQuestionSummaries.recent10
-                      .averageResponseTimeMs,
-                  )}
-                </span>
-              </div>
-              <div style={metricCardStyle}>
-                <span style={metricLabelStyle}>直近 30 問</span>
-                <span style={metricValueStyle}>
-                  {stats.recentQuestionSummaries.recent30.questionCount}
-                </span>
-                <span style={subtleTextStyle}>
-                  平均スコア{" "}
-                  {formatScoreLabel(
-                    stats.recentQuestionSummaries.recent30.averageScore,
-                  )}
-                  {" / "}正答率{" "}
-                  {formatAccuracyLabel(
-                    stats.recentQuestionSummaries.recent30.correctRate,
-                  )}
-                </span>
-                <span style={subtleTextStyle}>
-                  平均誤差{" "}
-                  {formatAvgErrorLabel(
-                    stats.recentQuestionSummaries.recent30.averageError,
-                  )}
-                  {" / "}平均回答時間{" "}
-                  {formatResponseTimeMsLabel(
-                    stats.recentQuestionSummaries.recent30
-                      .averageResponseTimeMs,
-                  )}
-                </span>
-              </div>
-            </div>
-          </section>
-
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>音程別パフォーマンス</h2>
-            <p style={subtleTextStyle}>
-              正解の音程距離ごとに、正答率・誤差・回答時間・平均スコアを見比べられます。
-            </p>
+          <Surface>
+            <SectionHeader
+              title="音程別パフォーマンス"
+              description="正解の音程距離ごとに、正答率・誤差・回答時間・平均スコアを比較できます。"
+            />
             {stats.intervalPerformance.length > 0 ? (
-              <div style={listStyle}>
+              <List as="div">
                 {stats.intervalPerformance.map((interval) => (
                   <article
                     key={interval.intervalSemitones}
-                    style={metricCardStyle}
+                    className="ui-panel-card"
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: "12px",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <strong style={{ fontSize: "16px" }}>
+                    <div className="ui-inline-split">
+                      <strong>
                         {getIntervalLabel(
                           interval.intervalSemitones,
                           intervalNotationStyle,
                         )}
                       </strong>
-                      <span style={subtleTextStyle}>
+                      <span className="ui-muted">
                         {interval.questionCount} 問
                       </span>
                     </div>
-                    <div style={metricsGridStyle}>
-                      <MetricValueCard
+                    <MetricGrid>
+                      <MetricCard
                         label="正答率"
                         value={formatAccuracyLabel(interval.correctRate)}
                       />
-                      <MetricValueCard
+                      <MetricCard
                         label="平均誤差"
                         value={formatAvgErrorLabel(interval.averageError)}
                       />
-                      <MetricValueCard
+                      <MetricCard
                         label="平均回答時間"
                         value={formatResponseTimeMsLabel(
                           interval.averageResponseTimeMs,
                         )}
-                        compact
+                        compactValue
                       />
-                      <MetricValueCard
+                      <MetricCard
                         label="平均スコア"
                         value={formatScoreLabel(interval.averageScore)}
                       />
-                    </div>
+                    </MetricGrid>
                   </article>
                 ))}
-              </div>
+              </List>
             ) : (
-              <p style={subtleTextStyle}>音程別データはまだありません。</p>
+              <p className="ui-subtitle">音程別データはまだありません。</p>
             )}
-          </section>
+          </Surface>
 
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>上下方向の比較</h2>
-            <p style={subtleTextStyle}>
-              上行と下行で、正答率や反応速度に偏りがないかを確認できます。
-            </p>
-            <div style={metricsGridStyle}>
-              <DirectionPerformanceCard
-                label="上行"
-                stats={stats.directionPerformance.up}
+          <div className="ui-grid-cards">
+            <Surface>
+              <SectionHeader
+                title="上下方向の比較"
+                description="上行と下行で、正答率や反応速度に偏りがないかを確認できます。"
               />
-              <DirectionPerformanceCard
-                label="下行"
-                stats={stats.directionPerformance.down}
-              />
-            </div>
-          </section>
+              <MetricGrid>
+                <DirectionPerformanceCard
+                  label="上行"
+                  stats={stats.directionPerformance.up}
+                />
+                <DirectionPerformanceCard
+                  label="下行"
+                  stats={stats.directionPerformance.down}
+                />
+              </MetricGrid>
+            </Surface>
 
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>回答傾向</h2>
-            <p style={subtleTextStyle}>
-              回答が高めか低めか、または一致しやすいかを全体傾向として見られます。
-            </p>
-            <div style={metricsGridStyle}>
-              <BiasMetricCard
-                label="高めに回答"
-                count={stats.answerBias.higherCount}
-                rate={stats.answerBias.higherRate}
+            <Surface>
+              <SectionHeader
+                title="回答傾向"
+                description="回答が高めか低めか、または一致しやすいかを全体傾向として見られます。"
               />
-              <BiasMetricCard
-                label="低めに回答"
-                count={stats.answerBias.lowerCount}
-                rate={stats.answerBias.lowerRate}
-              />
-              <BiasMetricCard
-                label="一致"
-                count={stats.answerBias.onTargetCount}
-                rate={stats.answerBias.onTargetRate}
-              />
-            </div>
-          </section>
+              <MetricGrid>
+                <BiasMetricCard
+                  label="高めに回答"
+                  count={stats.answerBias.higherCount}
+                  rate={stats.answerBias.higherRate}
+                />
+                <BiasMetricCard
+                  label="低めに回答"
+                  count={stats.answerBias.lowerCount}
+                  rate={stats.answerBias.lowerRate}
+                />
+                <BiasMetricCard
+                  label="一致"
+                  count={stats.answerBias.onTargetCount}
+                  rate={stats.answerBias.onTargetRate}
+                />
+              </MetricGrid>
+            </Surface>
+          </div>
 
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>最近のセッション</h2>
+          <Surface>
+            <SectionHeader title="最近のセッション" />
             {stats.recentSessions.length > 0 ? (
-              <ul style={listStyle}>
+              <List>
                 {stats.recentSessions.map((session) => (
                   <li key={session.id}>
-                    <Link
-                      href={`/sessions/${session.id}`}
-                      style={listLinkStyle}
-                    >
-                      <strong style={{ fontSize: "16px" }}>
-                        {formatSecondaryModeLabel(session.mode)}
-                      </strong>
-                      <span style={subtleTextStyle}>
+                    <ListLinkCard href={`/sessions/${session.id}`}>
+                      <strong>{formatSecondaryModeLabel(session.mode)}</strong>
+                      <span className="ui-muted">
                         スコア {formatScoreLabel(session.sessionScore)} / 問題数{" "}
                         {session.answeredQuestionCount} / 正答率{" "}
                         {formatAccuracyLabel(session.accuracyRate)}
                       </span>
-                      <span style={subtleTextStyle}>
+                      <span className="ui-muted">
                         完了日時 {formatDateTimeLabel(session.endedAt)}
                       </span>
-                    </Link>
+                    </ListLinkCard>
                   </li>
                 ))}
-              </ul>
+              </List>
             ) : (
-              <p style={subtleTextStyle}>
+              <p className="ui-subtitle">
                 保存済みセッションはまだありません。
               </p>
             )}
-          </section>
+          </Surface>
         </>
       ) : (
-        <section style={cardStyle}>
-          <p style={subtleTextStyle}>
-            保存済みの学習統計を見るにはログインしてください。ゲストのセッションは保存されません。
-          </p>
-        </section>
+        <Notice>
+          保存済みの学習統計を見るにはログインしてください。ゲストのセッションは保存されません。
+        </Notice>
       )}
-    </main>
+    </AppShell>
   );
 }
 
 function formatSecondaryModeLabel(value: "distance" | "keyboard"): string {
   return value === "distance" ? "距離モード" : "鍵盤モード";
-}
-
-function MetricValueCard(props: {
-  label: string;
-  value: string;
-  compact?: boolean;
-}) {
-  return (
-    <div style={metricCardStyle}>
-      <span style={metricLabelStyle}>{props.label}</span>
-      <span
-        style={{
-          ...metricValueStyle,
-          ...(props.compact ? { fontSize: "22px" } : {}),
-        }}
-      >
-        {props.value}
-      </span>
-    </div>
-  );
 }
 
 function DirectionPerformanceCard(props: {
@@ -470,28 +333,87 @@ function DirectionPerformanceCard(props: {
   };
 }) {
   return (
-    <div style={metricCardStyle}>
-      <span style={metricLabelStyle}>{props.label}</span>
-      <span style={metricValueStyle}>{props.stats.questionCount}</span>
-      <span style={subtleTextStyle}>
-        正答率 {formatAccuracyLabel(props.stats.correctRate)}
-        {" / "}平均誤差 {formatAvgErrorLabel(props.stats.averageError)}
-      </span>
-      <span style={subtleTextStyle}>
-        平均回答時間{" "}
-        {formatResponseTimeMsLabel(props.stats.averageResponseTimeMs)}
-        {" / "}平均スコア {formatScoreLabel(props.stats.averageScore)}
-      </span>
-    </div>
+    <MetricCard
+      label={props.label}
+      value={props.stats.questionCount}
+      detail={
+        <>
+          正答率 {formatAccuracyLabel(props.stats.correctRate)}
+          {" / "}平均誤差 {formatAvgErrorLabel(props.stats.averageError)}
+          <br />
+          平均回答時間{" "}
+          {formatResponseTimeMsLabel(props.stats.averageResponseTimeMs)}
+          {" / "}平均スコア {formatScoreLabel(props.stats.averageScore)}
+        </>
+      }
+    />
   );
 }
 
 function BiasMetricCard(props: { label: string; count: number; rate: number }) {
   return (
-    <div style={metricCardStyle}>
-      <span style={metricLabelStyle}>{props.label}</span>
-      <span style={metricValueStyle}>{props.count}</span>
-      <span style={subtleTextStyle}>{formatAccuracyLabel(props.rate)}</span>
+    <MetricCard
+      label={props.label}
+      value={props.count}
+      detail={formatAccuracyLabel(props.rate)}
+    />
+  );
+}
+
+function ModeSummaryCard(props: {
+  label: string;
+  sessionCount: number;
+  questionCount: number;
+  cumulativeScore: number;
+  correctRate: number;
+  averageError: number;
+  medianError: number;
+  averageResponseTimeMs: number;
+}) {
+  return (
+    <div className="ui-panel-card">
+      <span className="ui-hero__eyebrow">{props.label}</span>
+      <div className="ui-stack-sm">
+        <strong>{props.sessionCount} セッション</strong>
+        <span className="ui-muted">
+          問題数 {props.questionCount} / 累計スコア{" "}
+          {formatScoreLabel(props.cumulativeScore)}
+        </span>
+        <span className="ui-muted">
+          正答率 {formatAccuracyLabel(props.correctRate)}
+          {" / "}平均誤差 {formatAvgErrorLabel(props.averageError)}
+          {" / "}中央値誤差 {formatAvgErrorLabel(props.medianError)}
+          {" / "}平均回答時間{" "}
+          {formatResponseTimeMsLabel(props.averageResponseTimeMs)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function RecentQuestionCard(props: {
+  label: string;
+  summary: {
+    questionCount: number;
+    averageScore: number;
+    correctRate: number;
+    averageError: number;
+    averageResponseTimeMs: number;
+  };
+}) {
+  return (
+    <div className="ui-panel-card">
+      <span className="ui-hero__eyebrow">{props.label}</span>
+      <strong>{props.summary.questionCount} 問</strong>
+      <span className="ui-muted">
+        平均スコア {formatScoreLabel(props.summary.averageScore)}
+        {" / "}正答率 {formatAccuracyLabel(props.summary.correctRate)}
+      </span>
+      <span className="ui-muted">
+        平均誤差 {formatAvgErrorLabel(props.summary.averageError)}
+        {" / "}平均回答時間{" "}
+        {formatResponseTimeMsLabel(props.summary.averageResponseTimeMs)}
+      </span>
     </div>
   );
 }
@@ -504,33 +426,63 @@ function ScoreTrendColumn(props: {
     averageScore: number;
   }>;
 }) {
+  const maxScore = Math.max(
+    ...props.points.map((point) => point.averageScore),
+    1,
+  );
+
   return (
-    <div style={metricCardStyle}>
-      <span style={metricLabelStyle}>{props.label}</span>
+    <div className="ui-panel-card ui-trend-card">
+      <div className="ui-stack-sm">
+        <span className="ui-hero__eyebrow">{props.label}</span>
+        <strong>直近 {props.points.length} 日</strong>
+      </div>
       {props.points.length > 0 ? (
-        <div style={{ display: "grid", gap: "10px" }}>
-          {props.points.map((point) => (
-            <div
-              key={`${props.label}-${point.date}`}
-              style={{
-                display: "grid",
-                gap: "4px",
-                paddingTop: "8px",
-                borderTop: "1px solid rgba(91, 78, 62, 0.16)",
-              }}
-            >
-              <strong style={{ fontSize: "15px" }}>
-                {formatDateLabel(point.date)}
-              </strong>
-              <span style={subtleTextStyle}>
-                平均スコア {formatScoreLabel(point.averageScore)}
-              </span>
-              <span style={subtleTextStyle}>{point.questionCount} 問</span>
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="ui-trend-bars" aria-hidden="true">
+            {props.points.map((point) => {
+              const height = Math.max(
+                16,
+                Math.round((point.averageScore / maxScore) * 96),
+              );
+
+              return (
+                <div
+                  key={`${props.label}-${point.date}`}
+                  className="ui-trend-bar"
+                >
+                  <div
+                    className="ui-trend-bar__value"
+                    style={
+                      {
+                        "--trend-height": `${height}px`,
+                      } as CSSProperties
+                    }
+                  />
+                  <span className="ui-trend-bar__label">
+                    {formatDateLabel(point.date)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <List as="div">
+            {props.points.map((point) => (
+              <div
+                key={`${props.label}-detail-${point.date}`}
+                className="ui-kv-card"
+              >
+                <strong>{formatDateLabel(point.date)}</strong>
+                <span className="ui-muted">
+                  平均スコア {formatScoreLabel(point.averageScore)}
+                </span>
+                <span className="ui-muted">{point.questionCount} 問</span>
+              </div>
+            ))}
+          </List>
+        </>
       ) : (
-        <span style={subtleTextStyle}>データはまだありません。</span>
+        <span className="ui-subtitle">データはまだありません。</span>
       )}
     </div>
   );

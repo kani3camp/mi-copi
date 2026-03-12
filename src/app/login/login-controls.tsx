@@ -1,16 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import { getAuthClient } from "../../lib/auth/client";
-import {
-  buttonStyle,
-  navLinkStyle,
-  navRowStyle,
-  noticeStyle,
-  subtleTextStyle,
-} from "../ui/polish";
+import { Button, ButtonLink, Notice } from "../ui/primitives";
 
 interface LoginControlsProps {
   isAuthenticated: boolean;
@@ -44,43 +37,52 @@ export function LoginControls({ isAuthenticated }: LoginControlsProps) {
 
   if (isAuthenticated) {
     return (
-      <div style={{ display: "grid", gap: "12px" }}>
-        <div style={noticeStyle("success")}>
+      <div className="ui-stack-md">
+        <Notice tone="success">
           すでにサインイン済みです。ホームからそのまま学習を始められます。
-        </div>
-        <div style={navRowStyle}>
-          <Link href="/" style={navLinkStyle}>
-            ホームへ戻る
-          </Link>
+        </Notice>
+        <div className="ui-nav-row">
+          <ButtonLink href="/">ホームへ戻る</ButtonLink>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "grid", gap: "12px" }}>
-      <button
-        type="button"
-        onClick={handleGoogleSignIn}
-        disabled={isPending}
-        style={buttonStyle("primary", isPending)}
-      >
-        {isPending ? "接続中..." : "Google でログイン"}
-      </button>
-
-      <p style={subtleTextStyle}>
-        ログインすると結果の保存、統計、設定のクラウド同期が使えます。
-      </p>
-
-      {errorMessage ? (
-        <div style={noticeStyle("error")}>{errorMessage}</div>
-      ) : null}
-
-      <div style={navRowStyle}>
-        <Link href="/" style={navLinkStyle}>
-          ゲストで始める
-        </Link>
+    <div className="ui-auth-choice-grid">
+      <div className="ui-auth-choice-card">
+        <div className="ui-stack-sm">
+          <span className="ui-hero__eyebrow">Cloud Save</span>
+          <strong>Google でログイン</strong>
+          <p className="ui-muted">
+            結果の保存、統計、設定のクラウド同期を使う場合はこちら。
+          </p>
+        </div>
+        <Button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={isPending}
+          variant="primary"
+          block
+        >
+          {isPending ? "接続中..." : "Google でログイン"}
+        </Button>
       </div>
+
+      <div className="ui-auth-choice-card">
+        <div className="ui-stack-sm">
+          <span className="ui-hero__eyebrow">Guest Start</span>
+          <strong>ゲストでそのまま練習</strong>
+          <p className="ui-muted">
+            保存なしで今すぐ始める軽い反復練習向けです。
+          </p>
+        </div>
+        <ButtonLink href="/" block>
+          ゲストで始める
+        </ButtonLink>
+      </div>
+
+      {errorMessage ? <Notice tone="error">{errorMessage}</Notice> : null}
     </div>
   );
 }
