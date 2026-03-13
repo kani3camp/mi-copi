@@ -218,6 +218,7 @@ export function DistanceFeedbackDiagram(props: {
                 key={`${arrow.tone}-${arrow.lane}-${arrow.columnStart}-${arrow.columnEnd}`}
                 className="ui-distance-diagram__arrow"
                 data-tone={arrow.tone}
+                data-direction={arrow.direction}
                 data-lane={arrow.lane}
                 style={{
                   gridColumn: `${arrow.columnStart} / ${arrow.columnEnd}`,
@@ -229,18 +230,6 @@ export function DistanceFeedbackDiagram(props: {
                   className="ui-distance-diagram__arrow-svg"
                   aria-hidden="true"
                 >
-                  <defs>
-                    <marker
-                      id={`distance-arrowhead-${arrow.tone}`}
-                      markerWidth="8"
-                      markerHeight="8"
-                      refX="6"
-                      refY="4"
-                      orient="auto"
-                    >
-                      <path d="M0,0 L8,4 L0,8 Z" />
-                    </marker>
-                  </defs>
                   <line
                     x1={arrow.direction === "forward" ? "2" : "98"}
                     y1="6"
@@ -248,7 +237,6 @@ export function DistanceFeedbackDiagram(props: {
                     y2="6"
                     className="ui-distance-diagram__arrow-line"
                     data-tone={arrow.tone}
-                    markerEnd={`url(#distance-arrowhead-${arrow.tone})`}
                   />
                 </svg>
               </div>

@@ -152,6 +152,26 @@ test("distance feedback diagram arrows reverse for downward questions while keep
   );
 });
 
+test("distance feedback diagram arrows have direction for fixed scale (13 steps)", () => {
+  const arrows = buildDistanceFeedbackDiagramArrows({
+    stepCount: 13,
+    baseIndex: 0,
+    correctIndex: 5,
+    answeredIndex: 3,
+  });
+  assert.equal(arrows.length, 2);
+  for (const arrow of arrows) {
+    assert.ok(
+      arrow.direction === "forward" || arrow.direction === "backward",
+      `each arrow has direction forward or backward, got ${arrow.direction}`,
+    );
+    assert.ok(
+      arrow.tone === "success" || arrow.tone === "teal",
+      `each arrow has tone success or teal, got ${arrow.tone}`,
+    );
+  }
+});
+
 test("distance feedback status does not infer reverse direction for distance mode", () => {
   assert.deepEqual(
     getDistanceFeedbackStatus({

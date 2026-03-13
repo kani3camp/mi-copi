@@ -1652,6 +1652,8 @@ a {
 .ui-distance-diagram__viewport {
   width: 100%;
   overflow: hidden;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
 .ui-distance-diagram__scale {
@@ -1699,6 +1701,7 @@ a {
 }
 
 .ui-distance-diagram__arrow {
+  position: relative;
   grid-row: 1;
   height: 12px;
 }
@@ -1709,6 +1712,37 @@ a {
 
 .ui-distance-diagram__arrow[data-lane="lower"] {
   margin-top: 10px;
+}
+
+/* 矢印先端: 固定サイズの三角（矢印長に依存しない） */
+.ui-distance-diagram__arrow::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  transform: translateY(-50%);
+}
+
+.ui-distance-diagram__arrow[data-direction="forward"]::after {
+  right: 0;
+  border-width: 3px 0 3px 6px;
+  border-color: transparent transparent transparent currentColor;
+}
+
+.ui-distance-diagram__arrow[data-direction="backward"]::after {
+  left: 0;
+  border-width: 3px 6px 3px 0;
+  border-color: transparent currentColor transparent transparent;
+}
+
+.ui-distance-diagram__arrow[data-tone="success"]::after {
+  color: #9cdd2b;
+}
+
+.ui-distance-diagram__arrow[data-tone="teal"]::after {
+  color: #2a8f99;
 }
 
 .ui-distance-diagram__arrow-svg {
@@ -1728,17 +1762,8 @@ a {
   stroke: #9cdd2b;
 }
 
-.ui-distance-diagram__arrow-svg marker[id="distance-arrowhead-success"] path {
-  fill: #9cdd2b;
-}
-
 .ui-distance-diagram__arrow-line[data-tone="teal"] {
   stroke: #2a8f99;
-  stroke-dasharray: 7 5;
-}
-
-.ui-distance-diagram__arrow-svg marker[id="distance-arrowhead-teal"] path {
-  fill: #2a8f99;
 }
 
 .ui-distance-diagram__arrow-spacer {
