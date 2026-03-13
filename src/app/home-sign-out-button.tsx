@@ -37,6 +37,8 @@ export function HomeSignOutButton() {
       onClick={handleSignOut}
       disabled={isPending}
       pending={isPending}
+      variant="ghost"
+      className="ui-header-link"
     >
       {isPending ? "ログアウト中..." : "ログアウト"}
     </Button>

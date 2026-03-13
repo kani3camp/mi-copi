@@ -1,13 +1,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+
 import { GlobalUserSettingsProvider } from "../../features/settings/client/global-user-settings-provider";
 import type { GlobalUserSettings } from "../../features/settings/model/global-user-settings";
 import { getCurrentUserSettingsSnapshot } from "../../features/settings/server/getCurrentUserSettingsSnapshot";
 import { updateGlobalUserSettingsForCurrentUser } from "../../features/settings/server/global-user-settings";
-import {
-  formatDateTimeLabel,
-  formatDurationSecondsLabel,
-} from "../../features/training/model/format";
+import { formatDateTimeLabel } from "../../features/training/model/format";
 import { formatDirectionModeLabel } from "../../features/training/model/interval-notation";
 import type { TrainingConfigSnapshot } from "../../features/training/model/types";
 import { getSettingsPageDataForCurrentUser } from "../../features/training/server/getSettingsPageData";
@@ -16,11 +14,12 @@ import { getCurrentUserOrNullCached } from "../../lib/auth/server";
 import { ButtonLink } from "../ui/navigation-link";
 import {
   AppShell,
-  KeyValueCard,
-  KeyValueGrid,
+  Chip,
   Notice,
-  PageHero,
+  PageHeader,
   SectionHeader,
+  SummaryBlock,
+  SummaryStat,
   Surface,
 } from "../ui/primitives";
 import { GlobalSettingsSection } from "./global-settings-section";
@@ -87,30 +86,40 @@ export default async function SettingsPage({
       persistSettingsAction={persistGlobalUserSettingsAction}
     >
       <AppShell narrow>
-        <PageHero
+        <PageHeader
           title="設定"
           eyebrow="Preferences"
-          subtitle="全体設定の変更と、保存済みの前回設定の確認やリセットを行えます。"
-          actions={
-            <>
-              <ButtonLink href="/" pendingLabel="ホームを開いています...">
-                ホームへ戻る
-              </ButtonLink>
-              <ButtonLink
-                href="/train/distance"
-                pendingLabel="距離モードを開いています..."
-              >
-                距離モードへ
-              </ButtonLink>
-              <ButtonLink
-                href="/train/keyboard"
-                pendingLabel="鍵盤モードを開いています..."
-              >
-                鍵盤モードへ
-              </ButtonLink>
-            </>
-          }
+          subtitle="音量、表記、鍵盤ラベル表示と保存済み設定をここで整えます。"
         />
+
+        <Surface>
+          <div className="ui-page-aux-actions">
+            <ButtonLink
+              href="/"
+              variant="ghost"
+              className="ui-header-link"
+              pendingLabel="ホームを開いています..."
+            >
+              ホーム
+            </ButtonLink>
+            <ButtonLink
+              href="/train/distance"
+              variant="ghost"
+              className="ui-header-link"
+              pendingLabel="距離モードを開いています..."
+            >
+              距離モード
+            </ButtonLink>
+            <ButtonLink
+              href="/train/keyboard"
+              variant="ghost"
+              className="ui-header-link"
+              pendingLabel="鍵盤モードを開いています..."
+            >
+              鍵盤モード
+            </ButtonLink>
+          </div>
+        </Surface>
 
         {resetTarget ? (
           <Notice tone="success">
@@ -133,15 +142,35 @@ export default async function SettingsPage({
         {data.isAuthenticated ? (
           <>
             <Surface>
+              <SectionHeader title="保存済みの前回設定" />
+              <div className="ui-settings-snapshot">
+                <ConfigSnapshotGroup
+                  title="距離モード"
+                  config={data.lastDistanceConfig}
+                  resetAction={resetDistanceAction}
+                />
+                <ConfigSnapshotGroup
+                  title="鍵盤モード"
+                  config={data.lastKeyboardConfig}
+                  resetAction={resetKeyboardAction}
+                />
+              </div>
+            </Surface>
+
+            <Surface>
               <SectionHeader title="アカウント概要" />
-              <KeyValueGrid>
-                <KeyValueCard label="ログイン状態" value="サインイン中" />
-                <KeyValueCard label="名前" value={data.user?.name ?? "不明"} />
-                <KeyValueCard
+              <SummaryBlock>
+                <SummaryStat
+                  label="名前"
+                  value={data.user?.name ?? "不明"}
+                  emphasis="primary"
+                />
+                <SummaryStat
                   label="メールアドレス"
                   value={data.user?.email ?? "不明"}
                 />
-                <KeyValueCard
+                <SummaryStat label="ログイン状態" value="サインイン中" />
+                <SummaryStat
                   label="最終更新"
                   value={
                     data.updatedAt
@@ -149,61 +178,12 @@ export default async function SettingsPage({
                       : "まだ保存されていません"
                   }
                 />
-              </KeyValueGrid>
-            </Surface>
-
-            <Surface>
-              <SectionHeader title="前回の距離モード設定" />
-              {data.lastDistanceConfig ? (
-                <>
-                  <ConfigSnapshotView config={data.lastDistanceConfig} />
-                  <form action={resetDistanceAction}>
-                    <ResetConfigSubmitButton>
-                      距離モードを初期値に戻す
-                    </ResetConfigSubmitButton>
-                  </form>
-                </>
-              ) : (
-                <>
-                  <p className="ui-subtitle">
-                    距離モードの保存済み設定はまだありません。
-                  </p>
-                  <form action={resetDistanceAction}>
-                    <ResetConfigSubmitButton>
-                      距離モードを初期値に戻す
-                    </ResetConfigSubmitButton>
-                  </form>
-                </>
-              )}
-            </Surface>
-
-            <Surface>
-              <SectionHeader title="前回の鍵盤モード設定" />
-              {data.lastKeyboardConfig ? (
-                <>
-                  <ConfigSnapshotView config={data.lastKeyboardConfig} />
-                  <form action={resetKeyboardAction}>
-                    <ResetConfigSubmitButton>
-                      鍵盤モードを初期値に戻す
-                    </ResetConfigSubmitButton>
-                  </form>
-                </>
-              ) : (
-                <>
-                  <p className="ui-subtitle">
-                    鍵盤モードの保存済み設定はまだありません。
-                  </p>
-                  <form action={resetKeyboardAction}>
-                    <ResetConfigSubmitButton>
-                      鍵盤モードを初期値に戻す
-                    </ResetConfigSubmitButton>
-                  </form>
-                </>
-              )}
+              </SummaryBlock>
             </Surface>
           </>
         ) : (
           <Surface>
+            <SectionHeader title="保存済み設定" />
             <p className="ui-subtitle">
               ゲスト利用中です。保存済み設定はログイン後に利用できるようになります。
             </p>
@@ -214,72 +194,79 @@ export default async function SettingsPage({
   );
 }
 
-function ConfigSnapshotView(props: { config: TrainingConfigSnapshot }) {
-  const { config } = props;
-
+function ConfigSnapshotGroup(props: {
+  title: string;
+  config: TrainingConfigSnapshot | null;
+  resetAction: () => Promise<void>;
+}) {
   return (
-    <KeyValueGrid className="ui-grid-kv--compact">
-      <KeyValueCard
-        className="ui-kv-card--dense"
-        label="モード"
-        value={formatConfigModeLabel(config.mode)}
-      />
-      <KeyValueCard
-        className="ui-kv-card--dense"
-        label="音程範囲"
-        value={`${config.intervalRange.minSemitone} - ${config.intervalRange.maxSemitone}`}
-      />
-      <KeyValueCard
-        className="ui-kv-card--dense"
-        label="出題方向"
-        value={formatDirectionModeLabel(config.directionMode)}
-      />
-      <KeyValueCard
-        className="ui-kv-card--dense"
-        label="基準音モード"
-        value={config.baseNoteMode === "fixed" ? "固定" : "ランダム"}
-      />
-      <KeyValueCard
-        className="ui-kv-card--dense"
-        label="固定する基準音"
-        value={config.fixedBaseNote ?? "なし"}
-      />
-      <KeyValueCard
-        className="ui-kv-card--dense"
-        label="同音を含める"
-        value={config.includeUnison ? "はい" : "いいえ"}
-      />
-      <KeyValueCard
-        className="ui-kv-card--dense"
-        label="オクターブを含める"
-        value={config.includeOctave ? "はい" : "いいえ"}
-      />
-      <KeyValueCard
-        className="ui-kv-card--dense"
-        label="終了条件"
-        value={
-          config.endCondition.type === "question_count"
-            ? `問題数 (${config.endCondition.questionCount})`
-            : `制限時間 (${formatTimeLimitSecondsLabel(config.endCondition.timeLimitSeconds)})`
-        }
-      />
-      {"intervalGranularity" in config && config.intervalGranularity ? (
-        <KeyValueCard
-          className="ui-kv-card--dense"
-          label="音程表記の粒度"
-          value={
-            config.intervalGranularity === "simple" ? "シンプル" : "増減あり"
-          }
-        />
-      ) : null}
-    </KeyValueGrid>
+    <div className="ui-settings-snapshot__group">
+      <div className="ui-settings-snapshot__title">
+        <div className="ui-compact-actions">
+          <strong>{props.title}</strong>
+          <Chip tone="amber">保存済み</Chip>
+        </div>
+        <form action={props.resetAction}>
+          <ResetConfigSubmitButton>初期値に戻す</ResetConfigSubmitButton>
+        </form>
+      </div>
+
+      {props.config ? (
+        <div className="ui-settings-snapshot__rows">
+          {getSnapshotRows(props.config).map((row) => (
+            <div
+              key={`${props.title}-${row.label}`}
+              className="ui-settings-snapshot__row"
+            >
+              <span className="ui-settings-snapshot__label">{row.label}</span>
+              <span className="ui-settings-snapshot__value">{row.value}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="ui-subtitle">
+          {props.title}の保存済み設定はまだありません。
+        </p>
+      )}
+    </div>
   );
 }
 
-function formatTimeLimitSecondsLabel(value: number): string {
-  return formatDurationSecondsLabel(value);
-}
+function getSnapshotRows(config: TrainingConfigSnapshot) {
+  const rows = [
+    {
+      label: "音程範囲",
+      value: `${config.intervalRange.minSemitone} - ${config.intervalRange.maxSemitone}`,
+    },
+    {
+      label: "出題方向",
+      value: formatDirectionModeLabel(config.directionMode),
+    },
+    {
+      label: "基準音モード",
+      value: config.baseNoteMode === "fixed" ? "固定" : "ランダム",
+    },
+    { label: "固定する基準音", value: config.fixedBaseNote ?? "なし" },
+    { label: "同音", value: config.includeUnison ? "含める" : "含めない" },
+    {
+      label: "オクターブ",
+      value: config.includeOctave ? "含める" : "含めない",
+    },
+    {
+      label: "終了条件",
+      value:
+        config.endCondition.type === "question_count"
+          ? `問題数 ${config.endCondition.questionCount} 問`
+          : `制限時間 ${config.endCondition.timeLimitSeconds} 秒`,
+    },
+  ];
 
-function formatConfigModeLabel(value: "distance" | "keyboard"): string {
-  return value === "distance" ? "距離モード" : "鍵盤モード";
+  if ("intervalGranularity" in config && config.intervalGranularity) {
+    rows.push({
+      label: "表記粒度",
+      value: config.intervalGranularity === "simple" ? "シンプル" : "増減あり",
+    });
+  }
+
+  return rows;
 }

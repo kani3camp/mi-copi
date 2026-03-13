@@ -12,7 +12,7 @@ import {
 import { getIntervalLabel } from "../../features/training/model/interval-notation";
 import { getTrainingStatsForCurrentUser } from "../../features/training/server/getTrainingStats";
 import { getCurrentUserOrNullCached } from "../../lib/auth/server";
-import { ButtonLink, ListLinkCard } from "../ui/navigation-link";
+import { ListLinkCard } from "../ui/navigation-link";
 import {
   AppShell,
   GraphCard,
@@ -39,15 +39,6 @@ export default async function StatsPage() {
         title="統計"
         eyebrow="Progress View"
         subtitle="保存済みセッションから、成長の流れと苦手傾向をまとめて確認できます。"
-        actions={
-          <ButtonLink
-            href="/"
-            variant="ghost"
-            pendingLabel="ホームを開いています..."
-          >
-            ホーム
-          </ButtonLink>
-        }
       />
 
       {stats.isAuthenticated ? (

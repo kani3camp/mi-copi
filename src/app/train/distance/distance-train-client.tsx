@@ -52,9 +52,9 @@ import { ButtonLink } from "../../ui/navigation-link";
 import {
   AppShell,
   Button,
+  Chip,
   Field,
   FieldGrid,
-  KeyValueCard,
   Notice,
   SectionHeader,
   Surface,
@@ -652,24 +652,14 @@ export function DistanceTrainClient({
           saveResult,
         })}
         actions={
-          <>
-            <ButtonLink
-              href="/"
-              variant="ghost"
-              pendingLabel="ホームを開いています..."
-            >
-              ホームへ戻る
-            </ButtonLink>
-            {!isAuthenticatedState ? (
-              <ButtonLink
-                href="/login"
-                variant="ghost"
-                pendingLabel="ログイン画面を開いています..."
-              >
-                ログイン
-              </ButtonLink>
-            ) : null}
-          </>
+          <ButtonLink
+            href="/"
+            variant="ghost"
+            className="ui-header-link"
+            pendingLabel="ホームを開いています..."
+          >
+            戻る
+          </ButtonLink>
         }
         notice={
           audioError
@@ -684,79 +674,80 @@ export function DistanceTrainClient({
         <Surface tone="accent">
           <SectionHeader
             title="出題設定"
-            description="終了条件、出題レンジ、答え方をこの画面で整えてから始めます。"
+            description="必要な設定だけを整えて、そのまま開始します。"
           />
-          <div className="ui-grid-cards">
-            <div className="ui-panel-card ui-stack-md">
-              <strong>セッション終了</strong>
-              <Field label="終了条件">
-                <select
-                  className="ui-select"
-                  value={config.endCondition.type}
-                  onChange={(event) =>
-                    updateConfig((current) => ({
-                      ...current,
-                      endCondition:
-                        event.target.value === "time_limit"
-                          ? createDefaultTimeLimitEndCondition()
-                          : createDefaultQuestionCountEndCondition(),
-                    }))
-                  }
-                >
-                  <option value="question_count">問題数</option>
-                  <option value="time_limit">制限時間</option>
-                </select>
-              </Field>
-
-              {config.endCondition.type === "question_count" ? (
-                <Field label="問題数">
+          <div className="ui-form-layout">
+            <div className="ui-form-section">
+              <h3 className="ui-form-section__title">終了条件</h3>
+              <FieldGrid>
+                <Field label="終了方法">
                   <select
                     className="ui-select"
-                    value={plannedQuestionCount}
+                    value={config.endCondition.type}
                     onChange={(event) =>
                       updateConfig((current) => ({
                         ...current,
-                        endCondition: {
-                          type: "question_count",
-                          questionCount: Number(event.target.value),
-                        },
+                        endCondition:
+                          event.target.value === "time_limit"
+                            ? createDefaultTimeLimitEndCondition()
+                            : createDefaultQuestionCountEndCondition(),
                       }))
                     }
                   >
-                    {questionCountOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option} 問
-                      </option>
-                    ))}
+                    <option value="question_count">問題数</option>
+                    <option value="time_limit">制限時間</option>
                   </select>
                 </Field>
-              ) : (
-                <Field label="制限時間（秒）">
-                  <select
-                    className="ui-select"
-                    value={config.endCondition.timeLimitSeconds}
-                    onChange={(event) =>
-                      updateConfig((current) => ({
-                        ...current,
-                        endCondition: {
-                          type: "time_limit",
-                          timeLimitSeconds: Number(event.target.value),
-                        },
-                      }))
-                    }
-                  >
-                    {timeLimitOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option} 秒
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              )}
+                {config.endCondition.type === "question_count" ? (
+                  <Field label="問題数">
+                    <select
+                      className="ui-select"
+                      value={plannedQuestionCount}
+                      onChange={(event) =>
+                        updateConfig((current) => ({
+                          ...current,
+                          endCondition: {
+                            type: "question_count",
+                            questionCount: Number(event.target.value),
+                          },
+                        }))
+                      }
+                    >
+                      {questionCountOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option} 問
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : (
+                  <Field label="制限時間（秒）">
+                    <select
+                      className="ui-select"
+                      value={config.endCondition.timeLimitSeconds}
+                      onChange={(event) =>
+                        updateConfig((current) => ({
+                          ...current,
+                          endCondition: {
+                            type: "time_limit",
+                            timeLimitSeconds: Number(event.target.value),
+                          },
+                        }))
+                      }
+                    >
+                      {timeLimitOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option} 秒
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
+              </FieldGrid>
             </div>
 
-            <div className="ui-panel-card ui-stack-md">
-              <strong>問題レンジ</strong>
+            <div className="ui-form-section">
+              <h3 className="ui-form-section__title">出題範囲</h3>
               <FieldGrid>
                 <Field label="最小半音数">
                   <input
@@ -809,49 +800,47 @@ export function DistanceTrainClient({
                     }
                   />
                 </Field>
+                <Field label="出題方向">
+                  <select
+                    className="ui-select"
+                    value={config.directionMode}
+                    onChange={(event) =>
+                      updateConfig((current) => ({
+                        ...current,
+                        directionMode: event.target
+                          .value as DistanceTrainingConfig["directionMode"],
+                      }))
+                    }
+                  >
+                    <option value="mixed">
+                      {formatDirectionModeLabel("mixed")}
+                    </option>
+                    <option value="up_only">
+                      {formatDirectionModeLabel("up_only")}
+                    </option>
+                  </select>
+                </Field>
+                <Field label="基準音モード">
+                  <select
+                    className="ui-select"
+                    value={config.baseNoteMode}
+                    onChange={(event) =>
+                      updateConfig((current) => ({
+                        ...current,
+                        baseNoteMode: event.target
+                          .value as DistanceTrainingConfig["baseNoteMode"],
+                        fixedBaseNote:
+                          event.target.value === "fixed"
+                            ? (current.fixedBaseNote ?? "C")
+                            : null,
+                      }))
+                    }
+                  >
+                    <option value="random">ランダム</option>
+                    <option value="fixed">固定</option>
+                  </select>
+                </Field>
               </FieldGrid>
-
-              <Field label="出題方向">
-                <select
-                  className="ui-select"
-                  value={config.directionMode}
-                  onChange={(event) =>
-                    updateConfig((current) => ({
-                      ...current,
-                      directionMode: event.target
-                        .value as DistanceTrainingConfig["directionMode"],
-                    }))
-                  }
-                >
-                  <option value="mixed">
-                    {formatDirectionModeLabel("mixed")}
-                  </option>
-                  <option value="up_only">
-                    {formatDirectionModeLabel("up_only")}
-                  </option>
-                </select>
-              </Field>
-
-              <Field label="基準音モード">
-                <select
-                  className="ui-select"
-                  value={config.baseNoteMode}
-                  onChange={(event) =>
-                    updateConfig((current) => ({
-                      ...current,
-                      baseNoteMode: event.target
-                        .value as DistanceTrainingConfig["baseNoteMode"],
-                      fixedBaseNote:
-                        event.target.value === "fixed"
-                          ? (current.fixedBaseNote ?? "C")
-                          : null,
-                    }))
-                  }
-                >
-                  <option value="random">ランダム</option>
-                  <option value="fixed">固定</option>
-                </select>
-              </Field>
 
               {config.baseNoteMode === "fixed" ? (
                 <Field label="固定する基準音">
@@ -875,8 +864,8 @@ export function DistanceTrainClient({
               ) : null}
             </div>
 
-            <div className="ui-panel-card ui-stack-md">
-              <strong>回答スタイル</strong>
+            <div className="ui-form-section">
+              <h3 className="ui-form-section__title">回答スタイル</h3>
               <label className="ui-checkbox-card">
                 <input
                   type="checkbox"
@@ -890,7 +879,6 @@ export function DistanceTrainClient({
                 />
                 <span>同音を含める</span>
               </label>
-
               <label className="ui-checkbox-card">
                 <input
                   type="checkbox"
@@ -904,7 +892,6 @@ export function DistanceTrainClient({
                 />
                 <span>オクターブを含める</span>
               </label>
-
               <Field label="音程表記の粒度">
                 <select
                   className="ui-select"
@@ -921,13 +908,13 @@ export function DistanceTrainClient({
                   <option value="aug_dim">増減あり</option>
                 </select>
               </Field>
-
-              <KeyValueCard
-                label="回答候補"
-                value={answerChoiceValues
-                  .map((choice) => formatIntervalName(choice))
-                  .join(", ")}
-              />
+              <div className="ui-form-chip-list">
+                {answerChoiceValues.map((choice) => (
+                  <Chip key={choice} tone="teal">
+                    {formatIntervalName(choice)}
+                  </Chip>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -936,18 +923,12 @@ export function DistanceTrainClient({
           ) : null}
           {bootstrapNotice ? <Notice>{bootstrapNotice}</Notice> : null}
           {isAuthenticatedState && hasStoredConfigState && !bootstrapNotice ? (
-            <Notice>保存済み設定があります。</Notice>
+            <Notice>前回設定を読み込めます。</Notice>
           ) : null}
 
           {configError ? <Notice tone="error">{configError}</Notice> : null}
 
           <div className="ui-sticky-actions">
-            <div className="ui-stack-sm">
-              <strong>準備できたら開始</strong>
-              <span className="ui-muted">
-                開始タップを最初の audio unlock として使います。
-              </span>
-            </div>
             <Button type="button" onClick={handleStart} variant="primary" block>
               開始
             </Button>

@@ -34,7 +34,7 @@ export function LoginControls() {
 
   return (
     <div className="ui-auth-choice-grid">
-      <div className="ui-auth-choice-card">
+      <div className="ui-auth-choice-card ui-auth-choice-card--primary">
         <div className="ui-stack-sm">
           <Chip tone="brand">Cloud Save</Chip>
           <strong>Google でログイン</strong>
@@ -60,7 +60,12 @@ export function LoginControls() {
           <strong>ゲストでそのまま練習</strong>
           <p className="ui-muted">保存なしで今すぐ試したいときはこちらです。</p>
         </div>
-        <ButtonLink href="/" block pendingLabel="ホームを開いています...">
+        <ButtonLink
+          href="/"
+          variant="secondary"
+          block
+          pendingLabel="ホームを開いています..."
+        >
           ゲストで始める
         </ButtonLink>
       </div>

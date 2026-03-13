@@ -25,42 +25,34 @@ export default async function LoginPage() {
         title="ログイン"
         eyebrow="Account Access"
         subtitle="Google でログインするか、ゲストでそのまま始めるかを選びます。"
-        actions={
-          <>
-            <ButtonLink
-              href="/"
-              variant="ghost"
-              pendingLabel="ホームを開いています..."
-            >
-              ホーム
-            </ButtonLink>
-            <ButtonLink
-              href="/train/distance"
-              variant="ghost"
-              pendingLabel="距離モードを開いています..."
-            >
-              距離モード
-            </ButtonLink>
-          </>
-        }
       />
 
       {hasSessionToken ? (
         <Notice tone="success">
-          すでにサインイン済みです。必要ならこのままホームへ戻って学習を始められます。
+          すでにサインイン済みです。必要ならそのままホームから学習を始められます。
         </Notice>
       ) : null}
 
-      <Surface tone="accent">
-        <SectionHeader title="開始方法" />
-        <LoginControls />
-      </Surface>
+      <LoginControls />
 
       {hasSessionToken ? (
         <Suspense fallback={<LoginAccountLoading />}>
           <LoginCurrentUserSection />
         </Suspense>
       ) : null}
+
+      <Surface>
+        <div className="ui-page-aux-actions">
+          <ButtonLink
+            href="/"
+            variant="ghost"
+            className="ui-header-link"
+            pendingLabel="ホームを開いています..."
+          >
+            ホーム
+          </ButtonLink>
+        </div>
+      </Surface>
     </AppShell>
   );
 }

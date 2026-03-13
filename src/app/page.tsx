@@ -34,42 +34,16 @@ export default async function HomePage() {
         title="ミーコピ"
         eyebrow="Relative Pitch Trainer"
         subtitle="基準音ありの相対音感トレーニングを、短く反復するためのホームです。"
-        actions={
-          <>
-            <ButtonLink
-              href="/settings"
-              variant="ghost"
-              pendingLabel="設定を開いています..."
-            >
-              設定
-            </ButtonLink>
-            <ButtonLink
-              href="/login"
-              variant="ghost"
-              pendingLabel="ログイン画面を開いています..."
-            >
-              {hasSessionToken ? "アカウント" : "ログイン"}
-            </ButtonLink>
-            {hasSessionToken ? (
-              <Suspense fallback={null}>
-                <HomeAccountActions />
-              </Suspense>
-            ) : null}
-          </>
-        }
       />
 
-      <Surface tone="accent">
-        <SectionHeader
-          title="すぐ始める"
-          description="距離モードと鍵盤モードを同じ重みで配置しています。"
-        />
+      <div className="ui-stack-md">
+        <SectionHeader title="すぐ始める" />
         <div className="ui-grid-cards">
           <ModeEntry
             href="/train/distance"
             label="距離モード"
             title="音程名で答える"
-            description="半音距離の理解と反応速度を鍛えるモードです。"
+            description="半音距離と反応速度を短く繰り返し鍛えます。"
             pendingLabel="距離モードを開いています..."
             tone="brand"
           />
@@ -77,12 +51,12 @@ export default async function HomePage() {
             href="/train/keyboard"
             label="鍵盤モード"
             title="鍵盤で答える"
-            description="基準音の位置を見ながら耳コピ寄りに答えるモードです。"
+            description="基準音の位置を見ながら耳コピ寄りに答えます。"
             pendingLabel="鍵盤モードを開いています..."
             tone="teal"
           />
         </div>
-      </Surface>
+      </div>
 
       {hasSessionToken ? (
         <Suspense fallback={<HomeSummaryLoading />}>
@@ -91,6 +65,33 @@ export default async function HomePage() {
       ) : (
         <GuestHomeContent />
       )}
+
+      <Surface>
+        <SectionHeader title="補助操作" />
+        <div className="ui-page-aux-actions">
+          <ButtonLink
+            href="/settings"
+            variant="ghost"
+            className="ui-header-link"
+            pendingLabel="設定を開いています..."
+          >
+            設定
+          </ButtonLink>
+          <ButtonLink
+            href="/login"
+            variant="ghost"
+            className="ui-header-link"
+            pendingLabel="ログイン画面を開いています..."
+          >
+            {hasSessionToken ? "アカウント" : "ログイン"}
+          </ButtonLink>
+          {hasSessionToken ? (
+            <Suspense fallback={null}>
+              <HomeAccountActions />
+            </Suspense>
+          ) : null}
+        </div>
+      </Surface>
     </AppShell>
   );
 }
@@ -188,7 +189,12 @@ async function AuthenticatedHomeContent() {
         <SectionHeader
           title="最近の保存済みセッション"
           actions={
-            <ButtonLink href="/stats" pendingLabel="統計を開いています...">
+            <ButtonLink
+              href="/stats"
+              variant="ghost"
+              className="ui-header-link"
+              pendingLabel="統計を開いています..."
+            >
               統計を見る
             </ButtonLink>
           }
@@ -202,15 +208,17 @@ async function AuthenticatedHomeContent() {
                 pendingLabel="セッション詳細を開いています..."
                 className="ui-list-link--compact"
               >
-                <Chip tone={session.mode === "distance" ? "brand" : "teal"}>
-                  {formatTrainingModeLabel(session.mode)}
-                </Chip>
+                <div className="ui-inline-split">
+                  <Chip tone={session.mode === "distance" ? "brand" : "teal"}>
+                    {formatTrainingModeLabel(session.mode)}
+                  </Chip>
+                  <strong>{formatScoreLabel(session.sessionScore)}</strong>
+                </div>
                 <span className="ui-muted">
-                  スコア {formatScoreLabel(session.sessionScore)} / 正答率{" "}
-                  {formatAccuracyLabel(session.accuracyRate)} / 回答数{" "}
+                  正答率 {formatAccuracyLabel(session.accuracyRate)} / 回答数{" "}
                   {session.answeredQuestionCount}
                 </span>
-                <span className="ui-muted">
+                <span className="ui-mini-note">
                   完了 {formatDateTimeLabel(session.endedAt)}
                 </span>
               </ListLinkCard>
@@ -244,18 +252,6 @@ function GuestHomeContent() {
           detail="過去の成長を見返せます。"
         />
       </SummaryBlock>
-      <div className="ui-nav-row">
-        <ButtonLink
-          href="/login"
-          variant="primary"
-          pendingLabel="ログイン画面を開いています..."
-        >
-          ログインして履歴を残す
-        </ButtonLink>
-        <ButtonLink href="/settings" pendingLabel="設定を開いています...">
-          設定を見る
-        </ButtonLink>
-      </div>
     </Surface>
   );
 }
