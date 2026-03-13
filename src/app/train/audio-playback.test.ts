@@ -5,6 +5,7 @@ const {
   AUDIO_TRANSPOSE_MULTIPLIER,
   AUDIO_TRANSPOSE_SEMITONES,
   getFeedbackEffectFrequency,
+  getQuestionPlaybackDurationMs,
   getPlaybackFrequencyFromMidi,
   transposeFrequency,
 } = await import(new URL("./audio-playback.ts", import.meta.url).href);
@@ -24,6 +25,12 @@ test("playback note frequencies are transposed by one octave", () => {
 test("feedback effect frequencies are also transposed by one octave", () => {
   assert.equal(getFeedbackEffectFrequency(true), 1760);
   assert.equal(getFeedbackEffectFrequency(false), 440);
+});
+
+test("question playback durations match the intended note sequence timing", () => {
+  assert.equal(getQuestionPlaybackDurationMs("base"), 350);
+  assert.equal(getQuestionPlaybackDurationMs("target"), 350);
+  assert.equal(getQuestionPlaybackDurationMs("question"), 840);
 });
 
 test("transposeFrequency only changes playback values, not midi semantics", () => {

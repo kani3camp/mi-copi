@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
+import { shouldStartAnsweringTransition } from "../../../features/training/model/answering-transition";
 import { shouldApplyDeferredTrainingBootstrap } from "../../../features/training/model/bootstrap";
 import {
   clampIntervalMaxSemitone,
@@ -60,6 +61,7 @@ import {
   Surface,
 } from "../../ui/primitives";
 import {
+  getQuestionPlaybackDurationMs,
   type PlaybackKind,
   playFeedbackEffect,
   playQuestionAudio,
@@ -164,6 +166,10 @@ export function DistanceTrainClient({
   const bootstrapRequestedRef = useRef(false);
   const phaseRef = useRef<DistanceTrainPhase>("config");
   const startedAtRef = useRef<string | null>(null);
+  const answeringUnlockTimeoutRef = useRef<ReturnType<
+    typeof globalThis.setTimeout
+  > | null>(null);
+  const answeringHandledNonceRef = useRef<number | null>(null);
   const plannedQuestionCount = getDistanceQuestionCount(config);
   const questionCountOptions =
     getQuestionCountSelectOptions(plannedQuestionCount);
@@ -260,7 +266,44 @@ export function DistanceTrainClient({
     }
 
     playedNonceRef.current = activeQuestion.playNonce;
+    answeringHandledNonceRef.current = null;
     let cancelled = false;
+    const playNonce = activeQuestion.playNonce;
+
+    const unlockAnswering = () => {
+      if (
+        cancelled ||
+        !shouldStartAnsweringTransition({
+          phase: phaseRef.current,
+          activePlayNonce: activeQuestion.playNonce,
+          targetPlayNonce: playNonce,
+          handledPlayNonce: answeringHandledNonceRef.current,
+        })
+      ) {
+        return;
+      }
+
+      answeringHandledNonceRef.current = playNonce;
+      if (answeringUnlockTimeoutRef.current !== null) {
+        globalThis.clearTimeout(answeringUnlockTimeoutRef.current);
+        answeringUnlockTimeoutRef.current = null;
+      }
+      setActiveQuestion((current) =>
+        current && current.playNonce === playNonce
+          ? {
+              ...current,
+              answeringStartedAt:
+                current.answeringStartedAt ?? new Date().toISOString(),
+            }
+          : current,
+      );
+      setPhase((current) => (current === "playing" ? "answering" : current));
+    };
+
+    answeringUnlockTimeoutRef.current = globalThis.setTimeout(
+      unlockAnswering,
+      getQuestionPlaybackDurationMs(activeQuestion.playbackKind),
+    );
 
     void playQuestionAudio(
       activeQuestion.question,
@@ -276,25 +319,14 @@ export function DistanceTrainClient({
           );
         }
       })
-      .finally(() => {
-        if (cancelled) {
-          return;
-        }
-
-        setActiveQuestion((current) =>
-          current
-            ? {
-                ...current,
-                answeringStartedAt:
-                  current.answeringStartedAt ?? new Date().toISOString(),
-              }
-            : current,
-        );
-        setPhase("answering");
-      });
+      .finally(unlockAnswering);
 
     return () => {
       cancelled = true;
+      if (answeringUnlockTimeoutRef.current !== null) {
+        globalThis.clearTimeout(answeringUnlockTimeoutRef.current);
+        answeringUnlockTimeoutRef.current = null;
+      }
     };
   }, [activeQuestion, phase, settings.masterVolume]);
 

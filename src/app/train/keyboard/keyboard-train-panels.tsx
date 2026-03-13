@@ -70,7 +70,11 @@ export const KeyboardQuestionPanel = memo(
         <SectionHeader
           title="音を聴いて鍵盤で答える"
           description="基準音マーカーを見て、問題音の鍵盤を選びます。"
-          actions={<Chip tone="teal">回答中</Chip>}
+          actions={
+            <Chip tone="teal">
+              {props.phase === "playing" ? "再生中" : "回答中"}
+            </Chip>
+          }
         />
         <PlaybackButtonPair
           isPlaybackLocked={isPlaybackLocked}

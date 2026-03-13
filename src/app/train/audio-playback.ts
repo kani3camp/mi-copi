@@ -12,6 +12,18 @@ const NOTE_DURATION_SECONDS = 0.35;
 const FEEDBACK_EFFECT_DURATION_SECONDS = 0.08;
 const QUESTION_NOTE_GAP_MS = 140;
 
+export function getQuestionPlaybackDurationMs(
+  playbackKind: PlaybackKind,
+): number {
+  const noteDurationMs = NOTE_DURATION_SECONDS * 1000;
+
+  if (playbackKind === "question") {
+    return noteDurationMs * 2 + QUESTION_NOTE_GAP_MS;
+  }
+
+  return noteDurationMs;
+}
+
 export async function playQuestionAudio(
   question: Question,
   playbackKind: PlaybackKind,
