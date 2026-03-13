@@ -253,7 +253,10 @@ export function DistanceFeedbackDiagram(props: {
             >
               <div className="ui-distance-diagram__annotation-stack">
                 {annotations
-                  .filter((annotation) => annotation.distance === step.distance)
+                  .filter(
+                    (a) =>
+                      a.distance === step.distance && a.label !== "回答",
+                  )
                   .map((annotation) => (
                     <span
                       key={`${annotation.distance}-${annotation.label}`}
@@ -286,6 +289,22 @@ export function DistanceFeedbackDiagram(props: {
                     />
                   </div>
                 )}
+              </div>
+              <div className="ui-distance-diagram__annotation-stack ui-distance-diagram__annotation-stack--below">
+                {annotations
+                  .filter(
+                    (a) =>
+                      a.distance === step.distance && a.label === "回答",
+                  )
+                  .map((annotation) => (
+                    <span
+                      key={`${annotation.distance}-${annotation.label}`}
+                      className="ui-distance-diagram__annotation"
+                      data-tone={annotation.tone}
+                    >
+                      {annotation.label}
+                    </span>
+                  ))}
               </div>
             </div>
           ))}
