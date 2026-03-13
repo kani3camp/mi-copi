@@ -45,7 +45,7 @@ export default async function HomePage() {
             title="音程名で答える"
             description="半音距離と反応速度を短く繰り返し鍛えます。"
             pendingLabel="距離モードを開いています..."
-            tone="brand"
+            tone="teal"
           />
           <ModeEntry
             href="/train/keyboard"
@@ -53,7 +53,7 @@ export default async function HomePage() {
             title="鍵盤で答える"
             description="基準音の位置を見ながら耳コピ寄りに答えます。"
             pendingLabel="鍵盤モードを開いています..."
-            tone="teal"
+            tone="blue"
           />
         </div>
       </div>
@@ -102,17 +102,25 @@ function ModeEntry(props: {
   title: string;
   description: string;
   pendingLabel: string;
-  tone: "brand" | "teal";
+  tone: "teal" | "blue";
 }) {
   return (
     <ListLinkCard
       href={props.href}
       pendingLabel={props.pendingLabel}
       className="ui-list-link--mode"
+      data-tone={props.tone}
     >
-      <Chip tone={props.tone}>{props.label}</Chip>
+      <div className="ui-mode-entry__header">
+        <Chip tone={props.tone}>{props.label}</Chip>
+        <span className="ui-mode-entry__eyebrow">基準音あり</span>
+      </div>
       <strong>{props.title}</strong>
       <span className="ui-muted">{props.description}</span>
+      <div className="ui-mode-entry__footer">
+        <span className="ui-mode-entry__detail">スマホ縦持ちで短く反復</span>
+        <span className="ui-mode-entry__cta">練習を始める</span>
+      </div>
     </ListLinkCard>
   );
 }
@@ -141,9 +149,9 @@ async function AuthenticatedHomeContent() {
       <Surface>
         <SectionHeader
           title="学習サマリー"
-          actions={<Chip tone="brand">保存済み</Chip>}
+          actions={<Chip tone="blue">保存済みデータ</Chip>}
         />
-        <SummaryBlock>
+        <SummaryBlock className="ui-summary-block--insight">
           <SummaryStat
             label="最終学習日時"
             value={
@@ -157,6 +165,7 @@ async function AuthenticatedHomeContent() {
                 : "モード未記録"
             }
             emphasis="primary"
+            className="ui-summary-stat--brand"
           />
           <SummaryStat
             label="最近の平均誤差"
@@ -165,6 +174,8 @@ async function AuthenticatedHomeContent() {
                 ? "-"
                 : formatAvgErrorLabel(summary.recentAverageError)
             }
+            detail="ズレの平均"
+            className="ui-summary-stat--coral"
           />
           <SummaryStat
             label="最近の平均回答時間"
@@ -173,6 +184,8 @@ async function AuthenticatedHomeContent() {
                 ? "-"
                 : formatResponseTimeMsLabel(summary.recentAverageResponseTimeMs)
             }
+            detail="反応速度"
+            className="ui-summary-stat--blue"
           />
           <SummaryStat
             label="最近のセッションスコア"
@@ -181,6 +194,8 @@ async function AuthenticatedHomeContent() {
                 ? "-"
                 : formatScoreLabel(summary.latestSessionScore)
             }
+            detail="直近の手応え"
+            className="ui-summary-stat--teal"
           />
         </SummaryBlock>
       </Surface>
@@ -206,10 +221,10 @@ async function AuthenticatedHomeContent() {
                 key={session.id}
                 href={`/sessions/${session.id}`}
                 pendingLabel="セッション詳細を開いています..."
-                className="ui-list-link--compact"
+                className="ui-list-link--compact ui-list-link--session"
               >
                 <div className="ui-inline-split">
-                  <Chip tone={session.mode === "distance" ? "brand" : "teal"}>
+                  <Chip tone={session.mode === "distance" ? "teal" : "blue"}>
                     {formatTrainingModeLabel(session.mode)}
                   </Chip>
                   <strong>{formatScoreLabel(session.sessionScore)}</strong>
@@ -245,11 +260,13 @@ function GuestHomeContent() {
           value="距離モード / 鍵盤モード"
           detail="結果はその場で確認できます。"
           emphasis="primary"
+          className="ui-summary-stat--teal"
         />
         <SummaryStat
           label="ログイン後に増えること"
           value="保存 / 統計 / 同期"
           detail="過去の成長を見返せます。"
+          className="ui-summary-stat--blue"
         />
       </SummaryBlock>
     </Surface>

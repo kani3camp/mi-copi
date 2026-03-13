@@ -332,7 +332,7 @@ export default async function StatsPage() {
           </Surface>
         </>
       ) : (
-        <Notice>
+        <Notice tone="warning">
           保存済みの学習統計を見るにはログインしてください。ゲストのセッションは保存されません。
         </Notice>
       )}

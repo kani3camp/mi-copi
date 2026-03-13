@@ -142,7 +142,10 @@ export default async function SettingsPage({
         {data.isAuthenticated ? (
           <>
             <Surface>
-              <SectionHeader title="保存済みの前回設定" />
+              <SectionHeader
+                title="保存済みの前回設定"
+                description="mode ごとの前回設定を、フラットな行で確認できます。"
+              />
               <div className="ui-settings-snapshot">
                 <ConfigSnapshotGroup
                   title="距離モード"
@@ -158,18 +161,28 @@ export default async function SettingsPage({
             </Surface>
 
             <Surface>
-              <SectionHeader title="アカウント概要" />
-              <SummaryBlock>
+              <SectionHeader
+                title="アカウント概要"
+                description="クラウド保存に使うアカウント状態です。"
+              />
+              <SummaryBlock className="ui-summary-block--insight ui-settings-account-summary">
                 <SummaryStat
                   label="名前"
                   value={data.user?.name ?? "不明"}
                   emphasis="primary"
+                  className="ui-summary-stat--brand"
                 />
                 <SummaryStat
                   label="メールアドレス"
                   value={data.user?.email ?? "不明"}
+                  className="ui-summary-stat--blue"
                 />
-                <SummaryStat label="ログイン状態" value="サインイン中" />
+                <SummaryStat
+                  label="ログイン状態"
+                  value="サインイン中"
+                  detail="設定と結果をクラウド保存します。"
+                  className="ui-summary-stat--teal"
+                />
                 <SummaryStat
                   label="最終更新"
                   value={
@@ -177,6 +190,8 @@ export default async function SettingsPage({
                       ? formatDateTimeLabel(data.updatedAt)
                       : "まだ保存されていません"
                   }
+                  detail="設定のクラウド反映時刻"
+                  className="ui-summary-stat--blue"
                 />
               </SummaryBlock>
             </Surface>
@@ -184,9 +199,9 @@ export default async function SettingsPage({
         ) : (
           <Surface>
             <SectionHeader title="保存済み設定" />
-            <p className="ui-subtitle">
+            <Notice tone="warning">
               ゲスト利用中です。保存済み設定はログイン後に利用できるようになります。
-            </p>
+            </Notice>
           </Surface>
         )}
       </AppShell>
@@ -199,11 +214,16 @@ function ConfigSnapshotGroup(props: {
   config: TrainingConfigSnapshot | null;
   resetAction: () => Promise<void>;
 }) {
+  const tone = props.title === "距離モード" ? "teal" : "blue";
+
   return (
     <div className="ui-settings-snapshot__group">
       <div className="ui-settings-snapshot__title">
         <div className="ui-compact-actions">
           <strong>{props.title}</strong>
+          <Chip tone={tone}>
+            {props.title === "距離モード" ? "回答比較" : "鍵盤入力"}
+          </Chip>
           <Chip tone="amber">保存済み</Chip>
         </div>
         <form action={props.resetAction}>

@@ -1,7 +1,7 @@
 import { cn } from "./cn";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
-export type NoticeTone = "info" | "success" | "error";
+export type NoticeTone = "info" | "warning" | "success" | "error";
 export type ChipTone =
   | "neutral"
   | "brand"

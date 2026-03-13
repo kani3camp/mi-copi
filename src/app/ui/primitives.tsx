@@ -161,7 +161,7 @@ export function Button(
 
 export function Notice(
   props: PropsWithChildren<{
-    tone?: "info" | "success" | "error";
+    tone?: "info" | "warning" | "success" | "error";
     className?: string;
   }>,
 ) {

@@ -224,7 +224,9 @@ export function TrainingResultPersistenceSection(props: {
   if (!props.isAuthenticated) {
     return (
       <div className="ui-stack-md">
-        <Notice>ゲスト利用のため、この結果は保存されません。</Notice>
+        <Notice tone="warning">
+          ゲスト利用のため、この結果は保存されません。
+        </Notice>
         <p className="ui-subtitle">
           ログインすると、次回以降のセッションから結果保存と統計を使えます。この結果は後から保存されません。
         </p>

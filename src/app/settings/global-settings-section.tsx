@@ -1,7 +1,6 @@
 "use client";
 
 import { useGlobalUserSettings } from "../../features/settings/client/global-user-settings-provider";
-import { formatDateTimeLabel } from "../../features/training/model/format";
 import {
   Button,
   Field,
@@ -101,18 +100,18 @@ export function GlobalSettingsSection() {
             </div>
           </Notice>
         ) : saveState.status === "saving" ? (
-          <Notice>最新の設定を保存しています...</Notice>
+          <Notice tone="info">最新の設定をクラウドへ保存しています...</Notice>
         ) : (
-          <p className="ui-mini-note">
+          <Notice tone="info">
             {saveState.updatedAt
-              ? `${formatDateTimeLabel(saveState.updatedAt)} にクラウドへ保存しました。`
+              ? "最新の設定はクラウドへ保存済みです。"
               : "クラウド設定を保存する準備ができています。"}
-          </p>
+          </Notice>
         )
       ) : (
-        <p className="ui-mini-note">
+        <Notice tone="warning">
           ゲストでは、これらの設定はこのブラウザにのみ保存されます。
-        </p>
+        </Notice>
       )}
     </Surface>
   );
