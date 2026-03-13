@@ -24,7 +24,7 @@ import {
   SummaryBlock,
   SummaryStat,
   Surface,
-  TrainingModeChip,
+  TrainingModeLabel,
 } from "../ui/primitives";
 
 export default async function StatsPage() {
@@ -320,13 +320,7 @@ export default async function StatsPage() {
                     className="ui-list-link--compact ui-list-link--session"
                   >
                     <div className="ui-list-link__split">
-                      <strong>{formatSecondaryModeLabel(session.mode)}</strong>
-                      <TrainingModeChip
-                        mode={session.mode}
-                        label={
-                          session.mode === "distance" ? "回答比較" : "鍵盤回答"
-                        }
-                      />
+                      <TrainingModeLabel mode={session.mode} />
                     </div>
                     <span className="ui-muted">
                       スコア {formatScoreLabel(session.sessionScore)} / 問題数{" "}
@@ -379,10 +373,6 @@ function ComparisonPanel(props: {
       </dl>
     </section>
   );
-}
-
-function formatSecondaryModeLabel(value: "distance" | "keyboard"): string {
-  return value === "distance" ? "距離モード" : "鍵盤モード";
 }
 
 function getComparisonChipLabel(

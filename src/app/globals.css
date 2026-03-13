@@ -396,6 +396,23 @@ a {
   box-shadow: none;
 }
 
+.ui-mode-label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 1em;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.ui-mode-label--teal {
+  color: var(--accent-teal);
+}
+
+.ui-mode-label--blue {
+  color: var(--accent-blue);
+}
+
 .ui-notice {
   display: grid;
   gap: var(--space-2);

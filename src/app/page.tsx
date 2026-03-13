@@ -17,7 +17,6 @@ import { HomeSignOutButton } from "./home-sign-out-button";
 import { ButtonLink, ListLinkCard } from "./ui/navigation-link";
 import {
   AppShell,
-  Chip,
   PageHeader,
   SectionHeader,
   SummaryBlock,
@@ -149,10 +148,7 @@ async function AuthenticatedHomeContent() {
   return (
     <>
       <Surface>
-        <SectionHeader
-          title="学習サマリー"
-          actions={<Chip tone="blue">保存済みデータ</Chip>}
-        />
+        <SectionHeader title="学習サマリー" />
         <SummaryBlock className="ui-summary-block--insight">
           <SummaryStat
             label="最終学習日時"

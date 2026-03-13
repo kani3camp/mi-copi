@@ -4,7 +4,10 @@ import type {
   ReactNode,
 } from "react";
 
-import { formatTrainingModeLabel } from "../../features/training/model/format";
+import {
+  formatTrainingModeLabel,
+  getTrainingModeTone,
+} from "../../features/training/model/format";
 import type { TrainingMode } from "../../features/training/model/types";
 import { cn } from "./cn";
 import {
@@ -215,12 +218,27 @@ export function TrainingModeChip(props: {
   label?: ReactNode;
   className?: string;
 }) {
-  const tone = props.mode === "distance" ? "teal" : "blue";
+  const tone = getTrainingModeTone(props.mode);
 
   return (
     <span className={chipClassName(tone, cn("ui-chip--mode", props.className))}>
       {props.label ?? formatTrainingModeLabel(props.mode)}
     </span>
+  );
+}
+
+export function TrainingModeLabel(props: {
+  mode: TrainingMode;
+  className?: string;
+}) {
+  const tone = getTrainingModeTone(props.mode);
+
+  return (
+    <strong
+      className={cn("ui-mode-label", `ui-mode-label--${tone}`, props.className)}
+    >
+      {formatTrainingModeLabel(props.mode)}
+    </strong>
   );
 }
 

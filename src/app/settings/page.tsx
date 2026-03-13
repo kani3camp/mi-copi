@@ -21,7 +21,7 @@ import {
   SummaryBlock,
   SummaryStat,
   Surface,
-  TrainingModeChip,
+  TrainingModeLabel,
 } from "../ui/primitives";
 import { GlobalSettingsSection } from "./global-settings-section";
 import { ResetConfigSubmitButton } from "./reset-config-submit-button";
@@ -150,13 +150,11 @@ export default async function SettingsPage({
               <div className="ui-settings-snapshot">
                 <ConfigSnapshotGroup
                   mode="distance"
-                  title="距離モード"
                   config={data.lastDistanceConfig}
                   resetAction={resetDistanceAction}
                 />
                 <ConfigSnapshotGroup
                   mode="keyboard"
-                  title="鍵盤モード"
                   config={data.lastKeyboardConfig}
                   resetAction={resetKeyboardAction}
                 />
@@ -214,7 +212,6 @@ export default async function SettingsPage({
 
 function ConfigSnapshotGroup(props: {
   mode: "distance" | "keyboard";
-  title: string;
   config: TrainingConfigSnapshot | null;
   resetAction: () => Promise<void>;
 }) {
@@ -222,11 +219,7 @@ function ConfigSnapshotGroup(props: {
     <div className="ui-settings-snapshot__group">
       <div className="ui-settings-snapshot__title">
         <div className="ui-compact-actions">
-          <strong>{props.title}</strong>
-          <TrainingModeChip
-            mode={props.mode}
-            label={props.title === "距離モード" ? "回答比較" : "鍵盤入力"}
-          />
+          <TrainingModeLabel mode={props.mode} />
           <Chip tone="amber">保存済み</Chip>
         </div>
         <form action={props.resetAction}>
@@ -238,7 +231,7 @@ function ConfigSnapshotGroup(props: {
         <div className="ui-settings-snapshot__rows">
           {getSnapshotRows(props.config).map((row) => (
             <div
-              key={`${props.title}-${row.label}`}
+              key={`${props.mode}-${row.label}`}
               className="ui-settings-snapshot__row"
             >
               <span className="ui-settings-snapshot__label">{row.label}</span>
@@ -248,7 +241,8 @@ function ConfigSnapshotGroup(props: {
         </div>
       ) : (
         <p className="ui-subtitle">
-          {props.title}の保存済み設定はまだありません。
+          <TrainingModeLabel mode={props.mode} className="ui-mode-label" />
+          の保存済み設定はまだありません。
         </p>
       )}
     </div>
