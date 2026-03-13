@@ -1754,13 +1754,13 @@ a {
 }
 
 .ui-distance-diagram__arrow[data-direction="forward"]::after {
-  right: 0;
+  right: -8px;
   border-width: 3px 0 3px 6px;
   border-color: transparent transparent transparent currentColor;
 }
 
 .ui-distance-diagram__arrow[data-direction="backward"]::after {
-  left: 0;
+  left: -8px;
   border-width: 3px 6px 3px 0;
   border-color: transparent currentColor transparent transparent;
 }
@@ -1783,7 +1783,8 @@ a {
 .ui-distance-diagram__arrow-line {
   fill: none;
   stroke-width: 2.5;
-  stroke-linecap: round;
+  stroke-linecap: butt;
+  stroke-dasharray: none;
 }
 
 .ui-distance-diagram__arrow-line[data-tone="success"] {
@@ -1821,15 +1822,21 @@ a {
   align-items: center;
   justify-content: center;
   min-height: 20px;
-  padding: 0 6px;
+  padding: 4px 6px;
   border-radius: var(--radius-pill);
   font-size: 10px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: 0.02em;
-  white-space: nowrap;
   position: relative;
   z-index: 10;
+}
+
+.ui-distance-diagram__annotation-text {
+  display: inline-block;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  white-space: nowrap;
 }
 
 .ui-distance-diagram__annotation[data-tone="success"] {

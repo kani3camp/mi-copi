@@ -213,34 +213,43 @@ export function DistanceFeedbackDiagram(props: {
             }}
             aria-hidden="true"
           >
-            {arrows.map((arrow) => (
-              <div
-                key={`${arrow.tone}-${arrow.lane}-${arrow.columnStart}-${arrow.columnEnd}`}
-                className="ui-distance-diagram__arrow"
-                data-tone={arrow.tone}
-                data-direction={arrow.direction}
-                data-lane={arrow.lane}
-                style={{
-                  gridColumn: `${arrow.columnStart} / ${arrow.columnEnd}`,
-                }}
-              >
-                <svg
-                  viewBox="0 0 100 12"
-                  preserveAspectRatio="none"
-                  className="ui-distance-diagram__arrow-svg"
-                  aria-hidden="true"
+            {arrows.map((arrow) => {
+              const spanColumns = arrow.columnEnd - arrow.columnStart;
+              /* 根元を基準の丸に接するよう、線を基準列内まで伸ばして丸と重なるようにする */
+              const halfOffset = spanColumns > 0 ? 10 / spanColumns : 0;
+              const xStart =
+                arrow.direction === "forward" ? halfOffset : 100;
+              const xEnd =
+                arrow.direction === "forward" ? 100 : 100 - halfOffset;
+              return (
+                <div
+                  key={`${arrow.tone}-${arrow.lane}-${arrow.columnStart}-${arrow.columnEnd}`}
+                  className="ui-distance-diagram__arrow"
+                  data-tone={arrow.tone}
+                  data-direction={arrow.direction}
+                  data-lane={arrow.lane}
+                  style={{
+                    gridColumn: `${arrow.columnStart} / ${arrow.columnEnd}`,
+                  }}
                 >
-                  <line
-                    x1={arrow.direction === "forward" ? "0" : "100"}
-                    y1="6"
-                    x2={arrow.direction === "forward" ? "100" : "0"}
-                    y2="6"
-                    className="ui-distance-diagram__arrow-line"
-                    data-tone={arrow.tone}
-                  />
-                </svg>
-              </div>
-            ))}
+                  <svg
+                    viewBox="0 0 100 12"
+                    preserveAspectRatio="none"
+                    className="ui-distance-diagram__arrow-svg"
+                    aria-hidden="true"
+                  >
+                    <line
+                      x1={String(xStart)}
+                      y1="6"
+                      x2={String(xEnd)}
+                      y2="6"
+                      className="ui-distance-diagram__arrow-line"
+                      data-tone={arrow.tone}
+                    />
+                  </svg>
+                </div>
+              );
+            })}
           </div>
           {steps.map((step) => (
             <div
@@ -263,7 +272,9 @@ export function DistanceFeedbackDiagram(props: {
                       className="ui-distance-diagram__annotation"
                       data-tone={annotation.tone}
                     >
-                      {annotation.label}
+                      <span className="ui-distance-diagram__annotation-text">
+                        {annotation.label}
+                      </span>
                     </span>
                   ))}
               </div>
@@ -302,7 +313,9 @@ export function DistanceFeedbackDiagram(props: {
                       className="ui-distance-diagram__annotation"
                       data-tone={annotation.tone}
                     >
-                      {annotation.label}
+                      <span className="ui-distance-diagram__annotation-text">
+                        {annotation.label}
+                      </span>
                     </span>
                   ))}
               </div>
