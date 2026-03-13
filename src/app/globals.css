@@ -1557,14 +1557,15 @@ a {
 }
 
 .ui-distance-diagram__annotation[data-tone="success"] {
-  background: #d6ff72;
-  color: #214800;
+  background: #d8f39a;
+  color: #193122;
+  border: 1px solid rgba(110, 160, 32, 0.18);
 }
 
 .ui-distance-diagram__annotation[data-tone="teal"] {
-  background: #c7f0f4;
-  color: #0f6f78;
-  border: 1px solid rgba(15, 111, 120, 0.18);
+  background: #cdebf0;
+  color: #193122;
+  border: 1px solid rgba(42, 143, 153, 0.18);
 }
 
 .ui-distance-diagram__track {
@@ -1591,9 +1592,9 @@ a {
 }
 
 .ui-distance-diagram__marker[data-tone="success"] {
-  background: #8df500;
-  border-color: #8df500;
-  box-shadow: 0 0 0 4px rgba(141, 245, 0, 0.18);
+  background: #9cdd2b;
+  border-color: #9cdd2b;
+  box-shadow: 0 0 0 4px rgba(156, 221, 43, 0.16);
 }
 
 .ui-distance-diagram__marker[data-tone="teal"] {
