@@ -13,6 +13,8 @@
   --brand-strong: #4c7754;
   --brand-soft: #e2eee3;
   --brand-soft-hover: #d6e7d8;
+  --brand-secondary: #9fc9a6;
+  --brand-secondary-hover: #8fc098;
   --accent-teal: #4f8e8a;
   --accent-teal-soft: #dceeee;
   --accent-amber: #c7923f;
@@ -497,18 +499,21 @@ a {
 }
 
 .ui-button--secondary {
-  background: var(--surface-elevated);
-  color: var(--text-primary);
+  background: transparent;
+  color: var(--brand-primary);
+  border: 2px solid var(--brand-primary);
   box-shadow:
-    0 8px 18px rgba(24, 32, 27, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    0 10px 22px rgba(24, 32, 27, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .ui-button--secondary:hover {
-  background: rgba(255, 255, 255, 1);
+  background: var(--brand-soft);
+  border-color: var(--brand-strong);
+  color: var(--brand-strong);
   box-shadow:
-    0 10px 20px rgba(24, 32, 27, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    0 12px 24px rgba(24, 32, 27, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .ui-button--ghost {

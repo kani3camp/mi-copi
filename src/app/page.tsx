@@ -120,7 +120,7 @@ function ModeEntry(props: {
         <ButtonLink
           href={props.href}
           pendingLabel={props.pendingLabel}
-          variant="secondary"
+          variant="primary"
           block
         >
           練習を始める
