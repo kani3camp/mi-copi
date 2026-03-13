@@ -180,7 +180,7 @@ export function DistanceFeedbackDiagram(props: {
       className="ui-distance-diagram"
       data-direction={props.direction}
       role="img"
-      aria-label={`距離フィードバック: ${
+      aria-label={`距離フィードバック: 0 が基準音、${
         props.direction === "down" ? "下方向" : "上方向"
       }`}
     >
@@ -198,7 +198,7 @@ export function DistanceFeedbackDiagram(props: {
       </div>
       <div className="ui-distance-diagram__legend">
         <span className="ui-distance-diagram__legend-item" data-tone="neutral">
-          基準音
+          0 = 基準音
         </span>
         <span className="ui-distance-diagram__legend-item" data-tone="brand">
           正解

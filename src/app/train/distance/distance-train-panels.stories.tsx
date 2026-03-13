@@ -157,9 +157,9 @@ export const FeedbackIncorrectDownward: Story = {
     const canvas = within(canvasElement);
 
     await expect(
-      canvas.getByLabelText("距離フィードバック: 下方向"),
+      canvas.getByLabelText("距離フィードバック: 0 が基準音、下方向"),
     ).toBeVisible();
-    await expect(canvas.queryByText("上部マーカー=基準音")).toBeNull();
+    await expect(canvas.getByText("0 = 基準音")).toBeVisible();
   },
 };
 
