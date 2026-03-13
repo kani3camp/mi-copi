@@ -8,6 +8,7 @@ import type { SaveTrainingSessionResult } from "../../features/training/server/s
 import { ButtonLink } from "../ui/navigation-link";
 import { Button, Chip, Notice } from "../ui/primitives";
 import { buildDistanceFeedbackDiagramAnnotations } from "./distance-feedback-annotations";
+import { buildDistanceFeedbackDiagramArrows } from "./distance-feedback-arrows";
 import { buildDistanceFeedbackDiagramSteps } from "./distance-feedback-diagram";
 import { getDistanceFeedbackStatus } from "./distance-feedback-status";
 
@@ -163,6 +164,19 @@ export function DistanceFeedbackDiagram(props: {
     correctSemitones: props.correctSemitones,
     answeredSemitones: props.answeredSemitones,
   });
+  const baseIndex = steps.findIndex((step) => step.distance === 0);
+  const correctIndex = steps.findIndex(
+    (step) => step.distance === Math.abs(props.correctSemitones),
+  );
+  const answeredIndex = steps.findIndex(
+    (step) => step.distance === Math.abs(props.answeredSemitones),
+  );
+  const arrows = buildDistanceFeedbackDiagramArrows({
+    stepCount: steps.length,
+    correctIndex,
+    answeredIndex,
+    baseIndex,
+  });
 
   return (
     <div
@@ -174,6 +188,54 @@ export function DistanceFeedbackDiagram(props: {
       }`}
     >
       <div className="ui-distance-diagram__scale">
+        <div
+          className="ui-distance-diagram__arrow-layer"
+          style={{
+            gridTemplateColumns: `repeat(${steps.length}, minmax(24px, 1fr))`,
+          }}
+          aria-hidden="true"
+        >
+          {arrows.map((arrow) => (
+            <div
+              key={`${arrow.tone}-${arrow.lane}-${arrow.columnStart}-${arrow.columnEnd}`}
+              className="ui-distance-diagram__arrow"
+              data-tone={arrow.tone}
+              data-lane={arrow.lane}
+              style={{
+                gridColumn: `${arrow.columnStart} / ${arrow.columnEnd}`,
+              }}
+            >
+              <svg
+                viewBox="0 0 100 12"
+                preserveAspectRatio="none"
+                className="ui-distance-diagram__arrow-svg"
+                aria-hidden="true"
+              >
+                <defs>
+                  <marker
+                    id={`distance-arrowhead-${arrow.tone}`}
+                    markerWidth="8"
+                    markerHeight="8"
+                    refX="6"
+                    refY="4"
+                    orient="auto"
+                  >
+                    <path d="M0,0 L8,4 L0,8 Z" />
+                  </marker>
+                </defs>
+                <line
+                  x1={arrow.direction === "forward" ? "2" : "98"}
+                  y1="6"
+                  x2={arrow.direction === "forward" ? "98" : "2"}
+                  y2="6"
+                  className="ui-distance-diagram__arrow-line"
+                  data-tone={arrow.tone}
+                  markerEnd={`url(#distance-arrowhead-${arrow.tone})`}
+                />
+              </svg>
+            </div>
+          ))}
+        </div>
         {steps.map((step) => (
           <div key={step.distance} className="ui-distance-diagram__step">
             <div className="ui-distance-diagram__annotation-stack">
@@ -189,6 +251,10 @@ export function DistanceFeedbackDiagram(props: {
                   </span>
                 ))}
             </div>
+            <div
+              className="ui-distance-diagram__arrow-spacer"
+              aria-hidden="true"
+            />
             <div className="ui-distance-diagram__track" />
             <div
               className="ui-distance-diagram__marker"

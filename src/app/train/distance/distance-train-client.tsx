@@ -25,6 +25,7 @@ import {
   getDistanceQuestionCount,
   validateDistanceTrainingConfig,
 } from "../../../features/training/model/distance-guest";
+import { getTrainingModeTone } from "../../../features/training/model/format";
 import {
   formatDirectionModeLabel,
   getIntervalLabel,
@@ -697,7 +698,7 @@ export function DistanceTrainClient({
     <AppShell narrow className="ui-train-shell">
       <TrainingProgressHeader
         modeLabel="距離モード"
-        modeTone="brand"
+        modeTone={getTrainingModeTone("distance")}
         questionLabel={getDistanceHeaderLabel(
           phase,
           activeQuestion,
@@ -1094,7 +1095,7 @@ function getDistanceHeaderLabel(
     return `${activeQuestion.question.questionIndex + 1} / ${plannedQuestionCount}`;
   }
 
-  return phase === "config" ? "設定" : formatPhaseLabel(phase);
+  return phase === "config" ? undefined : formatPhaseLabel(phase);
 }
 
 function getDistanceHeaderMeta(props: {

@@ -4,6 +4,8 @@ import type {
   ReactNode,
 } from "react";
 
+import { formatTrainingModeLabel } from "../../features/training/model/format";
+import type { TrainingMode } from "../../features/training/model/types";
 import { cn } from "./cn";
 import {
   type ButtonSize,
@@ -204,6 +206,20 @@ export function Chip(
   return (
     <span className={chipClassName(props.tone, props.className)}>
       {props.children}
+    </span>
+  );
+}
+
+export function TrainingModeChip(props: {
+  mode: TrainingMode;
+  label?: ReactNode;
+  className?: string;
+}) {
+  const tone = props.mode === "distance" ? "teal" : "blue";
+
+  return (
+    <span className={chipClassName(tone, cn("ui-chip--mode", props.className))}>
+      {props.label ?? formatTrainingModeLabel(props.mode)}
     </span>
   );
 }

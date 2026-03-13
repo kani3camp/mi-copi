@@ -6,7 +6,7 @@
   --surface-soft: rgba(251, 252, 250, 0.88);
   --border-subtle: #d8e1d8;
   --border-strong: #b9c7bb;
-  --text-primary: #18201b;
+  --text-primary: #27322c;
   --text-secondary: #5a655e;
   --text-tertiary: #7b867f;
   --brand-primary: #5f8f66;
@@ -311,6 +311,23 @@ a {
   letter-spacing: 0.04em;
 }
 
+.ui-chip--mode {
+  position: relative;
+  gap: 8px;
+  font-weight: 800;
+  border-width: 1.5px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.ui-chip--mode::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 .ui-chip--neutral {
   background: var(--bg-subtle);
   border-color: rgba(123, 134, 127, 0.16);
@@ -335,6 +352,18 @@ a {
   color: var(--accent-teal);
 }
 
+.ui-chip--mode.ui-chip--teal {
+  background: #4f8e8a;
+  border-color: #4f8e8a;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(79, 142, 138, 0.18);
+}
+
+.ui-chip--mode.ui-chip--teal::before {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: none;
+}
+
 .ui-chip--amber,
 .ui-chip--warning {
   background: rgba(247, 236, 217, 0.92);
@@ -353,6 +382,18 @@ a {
   background: rgba(227, 235, 248, 0.92);
   border-color: rgba(95, 130, 180, 0.24);
   color: var(--accent-blue);
+}
+
+.ui-chip--mode.ui-chip--blue {
+  background: #5f82b4;
+  border-color: #5f82b4;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(95, 130, 180, 0.18);
+}
+
+.ui-chip--mode.ui-chip--blue::before {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: none;
 }
 
 .ui-notice {
@@ -680,40 +721,49 @@ a {
 .ui-list-link--mode {
   gap: var(--space-3);
   padding: var(--space-5);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(123, 134, 127, 0.2);
   border-radius: var(--radius-card);
   background: var(--surface-elevated);
-  box-shadow: var(--shadow-card);
+  box-shadow:
+    0 10px 24px rgba(24, 32, 27, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition:
+    transform var(--motion-fast) var(--motion-easing),
+    box-shadow var(--motion-base) var(--motion-easing),
+    border-color var(--motion-base) var(--motion-easing),
+    background-color var(--motion-base) var(--motion-easing);
 }
 
 .ui-list-link--mode[data-tone="brand"] {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.92) 0%,
-      rgba(226, 238, 227, 0.62) 100%
-    ),
-    var(--surface-elevated);
+  background: #f6faf6;
+  border-color: rgba(95, 143, 102, 0.22);
 }
 
 .ui-list-link--mode[data-tone="teal"] {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.92) 0%,
-      rgba(220, 238, 238, 0.62) 100%
-    ),
-    var(--surface-elevated);
+  background: #f4f8f8;
+  border-color: rgba(79, 142, 138, 0.24);
 }
 
 .ui-list-link--mode[data-tone="blue"] {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.92) 0%,
-      rgba(227, 235, 248, 0.68) 100%
-    ),
-    var(--surface-elevated);
+  background: #f4f7fb;
+  border-color: rgba(95, 130, 180, 0.24);
+}
+
+.ui-list-link--mode:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 30px rgba(24, 32, 27, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.ui-list-link--mode[data-tone="teal"]:hover {
+  border-color: rgba(79, 142, 138, 0.34);
+  background: #eef6f6;
+}
+
+.ui-list-link--mode[data-tone="blue"]:hover {
+  border-color: rgba(95, 130, 180, 0.34);
+  background: #edf3fb;
 }
 
 .ui-list-link--compact {
@@ -741,22 +791,10 @@ a {
   flex-wrap: wrap;
 }
 
-.ui-mode-entry__eyebrow {
-  color: var(--text-tertiary);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
 .ui-mode-entry__cta {
   color: var(--brand-strong);
   font-size: 14px;
   font-weight: 800;
-}
-
-.ui-mode-entry__detail {
-  color: var(--text-secondary);
-  font-size: 13px;
 }
 
 .ui-list-link--utility {
@@ -859,7 +897,7 @@ a {
 
 .ui-graph-card {
   gap: var(--space-3);
-  padding: var(--space-4) 0;
+  padding: var(--space-4);
   border-top: 1px solid rgba(95, 130, 180, 0.14);
   border-bottom: 1px solid rgba(95, 130, 180, 0.14);
   background: transparent;
@@ -1022,6 +1060,10 @@ a {
   gap: var(--space-3);
 }
 
+.ui-chart-card {
+  padding-top: var(--space-2);
+}
+
 .ui-stats-summary-meta {
   margin-top: var(--space-1);
 }
@@ -1065,6 +1107,7 @@ a {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
   gap: var(--space-3);
+  padding-top: var(--space-2);
 }
 
 .ui-line-chart__axis,
@@ -1214,6 +1257,7 @@ a {
 
 .ui-chart-label-row__item {
   white-space: nowrap;
+  padding-top: var(--space-1);
 }
 
 .ui-chart-count-card {
@@ -1516,6 +1560,7 @@ a {
 }
 
 .ui-distance-diagram__scale {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(24px, 1fr));
   gap: 8px;
@@ -1526,7 +1571,65 @@ a {
   display: grid;
   gap: 8px;
   justify-items: center;
-  grid-template-rows: minmax(44px, auto) 4px 18px auto;
+  grid-template-rows: minmax(44px, auto) 28px 4px 18px auto;
+}
+
+.ui-distance-diagram__arrow-layer {
+  position: absolute;
+  inset: 48px 0 auto;
+  display: grid;
+  gap: 8px;
+  height: 28px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ui-distance-diagram__arrow {
+  grid-row: 1;
+  height: 12px;
+}
+
+.ui-distance-diagram__arrow[data-lane="upper"] {
+  margin-top: 0;
+}
+
+.ui-distance-diagram__arrow[data-lane="lower"] {
+  margin-top: 14px;
+}
+
+.ui-distance-diagram__arrow-svg {
+  display: block;
+  width: 100%;
+  height: 12px;
+  overflow: visible;
+}
+
+.ui-distance-diagram__arrow-line {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.ui-distance-diagram__arrow-line[data-tone="success"] {
+  stroke: #9cdd2b;
+}
+
+.ui-distance-diagram__arrow-svg marker[id="distance-arrowhead-success"] path {
+  fill: #9cdd2b;
+}
+
+.ui-distance-diagram__arrow-line[data-tone="teal"] {
+  stroke: #2a8f99;
+  stroke-dasharray: 7 5;
+}
+
+.ui-distance-diagram__arrow-svg marker[id="distance-arrowhead-teal"] path {
+  fill: #2a8f99;
+}
+
+.ui-distance-diagram__arrow-spacer {
+  width: 100%;
+  height: 28px;
 }
 
 .ui-distance-diagram__annotation-stack {
@@ -1568,6 +1671,8 @@ a {
   height: 4px;
   border-radius: var(--radius-pill);
   background: var(--border-subtle);
+  position: relative;
+  z-index: 1;
 }
 
 .ui-distance-diagram__marker {
@@ -1576,6 +1681,8 @@ a {
   border-radius: 50%;
   border: 2px solid transparent;
   background: var(--surface-elevated);
+  position: relative;
+  z-index: 1;
 }
 
 .ui-distance-diagram__marker[data-tone="idle"] {

@@ -23,6 +23,7 @@ import {
   SummaryBlock,
   SummaryStat,
   Surface,
+  TrainingModeChip,
 } from "./ui/primitives";
 
 export default async function HomePage() {
@@ -32,7 +33,7 @@ export default async function HomePage() {
     <AppShell>
       <PageHeader
         title="ミーコピ"
-        eyebrow="Relative Pitch Trainer"
+        eyebrow="相対音感トレーニング"
         subtitle="基準音ありの相対音感トレーニングを、短く反復するためのホームです。"
       />
 
@@ -67,7 +68,7 @@ export default async function HomePage() {
       )}
 
       <Surface>
-        <SectionHeader title="補助操作" />
+        <SectionHeader title="メニュー" />
         <div className="ui-page-aux-actions">
           <ButtonLink
             href="/settings"
@@ -112,13 +113,14 @@ function ModeEntry(props: {
       data-tone={props.tone}
     >
       <div className="ui-mode-entry__header">
-        <Chip tone={props.tone}>{props.label}</Chip>
-        <span className="ui-mode-entry__eyebrow">基準音あり</span>
+        <TrainingModeChip
+          mode={props.tone === "teal" ? "distance" : "keyboard"}
+          label={props.label}
+        />
       </div>
       <strong>{props.title}</strong>
       <span className="ui-muted">{props.description}</span>
       <div className="ui-mode-entry__footer">
-        <span className="ui-mode-entry__detail">スマホ縦持ちで短く反復</span>
         <span className="ui-mode-entry__cta">練習を始める</span>
       </div>
     </ListLinkCard>
@@ -224,9 +226,7 @@ async function AuthenticatedHomeContent() {
                 className="ui-list-link--compact ui-list-link--session"
               >
                 <div className="ui-inline-split">
-                  <Chip tone={session.mode === "distance" ? "teal" : "blue"}>
-                    {formatTrainingModeLabel(session.mode)}
-                  </Chip>
+                  <TrainingModeChip mode={session.mode} />
                   <strong>{formatScoreLabel(session.sessionScore)}</strong>
                 </div>
                 <span className="ui-muted">

@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 
+import type { TrainingModeTone } from "../../features/training/model/format";
 import { Chip } from "../ui/primitives";
 
 export function TrainingProgressHeader(props: {
   modeLabel: string;
-  modeTone?: "brand" | "teal" | "blue";
+  modeTone?: TrainingModeTone;
   questionLabel?: string;
   meta?: ReactNode;
   actions?: ReactNode;
@@ -23,7 +24,12 @@ export function TrainingProgressHeader(props: {
               {props.questionLabel}
             </span>
           ) : null}
-          <Chip tone={props.modeTone ?? "brand"}>{props.modeLabel}</Chip>
+          <Chip
+            tone={props.modeTone ?? "brand"}
+            className={props.modeTone ? "ui-chip--mode" : undefined}
+          >
+            {props.modeLabel}
+          </Chip>
           {props.meta ? (
             <span className="ui-training-progress-header__meta">
               {props.meta}

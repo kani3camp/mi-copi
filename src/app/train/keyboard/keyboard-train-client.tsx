@@ -18,6 +18,7 @@ import {
   getTimeLimitSecondsSelectOptions,
   TRAINING_CONFIG_LIMITS,
 } from "../../../features/training/model/config";
+import { getTrainingModeTone } from "../../../features/training/model/format";
 import { formatDirectionModeLabel } from "../../../features/training/model/interval-notation";
 import type {
   buildKeyboardGuestSaveInput,
@@ -817,7 +818,7 @@ export function KeyboardTrainClient({
     <AppShell narrow className="ui-train-shell">
       <TrainingProgressHeader
         modeLabel="鍵盤モード"
-        modeTone="teal"
+        modeTone={getTrainingModeTone("keyboard")}
         questionLabel={getKeyboardHeaderLabel(
           phase,
           activeQuestion,
@@ -1210,7 +1211,7 @@ function getKeyboardHeaderLabel(
     return `${activeQuestion.question.questionIndex + 1}`;
   }
 
-  return phase === "config" ? "設定" : formatPhaseLabel(phase);
+  return phase === "config" ? undefined : formatPhaseLabel(phase);
 }
 
 function getKeyboardHeaderMeta(props: {

@@ -8,6 +8,7 @@ import {
   formatDurationSecondsLabel,
   formatResponseTimeMsLabel,
   formatScoreLabel,
+  formatTrainingModeLabel,
 } from "../../../features/training/model/format";
 import {
   formatDirectionModeLabel,
@@ -26,6 +27,7 @@ import {
   SummaryBlock,
   SummaryStat,
   Surface,
+  TrainingModeChip,
 } from "../../ui/primitives";
 
 interface TrainingSessionDetailPageProps {
@@ -55,14 +57,24 @@ export default async function TrainingSessionDetailPage({
     <AppShell narrow>
       <PageHero
         title="セッション詳細"
-        eyebrow="Saved Session"
+        eyebrow="保存済みセッション"
         subtitle="保存済みセッションの概要、設定、回答結果を確認できます。"
         actions={
           <>
-            <ButtonLink href="/" pendingLabel="ホームを開いています...">
+            <ButtonLink
+              href="/"
+              variant="ghost"
+              size="compact"
+              pendingLabel="ホームを開いています..."
+            >
               ホームへ戻る
             </ButtonLink>
-            <ButtonLink href="/stats" pendingLabel="統計を開いています...">
+            <ButtonLink
+              href="/stats"
+              variant="ghost"
+              size="compact"
+              pendingLabel="統計を開いています..."
+            >
               統計を見る
             </ButtonLink>
           </>
@@ -73,11 +85,7 @@ export default async function TrainingSessionDetailPage({
         <SectionHeader
           title="概要"
           description="保存済みセッションの主要指標を、1ブロックでまとめて確認できます。"
-          actions={
-            <Chip tone={detail.mode === "distance" ? "teal" : "blue"}>
-              {formatDetailModeLabel(detail.mode)}
-            </Chip>
-          }
+          actions={<TrainingModeChip mode={detail.mode} />}
         />
         <SummaryBlock className="ui-summary-block--insight">
           <SummaryStat
@@ -230,10 +238,6 @@ export default async function TrainingSessionDetailPage({
   );
 }
 
-function formatDetailModeLabel(value: "distance" | "keyboard"): string {
-  return value === "distance" ? "距離モード" : "鍵盤モード";
-}
-
 function formatTimeLimitSecondsLabel(value: number): string {
   return formatDurationSecondsLabel(value);
 }
@@ -248,7 +252,7 @@ function createConfigRows(
   return [
     {
       label: "モード",
-      value: formatDetailModeLabel(detail.configSnapshot.mode),
+      value: formatTrainingModeLabel(detail.configSnapshot.mode),
     },
     {
       label: "音程範囲",

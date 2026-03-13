@@ -21,6 +21,7 @@ import {
   SummaryBlock,
   SummaryStat,
   Surface,
+  TrainingModeChip,
 } from "../ui/primitives";
 import { GlobalSettingsSection } from "./global-settings-section";
 import { ResetConfigSubmitButton } from "./reset-config-submit-button";
@@ -88,7 +89,7 @@ export default async function SettingsPage({
       <AppShell narrow>
         <PageHeader
           title="設定"
-          eyebrow="Preferences"
+          eyebrow="設定"
           subtitle="音量、表記、鍵盤ラベル表示と保存済み設定をここで整えます。"
         />
 
@@ -148,11 +149,13 @@ export default async function SettingsPage({
               />
               <div className="ui-settings-snapshot">
                 <ConfigSnapshotGroup
+                  mode="distance"
                   title="距離モード"
                   config={data.lastDistanceConfig}
                   resetAction={resetDistanceAction}
                 />
                 <ConfigSnapshotGroup
+                  mode="keyboard"
                   title="鍵盤モード"
                   config={data.lastKeyboardConfig}
                   resetAction={resetKeyboardAction}
@@ -210,20 +213,20 @@ export default async function SettingsPage({
 }
 
 function ConfigSnapshotGroup(props: {
+  mode: "distance" | "keyboard";
   title: string;
   config: TrainingConfigSnapshot | null;
   resetAction: () => Promise<void>;
 }) {
-  const tone = props.title === "距離モード" ? "teal" : "blue";
-
   return (
     <div className="ui-settings-snapshot__group">
       <div className="ui-settings-snapshot__title">
         <div className="ui-compact-actions">
           <strong>{props.title}</strong>
-          <Chip tone={tone}>
-            {props.title === "距離モード" ? "回答比較" : "鍵盤入力"}
-          </Chip>
+          <TrainingModeChip
+            mode={props.mode}
+            label={props.title === "距離モード" ? "回答比較" : "鍵盤入力"}
+          />
           <Chip tone="amber">保存済み</Chip>
         </div>
         <form action={props.resetAction}>

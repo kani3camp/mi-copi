@@ -5,7 +5,7 @@ export default function Loading() {
     <AppShell narrow>
       <PageHero
         title="ログイン"
-        eyebrow="Account Access"
+        eyebrow="アカウント"
         subtitle="ログイン導線とアカウント状態を準備しています。"
       />
       <Surface tone="accent">

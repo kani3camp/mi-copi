@@ -12,7 +12,7 @@ import {
 import { getIntervalLabel } from "../../features/training/model/interval-notation";
 import { getTrainingStatsForCurrentUser } from "../../features/training/server/getTrainingStats";
 import { getCurrentUserOrNullCached } from "../../lib/auth/server";
-import { ListLinkCard } from "../ui/navigation-link";
+import { ButtonLink, ListLinkCard } from "../ui/navigation-link";
 import {
   AppShell,
   Chip,
@@ -24,6 +24,7 @@ import {
   SummaryBlock,
   SummaryStat,
   Surface,
+  TrainingModeChip,
 } from "../ui/primitives";
 
 export default async function StatsPage() {
@@ -38,9 +39,22 @@ export default async function StatsPage() {
     <AppShell>
       <PageHeader
         title="統計"
-        eyebrow="Progress View"
+        eyebrow="学習の記録"
         subtitle="保存済みセッションから、成長の流れと苦手傾向をまとめて確認できます。"
       />
+
+      <Surface>
+        <div className="ui-page-aux-actions">
+          <ButtonLink
+            href="/"
+            variant="ghost"
+            size="compact"
+            pendingLabel="ホームを開いています..."
+          >
+            ホーム
+          </ButtonLink>
+        </div>
+      </Surface>
 
       {stats.isAuthenticated ? (
         <>
@@ -307,11 +321,12 @@ export default async function StatsPage() {
                   >
                     <div className="ui-list-link__split">
                       <strong>{formatSecondaryModeLabel(session.mode)}</strong>
-                      <Chip
-                        tone={session.mode === "distance" ? "teal" : "blue"}
-                      >
-                        {session.mode === "distance" ? "回答比較" : "鍵盤回答"}
-                      </Chip>
+                      <TrainingModeChip
+                        mode={session.mode}
+                        label={
+                          session.mode === "distance" ? "回答比較" : "鍵盤回答"
+                        }
+                      />
                     </div>
                     <span className="ui-muted">
                       スコア {formatScoreLabel(session.sessionScore)} / 問題数{" "}

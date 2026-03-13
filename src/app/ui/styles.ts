@@ -62,7 +62,15 @@ function mapLegacyChipTone(
     return "blue";
   }
 
-  if (tone === "brand" || tone === "success" || tone === "warning") {
+  if (
+    tone === "brand" ||
+    tone === "teal" ||
+    tone === "amber" ||
+    tone === "coral" ||
+    tone === "blue" ||
+    tone === "success" ||
+    tone === "warning"
+  ) {
     return tone;
   }
 

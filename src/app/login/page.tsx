@@ -23,7 +23,7 @@ export default async function LoginPage() {
     <AppShell narrow>
       <PageHeader
         title="ログイン"
-        eyebrow="Account Access"
+        eyebrow="アカウント"
         subtitle="Google でログインするか、ゲストでそのまま始めるかを選びます。"
       />
 

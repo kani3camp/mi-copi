@@ -5,7 +5,7 @@ export default function Loading() {
     <AppShell narrow>
       <PageHeader
         title="画面を開いています..."
-        eyebrow="Loading"
+        eyebrow="読み込み中"
         subtitle="押下した操作を受け付けました。表示を準備しています。"
         className="ui-loading-hero"
       />
