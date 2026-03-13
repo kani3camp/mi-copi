@@ -126,24 +126,6 @@ export function DistanceFeedbackPanel(props: {
         }
       />
 
-      <SummaryBlock>
-        <SummaryStat
-          label="正解"
-          value={getIntervalLabel(
-            props.feedbackResult.question.distanceSemitones,
-            props.intervalNotationStyle,
-          )}
-          emphasis="primary"
-        />
-        <SummaryStat
-          label="回答"
-          value={getIntervalLabel(
-            props.feedbackResult.answeredDistanceSemitones,
-            props.intervalNotationStyle,
-          )}
-        />
-      </SummaryBlock>
-
       <DistanceFeedbackDiagram
         direction={props.feedbackResult.question.direction}
         correctSemitones={props.feedbackResult.question.distanceSemitones}

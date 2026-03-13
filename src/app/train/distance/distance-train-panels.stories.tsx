@@ -159,7 +159,38 @@ export const FeedbackIncorrectDownward: Story = {
     await expect(
       canvas.getByLabelText("距離フィードバック: 0 が基準音、下方向"),
     ).toBeVisible();
-    await expect(canvas.getByText("0 = 基準音")).toBeVisible();
+    await expect(canvas.getByText("正解")).toBeVisible();
+    await expect(canvas.getByText("解答")).toBeVisible();
+  },
+};
+
+export const FeedbackExactMatch: Story = {
+  render: (args) => (
+    <DistanceFeedbackPanel
+      feedbackResult={createDistanceResult({
+        question: {
+          distanceSemitones: 2,
+        },
+        answeredDistanceSemitones: 2,
+        isCorrect: true,
+        errorSemitones: 0,
+        score: 100,
+      })}
+      lastAnsweredWasFinal={true}
+      intervalNotationStyle="ja"
+      onReplayCorrectTarget={args.onReplayCorrectTarget}
+      onContinue={args.onContinue}
+    />
+  ),
+  args: {
+    onReplayCorrectTarget: fn(),
+    onContinue: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByText("完全一致")).toBeVisible();
+    await expect(canvas.getAllByText(/正解|解答/)).toHaveLength(2);
   },
 };
 

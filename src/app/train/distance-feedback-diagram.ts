@@ -3,7 +3,7 @@ import type { QuestionDirection } from "../../features/training/model/types";
 export interface DistanceFeedbackDiagramStep {
   distance: number;
   label: string;
-  tone: "idle" | "neutral" | "brand" | "teal";
+  tone: "idle" | "neutral" | "success" | "teal";
 }
 
 export function buildDistanceFeedbackDiagramSteps(params: {
@@ -33,7 +33,7 @@ export function buildDistanceFeedbackDiagramSteps(params: {
       distance === 0
         ? "neutral"
         : distance === Math.abs(params.correctSemitones)
-          ? "brand"
+          ? "success"
           : distance === Math.abs(params.answeredSemitones)
             ? "teal"
             : "idle",

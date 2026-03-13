@@ -7,6 +7,7 @@ import type {
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
 import { ButtonLink } from "../ui/navigation-link";
 import { Button, Chip, Notice } from "../ui/primitives";
+import { buildDistanceFeedbackDiagramAnnotations } from "./distance-feedback-annotations";
 import { buildDistanceFeedbackDiagramSteps } from "./distance-feedback-diagram";
 
 export type TrainingPlaybackKind = "question" | "base" | "target";
@@ -140,7 +141,7 @@ export function FeedbackStatusChip(props: {
   const absError = Math.abs(props.errorSemitones);
   const directionMatched = props.direction === props.answeredDirection;
   const tone = props.isCorrect
-    ? "brand"
+    ? "success"
     : !directionMatched
       ? "coral"
       : absError === 1
@@ -174,6 +175,10 @@ export function DistanceFeedbackDiagram(props: {
     correctSemitones: props.correctSemitones,
     answeredSemitones: props.answeredSemitones,
   });
+  const annotations = buildDistanceFeedbackDiagramAnnotations({
+    correctSemitones: props.correctSemitones,
+    answeredSemitones: props.answeredSemitones,
+  });
 
   return (
     <div
@@ -187,6 +192,19 @@ export function DistanceFeedbackDiagram(props: {
       <div className="ui-distance-diagram__scale">
         {steps.map((step) => (
           <div key={step.distance} className="ui-distance-diagram__step">
+            <div className="ui-distance-diagram__annotation-stack">
+              {annotations
+                .filter((annotation) => annotation.distance === step.distance)
+                .map((annotation) => (
+                  <span
+                    key={`${annotation.distance}-${annotation.label}`}
+                    className="ui-distance-diagram__annotation"
+                    data-tone={annotation.tone}
+                  >
+                    {annotation.label}
+                  </span>
+                ))}
+            </div>
             <div className="ui-distance-diagram__track" />
             <div
               className="ui-distance-diagram__marker"
@@ -195,17 +213,6 @@ export function DistanceFeedbackDiagram(props: {
             <span className="ui-distance-diagram__label">{step.label}</span>
           </div>
         ))}
-      </div>
-      <div className="ui-distance-diagram__legend">
-        <span className="ui-distance-diagram__legend-item" data-tone="neutral">
-          0 = 基準音
-        </span>
-        <span className="ui-distance-diagram__legend-item" data-tone="brand">
-          正解
-        </span>
-        <span className="ui-distance-diagram__legend-item" data-tone="teal">
-          回答
-        </span>
       </div>
     </div>
   );

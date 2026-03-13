@@ -317,11 +317,16 @@ a {
   color: var(--text-secondary);
 }
 
-.ui-chip--brand,
-.ui-chip--success {
+.ui-chip--brand {
   background: var(--brand-soft);
   border-color: rgba(95, 143, 102, 0.24);
   color: var(--brand-strong);
+}
+
+.ui-chip--success {
+  background: rgba(214, 255, 114, 0.92);
+  border-color: rgba(141, 245, 0, 0.42);
+  color: #214800;
 }
 
 .ui-chip--teal {
@@ -1519,13 +1524,46 @@ a {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(24px, 1fr));
   gap: 8px;
-  align-items: end;
+  align-items: start;
 }
 
 .ui-distance-diagram__step {
   display: grid;
   gap: 8px;
   justify-items: center;
+  grid-template-rows: minmax(44px, auto) 4px 18px auto;
+}
+
+.ui-distance-diagram__annotation-stack {
+  min-height: 44px;
+  display: grid;
+  align-content: end;
+  justify-items: center;
+  gap: 4px;
+}
+
+.ui-distance-diagram__annotation {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.ui-distance-diagram__annotation[data-tone="success"] {
+  background: #d6ff72;
+  color: #214800;
+}
+
+.ui-distance-diagram__annotation[data-tone="teal"] {
+  background: var(--accent-teal-soft);
+  color: var(--accent-teal);
 }
 
 .ui-distance-diagram__track {
@@ -1551,8 +1589,10 @@ a {
   border-color: var(--border-strong);
 }
 
-.ui-distance-diagram__marker[data-tone="brand"] {
-  background: var(--brand-primary);
+.ui-distance-diagram__marker[data-tone="success"] {
+  background: #8df500;
+  border-color: #8df500;
+  box-shadow: 0 0 0 4px rgba(141, 245, 0, 0.18);
 }
 
 .ui-distance-diagram__marker[data-tone="teal"] {
@@ -1563,38 +1603,7 @@ a {
 .ui-distance-diagram__label {
   color: var(--text-tertiary);
   font-size: 11px;
-}
-
-.ui-distance-diagram__legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.ui-distance-diagram__legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 10px;
-  min-height: 28px;
-  border-radius: var(--radius-pill);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.ui-distance-diagram__legend-item[data-tone="neutral"] {
-  background: var(--bg-subtle);
-  color: var(--text-secondary);
-}
-
-.ui-distance-diagram__legend-item[data-tone="brand"] {
-  background: var(--brand-soft);
-  color: var(--brand-strong);
-}
-
-.ui-distance-diagram__legend-item[data-tone="teal"] {
-  background: var(--accent-teal-soft);
-  color: var(--accent-teal);
+  line-height: 1.2;
 }
 
 .ui-replay-panel {
