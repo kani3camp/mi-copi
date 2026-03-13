@@ -7,6 +7,7 @@ import type {
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
 import { ButtonLink } from "../ui/navigation-link";
 import { Button, Chip, Notice } from "../ui/primitives";
+import { buildDistanceFeedbackDiagramSteps } from "./distance-feedback-diagram";
 
 export type TrainingPlaybackKind = "question" | "base" | "target";
 
@@ -164,37 +165,34 @@ export function FeedbackStatusChip(props: {
 }
 
 export function DistanceFeedbackDiagram(props: {
+  direction: QuestionDirection;
   correctSemitones: number;
   answeredSemitones: number;
 }) {
-  const min = Math.min(0, props.correctSemitones, props.answeredSemitones);
-  const max = Math.max(0, props.correctSemitones, props.answeredSemitones);
-  const steps = Array.from(
-    { length: max - min + 1 },
-    (_, index) => min + index,
-  );
+  const steps = buildDistanceFeedbackDiagramSteps({
+    direction: props.direction,
+    correctSemitones: props.correctSemitones,
+    answeredSemitones: props.answeredSemitones,
+  });
 
   return (
-    <div className="ui-distance-diagram">
+    <div
+      className="ui-distance-diagram"
+      data-direction={props.direction}
+      role="img"
+      aria-label={`距離フィードバック: ${
+        props.direction === "down" ? "下方向" : "上方向"
+      }`}
+    >
       <div className="ui-distance-diagram__scale">
         {steps.map((step) => (
-          <div key={step} className="ui-distance-diagram__step">
+          <div key={step.distance} className="ui-distance-diagram__step">
             <div className="ui-distance-diagram__track" />
             <div
               className="ui-distance-diagram__marker"
-              data-tone={
-                step === 0
-                  ? "neutral"
-                  : step === props.correctSemitones
-                    ? "brand"
-                    : step === props.answeredSemitones
-                      ? "teal"
-                      : "idle"
-              }
+              data-tone={step.tone}
             />
-            <span className="ui-distance-diagram__label">
-              {step > 0 ? `+${step}` : step}
-            </span>
+            <span className="ui-distance-diagram__label">{step.label}</span>
           </div>
         ))}
       </div>

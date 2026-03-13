@@ -145,11 +145,7 @@ export function DistanceFeedbackPanel(props: {
       </SummaryBlock>
 
       <DistanceFeedbackDiagram
-        correctSemitones={props.feedbackResult.question.distanceSemitones}
-        answeredSemitones={props.feedbackResult.answeredDistanceSemitones}
-      />
-
-      <DistanceMiniKeyboard
+        direction={props.feedbackResult.question.direction}
         correctSemitones={props.feedbackResult.question.distanceSemitones}
         answeredSemitones={props.feedbackResult.answeredDistanceSemitones}
       />
@@ -296,53 +292,5 @@ export function DistanceResultPanel(props: {
         </Button>
       </div>
     </Surface>
-  );
-}
-
-function DistanceMiniKeyboard(props: {
-  correctSemitones: number;
-  answeredSemitones: number;
-}) {
-  const keys = Array.from({ length: 13 }, (_, index) => index);
-
-  return (
-    <div
-      style={{
-        display: "grid",
-        gap: "8px",
-      }}
-    >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(13, minmax(0, 1fr))",
-          gap: "4px",
-        }}
-      >
-        {keys.map((key) => {
-          const isBase = key === 0;
-          const isCorrect = key === props.correctSemitones;
-          const isAnswered = key === props.answeredSemitones;
-
-          return (
-            <div
-              key={key}
-              style={{
-                minHeight: "34px",
-                borderRadius: "10px",
-                border: isAnswered ? "2px solid #4f8e8a" : "1px solid #d8e1d8",
-                background: isCorrect ? "#5f8f66" : "#fbfcfa",
-                boxShadow: isBase ? "inset 0 3px 0 #b9c7bb" : "none",
-              }}
-            />
-          );
-        })}
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-        <Chip tone="neutral">上部マーカー=基準音</Chip>
-        <Chip tone="brand">塗り=正解</Chip>
-        <Chip tone="teal">枠=回答</Chip>
-      </div>
-    </div>
   );
 }

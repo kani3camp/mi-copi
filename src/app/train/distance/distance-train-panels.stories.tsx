@@ -126,6 +126,43 @@ export const FeedbackIncorrect: Story = {
   },
 };
 
+export const FeedbackIncorrectDownward: Story = {
+  render: (args) => (
+    <DistanceFeedbackPanel
+      feedbackResult={createDistanceResult({
+        question: {
+          direction: "down",
+          distanceSemitones: 5,
+          baseNote: "F",
+          baseMidi: 65,
+          targetNote: "C",
+          targetMidi: 60,
+        },
+        answeredDistanceSemitones: 3,
+        isCorrect: false,
+        errorSemitones: -2,
+        score: 52.4,
+      })}
+      lastAnsweredWasFinal={false}
+      intervalNotationStyle="ja"
+      onReplayCorrectTarget={args.onReplayCorrectTarget}
+      onContinue={args.onContinue}
+    />
+  ),
+  args: {
+    onReplayCorrectTarget: fn(),
+    onContinue: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(
+      canvas.getByLabelText("距離フィードバック: 下方向"),
+    ).toBeVisible();
+    await expect(canvas.queryByText("上部マーカー=基準音")).toBeNull();
+  },
+};
+
 export const ResultGuest: Story = {
   render: (args) => (
     <DistanceResultPanel
