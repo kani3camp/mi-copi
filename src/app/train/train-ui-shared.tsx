@@ -343,10 +343,7 @@ export function TrainingResultPersistenceSection(props: {
       >
         {props.saveResult?.ok ? (
           <div className="ui-stack-md">
-            <div>
-              結果を自動保存しました。セッション ID:{" "}
-              <code>{props.saveResult.sessionId}</code>
-            </div>
+            <div>結果を自動保存しました。</div>
             <div className="ui-nav-row">
               <ButtonLink
                 href={`/sessions/${props.saveResult.sessionId}`}

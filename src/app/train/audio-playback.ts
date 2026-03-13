@@ -12,6 +12,14 @@ export const AUDIO_MASTER_VOLUME_BOOST = 1.5;
 
 const NOTE_DURATION_SECONDS = 0.35;
 const FEEDBACK_EFFECT_DURATION_SECONDS = 0.08;
+/** 正解時ピンポン効果: 1音目の長さ（秒） */
+const CORRECT_EFFECT_FIRST_DURATION_SECONDS = 0.06;
+/** 正解時ピンポン効果: 1音目と2音目の間隔（ミリ秒） */
+const CORRECT_EFFECT_GAP_MS = 40;
+/** 正解時ピンポン効果: 2音目の長さ（秒） */
+const CORRECT_EFFECT_SECOND_DURATION_SECONDS = 0.07;
+/** 正解時2音目の周波数（1音目1760Hzの完全5度上 = 2640Hz） */
+const CORRECT_EFFECT_SECOND_FREQUENCY = 2640;
 const QUESTION_NOTE_GAP_MS = 140;
 
 export function getQuestionPlaybackDurationMs(
@@ -65,16 +73,33 @@ export async function playFeedbackEffect(
 
   await runGuardedPlayback(playbackLockRef, async () => {
     const audioContext = await getAudioContext(audioContextRef);
-
-    await playTone(
-      audioContext,
-      getFeedbackEffectFrequency(isCorrect),
-      FEEDBACK_EFFECT_DURATION_SECONDS,
-      Math.max(
-        12,
-        Math.round(getBoostedPlaybackMasterVolume(masterVolume) * 0.5),
-      ),
+    const effectVolume = Math.max(
+      12,
+      Math.round(getBoostedPlaybackMasterVolume(masterVolume) * 0.5),
     );
+
+    if (isCorrect) {
+      await playTone(
+        audioContext,
+        getFeedbackEffectFrequency(true),
+        CORRECT_EFFECT_FIRST_DURATION_SECONDS,
+        effectVolume,
+      );
+      await wait(CORRECT_EFFECT_GAP_MS);
+      await playTone(
+        audioContext,
+        CORRECT_EFFECT_SECOND_FREQUENCY,
+        CORRECT_EFFECT_SECOND_DURATION_SECONDS,
+        effectVolume,
+      );
+    } else {
+      await playTone(
+        audioContext,
+        getFeedbackEffectFrequency(false),
+        FEEDBACK_EFFECT_DURATION_SECONDS,
+        effectVolume,
+      );
+    }
   });
 }
 
