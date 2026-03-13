@@ -9,6 +9,7 @@ import { ButtonLink } from "../ui/navigation-link";
 import { Button, Chip, Notice } from "../ui/primitives";
 import { buildDistanceFeedbackDiagramAnnotations } from "./distance-feedback-annotations";
 import { buildDistanceFeedbackDiagramSteps } from "./distance-feedback-diagram";
+import { getDistanceFeedbackStatus } from "./distance-feedback-status";
 
 export type TrainingPlaybackKind = "question" | "base" | "target";
 
@@ -135,32 +136,15 @@ export function MiniStatRow(props: {
 export function FeedbackStatusChip(props: {
   errorSemitones: number;
   isCorrect: boolean;
-  direction: QuestionDirection;
-  answeredDirection: QuestionDirection;
 }) {
-  const absError = Math.abs(props.errorSemitones);
-  const directionMatched = props.direction === props.answeredDirection;
-  const tone = props.isCorrect
-    ? "success"
-    : !directionMatched
-      ? "coral"
-      : absError === 1
-        ? "amber"
-        : "coral";
-  const label = props.isCorrect
-    ? "完全一致"
-    : !directionMatched
-      ? "方向が逆"
-      : absError === 1
-        ? "惜しい"
-        : "大きくズレ";
+  const status = getDistanceFeedbackStatus({
+    isCorrect: props.isCorrect,
+    errorSemitones: props.errorSemitones,
+  });
 
   return (
     <div className="ui-feedback-status">
-      <Chip tone={tone}>{label}</Chip>
-      {!props.isCorrect && directionMatched ? (
-        <Chip tone="teal">方向は正しい</Chip>
-      ) : null}
+      <Chip tone={status.tone}>{status.label}</Chip>
     </div>
   );
 }

@@ -72,7 +72,7 @@ export default async function HomePage() {
           <ButtonLink
             href="/settings"
             variant="ghost"
-            className="ui-header-link"
+            size="compact"
             pendingLabel="設定を開いています..."
           >
             設定
@@ -80,7 +80,7 @@ export default async function HomePage() {
           <ButtonLink
             href="/login"
             variant="ghost"
-            className="ui-header-link"
+            size="compact"
             pendingLabel="ログイン画面を開いています..."
           >
             {hasSessionToken ? "アカウント" : "ログイン"}
@@ -207,7 +207,7 @@ async function AuthenticatedHomeContent() {
             <ButtonLink
               href="/stats"
               variant="ghost"
-              className="ui-header-link"
+              size="compact"
               pendingLabel="統計を開いています..."
             >
               統計を見る

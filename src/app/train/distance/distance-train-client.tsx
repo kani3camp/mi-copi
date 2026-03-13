@@ -713,7 +713,7 @@ export function DistanceTrainClient({
           <ButtonLink
             href="/"
             variant="ghost"
-            className="ui-header-link"
+            size="compact"
             pendingLabel="ホームを開いています..."
           >
             戻る

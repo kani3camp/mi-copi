@@ -97,7 +97,7 @@ export default async function SettingsPage({
             <ButtonLink
               href="/"
               variant="ghost"
-              className="ui-header-link"
+              size="compact"
               pendingLabel="ホームを開いています..."
             >
               ホーム
@@ -105,7 +105,7 @@ export default async function SettingsPage({
             <ButtonLink
               href="/train/distance"
               variant="ghost"
-              className="ui-header-link"
+              size="compact"
               pendingLabel="距離モードを開いています..."
             >
               距離モード
@@ -113,7 +113,7 @@ export default async function SettingsPage({
             <ButtonLink
               href="/train/keyboard"
               variant="ghost"
-              className="ui-header-link"
+              size="compact"
               pendingLabel="鍵盤モードを開いています..."
             >
               鍵盤モード

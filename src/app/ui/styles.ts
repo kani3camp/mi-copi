@@ -1,6 +1,7 @@
 import { cn } from "./cn";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonSize = "default" | "compact";
 export type NoticeTone = "info" | "warning" | "success" | "error";
 export type ChipTone =
   | "neutral"
@@ -20,12 +21,14 @@ export function buttonClassName(
   options?: {
     block?: boolean;
     pending?: boolean;
+    size?: ButtonSize;
     className?: string;
   },
 ): string {
   return cn(
     "ui-button",
     `ui-button--${variant}`,
+    `ui-button--${options?.size ?? "default"}`,
     options?.block && "ui-button--block",
     options?.pending && "ui-button--pending",
     options?.className,

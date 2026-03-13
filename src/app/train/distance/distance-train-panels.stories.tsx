@@ -116,6 +116,9 @@ export const FeedbackIncorrect: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
 
+    await expect(canvas.getByText("ずれあり")).toBeVisible();
+    await expect(canvas.queryByText("方向が逆")).toBeNull();
+    await expect(canvas.queryByText("方向は正しい")).toBeNull();
     await userEvent.click(
       canvas.getByRole("button", { name: "正解の音を再生" }),
     );
@@ -159,6 +162,8 @@ export const FeedbackIncorrectDownward: Story = {
     await expect(
       canvas.getByLabelText("距離フィードバック: 0 が基準音、下方向"),
     ).toBeVisible();
+    await expect(canvas.getByText("惜しい")).toBeVisible();
+    await expect(canvas.queryByText("方向が逆")).toBeNull();
     await expect(canvas.getByText("正解")).toBeVisible();
     await expect(canvas.getByText("解答")).toBeVisible();
   },

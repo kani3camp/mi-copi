@@ -6,6 +6,7 @@ import type {
 
 import { cn } from "./cn";
 import {
+  type ButtonSize,
   type ButtonVariant,
   buttonClassName,
   chipClassName,
@@ -133,6 +134,7 @@ export function SectionHeader(props: {
 export function Button(
   props: ComponentPropsWithoutRef<"button"> & {
     variant?: ButtonVariant;
+    size?: ButtonSize;
     block?: boolean;
     pending?: boolean;
   },
@@ -140,6 +142,7 @@ export function Button(
   const {
     className,
     variant = "secondary",
+    size = "default",
     block,
     pending = false,
     ...rest
@@ -151,6 +154,7 @@ export function Button(
       className={buttonClassName(variant, {
         block,
         pending,
+        size,
         className,
       })}
       data-pending={pending ? "true" : undefined}

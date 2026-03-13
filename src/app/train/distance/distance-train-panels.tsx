@@ -109,9 +109,6 @@ export function DistanceFeedbackPanel(props: {
   onReplayCorrectTarget: () => void;
   onContinue: () => void;
 }) {
-  const answeredDirection =
-    props.feedbackResult.answeredDistanceSemitones >= 0 ? "up" : "down";
-
   return (
     <Surface tone="elevated">
       <SectionHeader
@@ -120,8 +117,6 @@ export function DistanceFeedbackPanel(props: {
           <FeedbackStatusChip
             errorSemitones={props.feedbackResult.errorSemitones}
             isCorrect={props.feedbackResult.isCorrect}
-            direction={props.feedbackResult.question.direction}
-            answeredDirection={answeredDirection}
           />
         }
       />

@@ -6,7 +6,7 @@ import type { ComponentPropsWithoutRef, MouseEvent, ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { cn } from "./cn";
-import { type ButtonVariant, buttonClassName } from "./styles";
+import { type ButtonSize, type ButtonVariant, buttonClassName } from "./styles";
 
 interface BasePendingLinkProps {
   pendingLabel?: ReactNode;
@@ -18,12 +18,14 @@ type PendingLinkProps = ComponentPropsWithoutRef<typeof Link> &
 export function ButtonLink(
   props: PendingLinkProps & {
     variant?: ButtonVariant;
+    size?: ButtonSize;
     block?: boolean;
   },
 ) {
   const {
     className,
     variant = "secondary",
+    size = "default",
     block,
     pendingLabel = "移動中...",
     children,
@@ -34,7 +36,7 @@ export function ButtonLink(
     <PendingLink
       {...rest}
       pendingLabel={pendingLabel}
-      className={buttonClassName(variant, { block, className })}
+      className={buttonClassName(variant, { block, size, className })}
     >
       {children}
     </PendingLink>

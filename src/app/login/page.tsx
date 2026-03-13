@@ -46,7 +46,7 @@ export default async function LoginPage() {
           <ButtonLink
             href="/"
             variant="ghost"
-            className="ui-header-link"
+            size="compact"
             pendingLabel="ホームを開いています..."
           >
             ホーム
