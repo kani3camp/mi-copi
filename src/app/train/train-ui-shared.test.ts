@@ -64,7 +64,7 @@ test("distance feedback diagram exposes separate correct and answered annotation
       { distance: 0, label: "基準音", tone: "neutral" },
       {
         distance: 3,
-        label: "回答音",
+        label: "回答",
         tone: "teal",
       },
       {
@@ -91,7 +91,7 @@ test("distance feedback diagram stacks correct and answered annotations on exact
       },
       {
         distance: 5,
-        label: "回答音",
+        label: "回答",
         tone: "teal",
       },
     ],

@@ -1,6 +1,6 @@
 export interface DistanceFeedbackDiagramAnnotation {
   distance: number;
-  label: "正解" | "回答音" | "基準音";
+  label: "正解" | "回答" | "基準音";
   tone: "success" | "teal" | "neutral";
 }
 
@@ -10,7 +10,7 @@ const ANNOTATION_ORDER: Record<
 > = {
   基準音: 0,
   正解: 1,
-  回答音: 2,
+  回答: 2,
 };
 
 export function buildDistanceFeedbackDiagramAnnotations(params: {
@@ -26,7 +26,7 @@ export function buildDistanceFeedbackDiagramAnnotations(params: {
     },
     {
       distance: Math.abs(params.answeredSemitones),
-      label: "回答音",
+      label: "回答",
       tone: "teal",
     },
   ];

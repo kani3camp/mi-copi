@@ -338,6 +338,8 @@ export function SummaryStat(props: {
   value: ReactNode;
   detail?: ReactNode;
   emphasis?: "primary" | "default";
+  /** 矢印・図の色に合わせる（正解＝success / 回答＝teal） */
+  tone?: "success" | "teal";
   className?: string;
 }) {
   return (
@@ -345,6 +347,8 @@ export function SummaryStat(props: {
       className={cn(
         "ui-summary-stat",
         props.emphasis === "primary" && "ui-summary-stat--primary",
+        props.tone === "success" && "ui-summary-stat--success",
+        props.tone === "teal" && "ui-summary-stat--teal-diagram",
         props.className,
       )}
     >

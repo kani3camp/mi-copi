@@ -773,6 +773,17 @@ a {
   color: var(--accent-blue);
 }
 
+/* 距離フィードバック: 矢印・図の色に合わせる */
+.ui-summary-stat--success .ui-summary-stat__label,
+.ui-summary-stat--success .ui-summary-stat__value {
+  color: #9cdd2b;
+}
+
+.ui-summary-stat--teal-diagram .ui-summary-stat__label,
+.ui-summary-stat--teal-diagram .ui-summary-stat__value {
+  color: #2a8f99;
+}
+
 .ui-list {
   display: grid;
   gap: var(--space-3);
@@ -1653,7 +1664,8 @@ a {
   width: 100%;
   overflow: hidden;
   padding-left: 12px;
-  padding-right: 12px;
+  /* 基準音ラベルが右端で見切れないように多めに取る（down 時は右端列に表示） */
+  padding-right: 24px;
 }
 
 .ui-distance-diagram__scale {
@@ -1702,7 +1714,8 @@ a {
 
 .ui-distance-diagram__arrow-layer {
   position: absolute;
-  inset: 38px 0 auto;
+  /* 矢印を arrow-row（アノテーション 36px + gap 6px = 42px）と同じ高さに揃え、根元の丸と重なるようにする */
+  inset: 42px 0 auto;
   display: grid;
   gap: 8px;
   height: 22px;
@@ -1720,12 +1733,13 @@ a {
   height: 12px;
 }
 
+/* 上段・下段の矢印を根元の丸の中心（10px 円が space-between で 22px 内に並ぶ）に合わせる */
 .ui-distance-diagram__arrow[data-lane="upper"] {
-  margin-top: 0;
+  margin-top: -1px;
 }
 
 .ui-distance-diagram__arrow[data-lane="lower"] {
-  margin-top: 10px;
+  margin-top: 11px;
 }
 
 /* 矢印先端: 固定サイズの三角（矢印長に依存しない） */
@@ -1793,6 +1807,8 @@ a {
   align-content: end;
   justify-items: center;
   gap: 3px;
+  position: relative;
+  z-index: 10;
 }
 
 .ui-distance-diagram__annotation {
@@ -1807,6 +1823,8 @@ a {
   line-height: 1;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  position: relative;
+  z-index: 10;
 }
 
 .ui-distance-diagram__annotation[data-tone="success"] {
