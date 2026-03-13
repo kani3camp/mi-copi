@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 const {
+  AUDIO_MASTER_VOLUME_BOOST,
   AUDIO_TRANSPOSE_MULTIPLIER,
   AUDIO_TRANSPOSE_SEMITONES,
+  clampPlaybackMasterVolume,
+  getBoostedPlaybackMasterVolume,
   getFeedbackEffectFrequency,
   getQuestionPlaybackDurationMs,
   getPlaybackFrequencyFromMidi,
@@ -36,4 +39,16 @@ test("question playback durations match the intended note sequence timing", () =
 test("transposeFrequency only changes playback values, not midi semantics", () => {
   assert.equal(transposeFrequency(330), 660);
   assert.equal(transposeFrequency(330, 0), 330);
+});
+
+test("playback master volume clamp keeps the UI scale at 0-100", () => {
+  assert.equal(clampPlaybackMasterVolume(-10), 0);
+  assert.equal(clampPlaybackMasterVolume(80), 80);
+  assert.equal(clampPlaybackMasterVolume(180), 100);
+});
+
+test("playback uses an internal boost while keeping the UI capped at 100", () => {
+  assert.equal(AUDIO_MASTER_VOLUME_BOOST, 1.5);
+  assert.equal(getBoostedPlaybackMasterVolume(100), 150);
+  assert.equal(getBoostedPlaybackMasterVolume(50), 75);
 });

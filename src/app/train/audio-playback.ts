@@ -1,5 +1,6 @@
 import type { MutableRefObject } from "react";
 
+import { MAX_MASTER_VOLUME } from "../../features/settings/model/global-user-settings.ts";
 import { getFrequencyFromMidi } from "../../features/training/model/pitch.ts";
 import type { Question } from "../../features/training/model/types.ts";
 
@@ -7,6 +8,7 @@ export type PlaybackKind = "question" | "base" | "target";
 
 export const AUDIO_TRANSPOSE_SEMITONES = 12;
 export const AUDIO_TRANSPOSE_MULTIPLIER = 2 ** (AUDIO_TRANSPOSE_SEMITONES / 12);
+export const AUDIO_MASTER_VOLUME_BOOST = 1.5;
 
 const NOTE_DURATION_SECONDS = 0.35;
 const FEEDBACK_EFFECT_DURATION_SECONDS = 0.08;
@@ -68,7 +70,10 @@ export async function playFeedbackEffect(
       audioContext,
       getFeedbackEffectFrequency(isCorrect),
       FEEDBACK_EFFECT_DURATION_SECONDS,
-      Math.max(12, Math.round(masterVolume * 0.5)),
+      Math.max(
+        12,
+        Math.round(getBoostedPlaybackMasterVolume(masterVolume) * 0.5),
+      ),
     );
   });
 }
@@ -79,6 +84,14 @@ export function getPlaybackFrequencyFromMidi(midi: number): number {
 
 export function getFeedbackEffectFrequency(isCorrect: boolean): number {
   return transposeFrequency(isCorrect ? 880 : 220);
+}
+
+export function clampPlaybackMasterVolume(masterVolume: number): number {
+  return Math.min(MAX_MASTER_VOLUME, Math.max(0, masterVolume));
+}
+
+export function getBoostedPlaybackMasterVolume(masterVolume: number): number {
+  return clampPlaybackMasterVolume(masterVolume) * AUDIO_MASTER_VOLUME_BOOST;
 }
 
 export function transposeFrequency(
@@ -139,7 +152,7 @@ function playTone(
     const now = audioContext.currentTime;
     const peakGain = Math.max(
       0.0001,
-      (Math.min(100, Math.max(0, masterVolume)) / 100) * 0.15,
+      (getBoostedPlaybackMasterVolume(masterVolume) / 100) * 0.15,
     );
 
     oscillator.type = "sine";

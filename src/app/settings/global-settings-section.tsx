@@ -1,6 +1,7 @@
 "use client";
 
 import { useGlobalUserSettings } from "../../features/settings/client/global-user-settings-provider";
+import { MAX_MASTER_VOLUME } from "../../features/settings/model/global-user-settings";
 import {
   Button,
   Field,
@@ -29,7 +30,7 @@ export function GlobalSettingsSection() {
                 className="ui-range"
                 type="range"
                 min={0}
-                max={100}
+                max={MAX_MASTER_VOLUME}
                 value={settings.masterVolume}
                 onChange={(event) =>
                   updateSettings({
