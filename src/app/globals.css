@@ -439,7 +439,7 @@ a {
   min-height: 52px;
   padding: 0 18px;
   border-radius: var(--radius-control);
-  border: 1px solid var(--border-strong);
+  border: 0;
   background: transparent;
   color: var(--text-primary);
   text-decoration: none;
@@ -452,7 +452,6 @@ a {
     transform var(--motion-fast) var(--motion-easing),
     box-shadow var(--motion-base) var(--motion-easing),
     background var(--motion-base) var(--motion-easing),
-    border-color var(--motion-base) var(--motion-easing),
     color var(--motion-base) var(--motion-easing),
     opacity var(--motion-base) var(--motion-easing);
   touch-action: manipulation;
@@ -483,7 +482,6 @@ a {
 }
 
 .ui-button--primary {
-  border-color: var(--brand-strong);
   background: var(--brand-primary);
   color: #ffffff;
   box-shadow:
@@ -493,7 +491,9 @@ a {
 
 .ui-button--primary:hover {
   background: var(--brand-strong);
-  border-color: var(--brand-strong);
+  box-shadow:
+    0 12px 24px rgba(76, 119, 84, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .ui-button--secondary {
@@ -505,27 +505,36 @@ a {
 }
 
 .ui-button--secondary:hover {
-  border-color: rgba(95, 143, 102, 0.34);
-  background: #ffffff;
+  background: rgba(255, 255, 255, 1);
+  box-shadow:
+    0 10px 20px rgba(24, 32, 27, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
 }
 
 .ui-button--ghost {
-  border-color: rgba(185, 199, 187, 0.92);
   background: rgba(255, 255, 255, 0.78);
   color: var(--text-primary);
   box-shadow: 0 4px 12px rgba(23, 32, 25, 0.04);
 }
 
 .ui-button--ghost:hover {
-  border-color: rgba(95, 143, 102, 0.24);
   background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 6px 14px rgba(23, 32, 25, 0.06);
 }
 
 .ui-button--danger {
-  background: var(--surface-elevated);
-  border-color: rgba(201, 107, 92, 0.35);
-  color: var(--accent-coral);
-  box-shadow: var(--shadow-soft);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text-primary);
+  box-shadow:
+    0 8px 18px rgba(24, 32, 27, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.ui-button--danger:hover {
+  background: #ffffff;
+  box-shadow:
+    0 10px 20px rgba(24, 32, 27, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
 }
 
 .ui-button--block {

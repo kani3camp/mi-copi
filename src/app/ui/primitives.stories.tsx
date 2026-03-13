@@ -38,6 +38,9 @@ export const ButtonsAndChips: Story = {
         <Button type="button" variant="ghost" size="compact">
           戻る
         </Button>
+        <Button type="button" variant="danger" size="compact">
+          ログアウト
+        </Button>
       </div>
       <div className="ui-page-aux-actions">
         <Chip tone="neutral">保存なし</Chip>
