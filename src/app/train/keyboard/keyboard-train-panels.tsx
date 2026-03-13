@@ -48,6 +48,12 @@ const BLACK_KEY_LAYOUT: Array<{ note: NoteClass; left: string }> = [
   { note: "A#", left: "calc(85.7142% - 5.4%)" },
 ];
 
+const KEYBOARD_FEEDBACK_CORRECT_FILL = "#9cdd2b";
+const KEYBOARD_FEEDBACK_CORRECT_SOFT = "#d8f39a";
+const KEYBOARD_FEEDBACK_CORRECT_TEXT = "#193122";
+const KEYBOARD_FEEDBACK_ANSWERED = "#2a8f99";
+const KEYBOARD_FEEDBACK_ANSWERED_SOFT = "#cdebf0";
+
 export const KeyboardQuestionPanel = memo(
   function KeyboardQuestionPanel(props: {
     phase: "playing" | "answering";
@@ -387,8 +393,22 @@ const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
         >
           基準音
         </span>
-        <span style={legendItemStyle("#ffffff", "#5f8f66")}>正解</span>
-        <span style={legendItemStyle("#4f8e8a", "#dceeee")}>回答</span>
+        <span
+          style={legendItemStyle(
+            KEYBOARD_FEEDBACK_CORRECT_TEXT,
+            KEYBOARD_FEEDBACK_CORRECT_SOFT,
+          )}
+        >
+          正解
+        </span>
+        <span
+          style={legendItemStyle(
+            KEYBOARD_FEEDBACK_CORRECT_TEXT,
+            KEYBOARD_FEEDBACK_ANSWERED_SOFT,
+          )}
+        >
+          回答
+        </span>
       </div>
     </div>
   );
@@ -410,17 +430,17 @@ function getKeyboardKeyStyle(
   const referenceStripeColor = blackKey ? "#d9ebdf" : "var(--brand-strong)";
   const referenceStripeHeight = blackKey ? "10px" : "12px";
   const fillColor = options.correct
-    ? blackKey
-      ? "#5f8f66"
-      : "#5f8f66"
+    ? KEYBOARD_FEEDBACK_CORRECT_FILL
     : blackKey
       ? "#202722"
       : "#ffffff";
   const baseBorder = blackKey ? "#0f1511" : "#d8e1d8";
-  const outlineColor = options.answered ? "#4f8e8a" : baseBorder;
+  const outlineColor = options.answered
+    ? KEYBOARD_FEEDBACK_ANSWERED
+    : baseBorder;
   const boxShadowParts = [
     options.correct
-      ? "0 8px 18px rgba(76, 119, 84, 0.18)"
+      ? "0 0 0 4px rgba(156, 221, 43, 0.16)"
       : blackKey
         ? "0 6px 16px rgba(24, 32, 27, 0.18)"
         : "0 4px 12px rgba(24, 32, 27, 0.06)",
@@ -448,12 +468,11 @@ function getKeyboardKeyStyle(
       ? `linear-gradient(to bottom, ${referenceStripeColor} 0, ${referenceStripeColor} ${referenceStripeHeight}, transparent ${referenceStripeHeight}, transparent 100%)`
       : undefined,
     backgroundRepeat: "no-repeat",
-    color:
-      options.correct && !blackKey
-        ? "#ffffff"
-        : blackKey
-          ? "#f4f7f4"
-          : "#18201b",
+    color: options.correct
+      ? KEYBOARD_FEEDBACK_CORRECT_TEXT
+      : blackKey
+        ? "#f4f7f4"
+        : "#18201b",
     boxShadow: boxShadowParts.join(", "),
     fontWeight: 700,
     fontSize: blackKey ? "11px" : "13px",
@@ -466,7 +485,9 @@ function getKeyboardKeyStyle(
     opacity: options.disabled ? 0.45 : 1,
     touchAction: "manipulation",
     zIndex: blackKey ? 2 : 1,
-    outline: options.answered ? "2px solid rgba(79, 142, 138, 0.18)" : "none",
+    outline: options.answered
+      ? `2px solid ${KEYBOARD_FEEDBACK_ANSWERED_SOFT}`
+      : "none",
     outlineOffset: options.answered ? "-4px" : undefined,
   };
 }
