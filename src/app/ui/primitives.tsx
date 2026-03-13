@@ -242,6 +242,47 @@ export function TrainingModeLabel(props: {
   );
 }
 
+export function ActionCard(
+  props: PropsWithChildren<{
+    title: ReactNode;
+    description?: ReactNode;
+    eyebrow?: ReactNode;
+    footer?: ReactNode;
+    tone?: "default" | "brand" | "teal" | "blue";
+    className?: string;
+  }>,
+) {
+  return (
+    <article
+      className={cn(
+        "ui-action-card",
+        props.tone &&
+          props.tone !== "default" &&
+          `ui-action-card--${props.tone}`,
+        props.className,
+      )}
+    >
+      <div className="ui-action-card__content">
+        {props.eyebrow ? (
+          <div className="ui-action-card__eyebrow">{props.eyebrow}</div>
+        ) : null}
+        <div className="ui-action-card__copy">
+          <strong className="ui-action-card__title">{props.title}</strong>
+          {props.description ? (
+            <p className="ui-muted ui-action-card__description">
+              {props.description}
+            </p>
+          ) : null}
+        </div>
+        {props.children}
+      </div>
+      {props.footer ? (
+        <div className="ui-action-card__footer">{props.footer}</div>
+      ) : null}
+    </article>
+  );
+}
+
 export function MetricGrid(props: PropsWithChildren<{ className?: string }>) {
   return (
     <div className={cn("ui-grid-metrics", props.className)}>

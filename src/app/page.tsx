@@ -16,6 +16,7 @@ import {
 import { HomeSignOutButton } from "./home-sign-out-button";
 import { ButtonLink, ListLinkCard } from "./ui/navigation-link";
 import {
+  ActionCard,
   AppShell,
   PageHeader,
   SectionHeader,
@@ -105,24 +106,27 @@ function ModeEntry(props: {
   tone: "teal" | "blue";
 }) {
   return (
-    <ListLinkCard
-      href={props.href}
-      pendingLabel={props.pendingLabel}
-      className="ui-list-link--mode"
-      data-tone={props.tone}
-    >
-      <div className="ui-mode-entry__header">
+    <ActionCard
+      tone={props.tone}
+      eyebrow={
         <TrainingModeChip
           mode={props.tone === "teal" ? "distance" : "keyboard"}
           label={props.label}
         />
-      </div>
-      <strong>{props.title}</strong>
-      <span className="ui-muted">{props.description}</span>
-      <div className="ui-mode-entry__footer">
-        <span className="ui-mode-entry__cta">練習を始める</span>
-      </div>
-    </ListLinkCard>
+      }
+      title={props.title}
+      description={props.description}
+      footer={
+        <ButtonLink
+          href={props.href}
+          pendingLabel={props.pendingLabel}
+          variant="secondary"
+          block
+        >
+          練習を始める
+        </ButtonLink>
+      }
+    />
   );
 }
 

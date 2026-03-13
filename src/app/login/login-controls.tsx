@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { getAuthClient } from "../../lib/auth/client";
 import { ButtonLink } from "../ui/navigation-link";
-import { Button, Chip, Notice } from "../ui/primitives";
+import { ActionCard, Button, Chip, Notice } from "../ui/primitives";
 
 export function LoginControls() {
   const authClient = getAuthClient();
@@ -34,41 +34,40 @@ export function LoginControls() {
 
   return (
     <div className="ui-auth-choice-grid">
-      <div className="ui-auth-choice-card ui-auth-choice-card--primary">
-        <div className="ui-stack-sm">
-          <Chip tone="brand">Cloud Save</Chip>
-          <strong>Google でログイン</strong>
-          <p className="ui-muted">
-            結果の保存、統計、設定の同期を使う場合はこちら。
-          </p>
-        </div>
-        <Button
-          type="button"
-          onClick={handleGoogleSignIn}
-          disabled={isPending}
-          pending={isPending}
-          variant="primary"
-          block
-        >
-          {isPending ? "接続中..." : "Google でログイン"}
-        </Button>
-      </div>
+      <ActionCard
+        tone="brand"
+        eyebrow={<Chip tone="brand">クラウド保存</Chip>}
+        title="Google でログイン"
+        description="結果の保存、統計、設定の同期を使う場合はこちら。"
+        footer={
+          <Button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isPending}
+            pending={isPending}
+            variant="primary"
+            block
+          >
+            {isPending ? "接続中..." : "Google でログイン"}
+          </Button>
+        }
+      />
 
-      <div className="ui-auth-choice-card">
-        <div className="ui-stack-sm">
-          <Chip tone="teal">Guest Start</Chip>
-          <strong>ゲストでそのまま練習</strong>
-          <p className="ui-muted">保存なしで今すぐ試したいときはこちらです。</p>
-        </div>
-        <ButtonLink
-          href="/"
-          variant="secondary"
-          block
-          pendingLabel="ホームを開いています..."
-        >
-          ゲストで始める
-        </ButtonLink>
-      </div>
+      <ActionCard
+        eyebrow={<Chip tone="neutral">保存なし</Chip>}
+        title="ゲストでそのまま練習"
+        description="保存なしで今すぐ試したいときはこちらです。"
+        footer={
+          <ButtonLink
+            href="/"
+            variant="secondary"
+            block
+            pendingLabel="ホームを開いています..."
+          >
+            ゲストで始める
+          </ButtonLink>
+        }
+      />
 
       {errorMessage ? <Notice tone="error">{errorMessage}</Notice> : null}
     </div>
