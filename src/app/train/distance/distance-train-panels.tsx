@@ -109,6 +109,15 @@ export function DistanceFeedbackPanel(props: {
   onReplayCorrectTarget: () => void;
   onContinue: () => void;
 }) {
+  const correctIntervalLabel = getIntervalLabel(
+    props.feedbackResult.question.distanceSemitones,
+    props.intervalNotationStyle,
+  );
+  const answeredIntervalLabel = getIntervalLabel(
+    props.feedbackResult.answeredDistanceSemitones,
+    props.intervalNotationStyle,
+  );
+
   return (
     <Surface tone="elevated">
       <SectionHeader
@@ -120,6 +129,15 @@ export function DistanceFeedbackPanel(props: {
           />
         }
       />
+
+      <SummaryBlock>
+        <SummaryStat
+          label="正解"
+          value={correctIntervalLabel}
+          emphasis="primary"
+        />
+        <SummaryStat label="回答" value={answeredIntervalLabel} />
+      </SummaryBlock>
 
       <DistanceFeedbackDiagram
         direction={props.feedbackResult.question.direction}

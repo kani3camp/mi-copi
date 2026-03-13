@@ -177,6 +177,8 @@ export function DistanceFeedbackDiagram(props: {
     answeredIndex,
     baseIndex,
   });
+  const columnTemplate = `repeat(${steps.length}, minmax(48px, 1fr))`;
+  const minWidth = `${steps.length * 48}px`;
 
   return (
     <div
@@ -187,82 +189,90 @@ export function DistanceFeedbackDiagram(props: {
         props.direction === "down" ? "下方向" : "上方向"
       }`}
     >
-      <div className="ui-distance-diagram__scale">
+      <div className="ui-distance-diagram__viewport">
         <div
-          className="ui-distance-diagram__arrow-layer"
+          className="ui-distance-diagram__scale"
           style={{
-            gridTemplateColumns: `repeat(${steps.length}, minmax(24px, 1fr))`,
+            gridTemplateColumns: columnTemplate,
+            minWidth,
           }}
-          aria-hidden="true"
         >
-          {arrows.map((arrow) => (
-            <div
-              key={`${arrow.tone}-${arrow.lane}-${arrow.columnStart}-${arrow.columnEnd}`}
-              className="ui-distance-diagram__arrow"
-              data-tone={arrow.tone}
-              data-lane={arrow.lane}
-              style={{
-                gridColumn: `${arrow.columnStart} / ${arrow.columnEnd}`,
-              }}
-            >
-              <svg
-                viewBox="0 0 100 12"
-                preserveAspectRatio="none"
-                className="ui-distance-diagram__arrow-svg"
-                aria-hidden="true"
+          <div
+            className="ui-distance-diagram__arrow-layer"
+            style={{
+              gridTemplateColumns: columnTemplate,
+            }}
+            aria-hidden="true"
+          >
+            {arrows.map((arrow) => (
+              <div
+                key={`${arrow.tone}-${arrow.lane}-${arrow.columnStart}-${arrow.columnEnd}`}
+                className="ui-distance-diagram__arrow"
+                data-tone={arrow.tone}
+                data-lane={arrow.lane}
+                style={{
+                  gridColumn: `${arrow.columnStart} / ${arrow.columnEnd}`,
+                }}
               >
-                <defs>
-                  <marker
-                    id={`distance-arrowhead-${arrow.tone}`}
-                    markerWidth="8"
-                    markerHeight="8"
-                    refX="6"
-                    refY="4"
-                    orient="auto"
-                  >
-                    <path d="M0,0 L8,4 L0,8 Z" />
-                  </marker>
-                </defs>
-                <line
-                  x1={arrow.direction === "forward" ? "2" : "98"}
-                  y1="6"
-                  x2={arrow.direction === "forward" ? "98" : "2"}
-                  y2="6"
-                  className="ui-distance-diagram__arrow-line"
-                  data-tone={arrow.tone}
-                  markerEnd={`url(#distance-arrowhead-${arrow.tone})`}
-                />
-              </svg>
+                <svg
+                  viewBox="0 0 100 12"
+                  preserveAspectRatio="none"
+                  className="ui-distance-diagram__arrow-svg"
+                  aria-hidden="true"
+                >
+                  <defs>
+                    <marker
+                      id={`distance-arrowhead-${arrow.tone}`}
+                      markerWidth="8"
+                      markerHeight="8"
+                      refX="6"
+                      refY="4"
+                      orient="auto"
+                    >
+                      <path d="M0,0 L8,4 L0,8 Z" />
+                    </marker>
+                  </defs>
+                  <line
+                    x1={arrow.direction === "forward" ? "2" : "98"}
+                    y1="6"
+                    x2={arrow.direction === "forward" ? "98" : "2"}
+                    y2="6"
+                    className="ui-distance-diagram__arrow-line"
+                    data-tone={arrow.tone}
+                    markerEnd={`url(#distance-arrowhead-${arrow.tone})`}
+                  />
+                </svg>
+              </div>
+            ))}
+          </div>
+          {steps.map((step) => (
+            <div key={step.distance} className="ui-distance-diagram__step">
+              <div className="ui-distance-diagram__annotation-stack">
+                {annotations
+                  .filter((annotation) => annotation.distance === step.distance)
+                  .map((annotation) => (
+                    <span
+                      key={`${annotation.distance}-${annotation.label}`}
+                      className="ui-distance-diagram__annotation"
+                      data-tone={annotation.tone}
+                    >
+                      {annotation.label}
+                    </span>
+                  ))}
+              </div>
+              <div
+                className="ui-distance-diagram__arrow-spacer"
+                aria-hidden="true"
+              />
+              <div className="ui-distance-diagram__track" />
+              <div
+                className="ui-distance-diagram__marker"
+                data-tone={step.tone}
+              />
+              <span className="ui-distance-diagram__label">{step.label}</span>
             </div>
           ))}
         </div>
-        {steps.map((step) => (
-          <div key={step.distance} className="ui-distance-diagram__step">
-            <div className="ui-distance-diagram__annotation-stack">
-              {annotations
-                .filter((annotation) => annotation.distance === step.distance)
-                .map((annotation) => (
-                  <span
-                    key={`${annotation.distance}-${annotation.label}`}
-                    className="ui-distance-diagram__annotation"
-                    data-tone={annotation.tone}
-                  >
-                    {annotation.label}
-                  </span>
-                ))}
-            </div>
-            <div
-              className="ui-distance-diagram__arrow-spacer"
-              aria-hidden="true"
-            />
-            <div className="ui-distance-diagram__track" />
-            <div
-              className="ui-distance-diagram__marker"
-              data-tone={step.tone}
-            />
-            <span className="ui-distance-diagram__label">{step.label}</span>
-          </div>
-        ))}
       </div>
     </div>
   );

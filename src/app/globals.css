@@ -1641,30 +1641,37 @@ a {
 
 .ui-distance-diagram {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
+}
+
+.ui-distance-diagram__viewport {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ui-distance-diagram__scale {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(24px, 1fr));
   gap: 8px;
   align-items: start;
 }
 
 .ui-distance-diagram__step {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   justify-items: center;
-  grid-template-rows: minmax(44px, auto) 28px 4px 18px auto;
+  min-width: 0;
+  grid-template-rows: minmax(36px, auto) 22px 4px 18px auto;
 }
 
 .ui-distance-diagram__arrow-layer {
   position: absolute;
-  inset: 48px 0 auto;
+  inset: 38px 0 auto;
   display: grid;
   gap: 8px;
-  height: 28px;
+  height: 22px;
   pointer-events: none;
   z-index: 0;
 }
@@ -1679,7 +1686,7 @@ a {
 }
 
 .ui-distance-diagram__arrow[data-lane="lower"] {
-  margin-top: 14px;
+  margin-top: 10px;
 }
 
 .ui-distance-diagram__arrow-svg {
@@ -1714,15 +1721,15 @@ a {
 
 .ui-distance-diagram__arrow-spacer {
   width: 100%;
-  height: 28px;
+  height: 22px;
 }
 
 .ui-distance-diagram__annotation-stack {
-  min-height: 44px;
+  min-height: 36px;
   display: grid;
   align-content: end;
   justify-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .ui-distance-diagram__annotation {

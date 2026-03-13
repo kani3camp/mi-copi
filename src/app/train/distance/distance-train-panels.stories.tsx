@@ -117,6 +117,8 @@ export const FeedbackIncorrect: Story = {
     const canvas = within(canvasElement);
 
     await expect(canvas.getByText("ずれあり")).toBeVisible();
+    await expect(canvas.getByText("完全5度")).toBeVisible();
+    await expect(canvas.getByText("完全4度")).toBeVisible();
     await expect(canvas.queryByText("方向が逆")).toBeNull();
     await expect(canvas.queryByText("方向は正しい")).toBeNull();
     await userEvent.click(
@@ -162,7 +164,9 @@ export const FeedbackIncorrectDownward: Story = {
     await expect(
       canvas.getByLabelText("距離フィードバック: 0 が基準音、下方向"),
     ).toBeVisible();
-    await expect(canvas.getByText("惜しい")).toBeVisible();
+    await expect(canvas.getByText("ずれあり")).toBeVisible();
+    await expect(canvas.getByText("完全4度")).toBeVisible();
+    await expect(canvas.getByText("短3度")).toBeVisible();
     await expect(canvas.queryByText("方向が逆")).toBeNull();
     await expect(canvas.getByText("正解")).toBeVisible();
     await expect(canvas.getByText("解答")).toBeVisible();
@@ -195,6 +199,7 @@ export const FeedbackExactMatch: Story = {
     const canvas = within(canvasElement);
 
     await expect(canvas.getByText("完全一致")).toBeVisible();
+    await expect(canvas.getAllByText("長2度")).toHaveLength(2);
     await expect(canvas.getAllByText(/正解|解答/)).toHaveLength(2);
   },
 };
