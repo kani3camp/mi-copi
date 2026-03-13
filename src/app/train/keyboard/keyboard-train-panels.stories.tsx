@@ -191,9 +191,7 @@ export const AnsweringWithHiddenLabels: Story = {
       '[data-note="F#"][data-reference="true"]',
     );
 
-    await expect(
-      referenceKey,
-    ).not.toBeNull();
+    await expect(referenceKey).not.toBeNull();
     await expect(referenceKey?.textContent).toBe("");
   },
 };

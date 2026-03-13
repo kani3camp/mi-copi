@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 const { shouldStartAnsweringTransition, shouldStartQuestionPlayback } =
-  await import(
-  new URL("./answering-transition.ts", import.meta.url).href
-);
+  await import(new URL("./answering-transition.ts", import.meta.url).href);
 
 test("starts playback when the active question nonce is not already in flight", () => {
   assert.equal(

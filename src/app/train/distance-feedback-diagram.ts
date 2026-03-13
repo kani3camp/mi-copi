@@ -1,5 +1,7 @@
 import type { QuestionDirection } from "../../features/training/model/types";
 
+export const DISTANCE_FEEDBACK_SCALE_MAX_SEMITONES = 12;
+
 export interface DistanceFeedbackDiagramStep {
   distance: number;
   label: string;
@@ -11,9 +13,13 @@ export function buildDistanceFeedbackDiagramSteps(params: {
   correctSemitones: number;
   answeredSemitones: number;
 }): DistanceFeedbackDiagramStep[] {
-  const maxDistance = Math.max(
-    0,
+  const maxDistance = DISTANCE_FEEDBACK_SCALE_MAX_SEMITONES;
+  const clampedCorrect = Math.min(
+    maxDistance,
     Math.abs(params.correctSemitones),
+  );
+  const clampedAnswered = Math.min(
+    maxDistance,
     Math.abs(params.answeredSemitones),
   );
   const distances = Array.from(
@@ -32,9 +38,9 @@ export function buildDistanceFeedbackDiagramSteps(params: {
     tone:
       distance === 0
         ? "neutral"
-        : distance === Math.abs(params.correctSemitones)
+        : distance === clampedCorrect
           ? "success"
-          : distance === Math.abs(params.answeredSemitones)
+          : distance === clampedAnswered
             ? "teal"
             : "idle",
   }));

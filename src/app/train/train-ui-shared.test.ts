@@ -15,42 +15,43 @@ const { getDistanceFeedbackStatus } = await import(
 );
 
 test("distance feedback diagram keeps the base note on the left for upward questions", () => {
-  assert.deepEqual(
-    buildDistanceFeedbackDiagramSteps({
-      direction: "up",
-      correctSemitones: 5,
-      answeredSemitones: 3,
-    }).map((step: { label: string }) => step.label),
-    ["0", "+1", "+2", "+3", "+4", "+5"],
-  );
+  const labels = buildDistanceFeedbackDiagramSteps({
+    direction: "up",
+    correctSemitones: 5,
+    answeredSemitones: 3,
+  }).map((step: { label: string }) => step.label);
+  assert.equal(labels.length, 13);
+  assert.equal(labels[0], "0");
+  assert.equal(labels[12], "+12");
 });
 
 test("distance feedback diagram moves the base note to the right for downward questions", () => {
-  assert.deepEqual(
-    buildDistanceFeedbackDiagramSteps({
-      direction: "down",
-      correctSemitones: 5,
-      answeredSemitones: 3,
-    }).map((step: { label: string }) => step.label),
-    ["-5", "-4", "-3", "-2", "-1", "0"],
-  );
+  const labels = buildDistanceFeedbackDiagramSteps({
+    direction: "down",
+    correctSemitones: 5,
+    answeredSemitones: 3,
+  }).map((step: { label: string }) => step.label);
+  assert.equal(labels.length, 13);
+  assert.equal(labels[0], "-12");
+  assert.equal(labels[12], "0");
 });
 
 test("distance feedback diagram preserves marker roles after reversing direction", () => {
-  assert.deepEqual(
-    buildDistanceFeedbackDiagramSteps({
-      direction: "down",
-      correctSemitones: 4,
-      answeredSemitones: 1,
-    }).map((step: { label: string; tone: string }) => [step.label, step.tone]),
-    [
-      ["-4", "success"],
-      ["-3", "idle"],
-      ["-2", "idle"],
-      ["-1", "teal"],
-      ["0", "neutral"],
-    ],
+  const steps = buildDistanceFeedbackDiagramSteps({
+    direction: "down",
+    correctSemitones: 4,
+    answeredSemitones: 1,
+  });
+  const byLabel = Object.fromEntries(
+    steps.map((step: { label: string; tone: string }) => [
+      step.label,
+      step.tone,
+    ]),
   );
+  assert.equal(byLabel["-4"], "success");
+  assert.equal(byLabel["-1"], "teal");
+  assert.equal(byLabel["0"], "neutral");
+  assert.equal(byLabel["-12"], "idle");
 });
 
 test("distance feedback diagram exposes separate correct and answered annotations", () => {
@@ -60,9 +61,10 @@ test("distance feedback diagram exposes separate correct and answered annotation
       answeredSemitones: 3,
     }),
     [
+      { distance: 0, label: "基準音", tone: "neutral" },
       {
         distance: 3,
-        label: "解答",
+        label: "回答音",
         tone: "teal",
       },
       {
@@ -81,6 +83,7 @@ test("distance feedback diagram stacks correct and answered annotations on exact
       answeredSemitones: 5,
     }),
     [
+      { distance: 0, label: "基準音", tone: "neutral" },
       {
         distance: 5,
         label: "正解",
@@ -88,7 +91,7 @@ test("distance feedback diagram stacks correct and answered annotations on exact
       },
       {
         distance: 5,
-        label: "解答",
+        label: "回答音",
         tone: "teal",
       },
     ],

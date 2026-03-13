@@ -9,7 +9,10 @@ import { ButtonLink } from "../ui/navigation-link";
 import { Button, Chip, Notice } from "../ui/primitives";
 import { buildDistanceFeedbackDiagramAnnotations } from "./distance-feedback-annotations";
 import { buildDistanceFeedbackDiagramArrows } from "./distance-feedback-arrows";
-import { buildDistanceFeedbackDiagramSteps } from "./distance-feedback-diagram";
+import {
+  buildDistanceFeedbackDiagramSteps,
+  DISTANCE_FEEDBACK_SCALE_MAX_SEMITONES,
+} from "./distance-feedback-diagram";
 import { getDistanceFeedbackStatus } from "./distance-feedback-status";
 
 export type TrainingPlaybackKind = "question" | "base" | "target";
@@ -164,12 +167,20 @@ export function DistanceFeedbackDiagram(props: {
     correctSemitones: props.correctSemitones,
     answeredSemitones: props.answeredSemitones,
   });
+  const clampedCorrect = Math.min(
+    DISTANCE_FEEDBACK_SCALE_MAX_SEMITONES,
+    Math.abs(props.correctSemitones),
+  );
+  const clampedAnswered = Math.min(
+    DISTANCE_FEEDBACK_SCALE_MAX_SEMITONES,
+    Math.abs(props.answeredSemitones),
+  );
   const baseIndex = steps.findIndex((step) => step.distance === 0);
   const correctIndex = steps.findIndex(
-    (step) => step.distance === Math.abs(props.correctSemitones),
+    (step) => step.distance === clampedCorrect,
   );
   const answeredIndex = steps.findIndex(
-    (step) => step.distance === Math.abs(props.answeredSemitones),
+    (step) => step.distance === clampedAnswered,
   );
   const arrows = buildDistanceFeedbackDiagramArrows({
     stepCount: steps.length,
@@ -177,8 +188,7 @@ export function DistanceFeedbackDiagram(props: {
     answeredIndex,
     baseIndex,
   });
-  const columnTemplate = `repeat(${steps.length}, minmax(48px, 1fr))`;
-  const minWidth = `${steps.length * 48}px`;
+  const columnTemplate = `repeat(${steps.length}, minmax(0, 1fr))`;
 
   return (
     <div
@@ -194,11 +204,10 @@ export function DistanceFeedbackDiagram(props: {
           className="ui-distance-diagram__scale"
           style={{
             gridTemplateColumns: columnTemplate,
-            minWidth,
           }}
         >
           <div
-            className="ui-distance-diagram__arrow-layer"
+            className="ui-distance-diagram__arrow-layer ui-distance-diagram__arrow-layer--over-markers"
             style={{
               gridTemplateColumns: columnTemplate,
             }}
@@ -246,7 +255,14 @@ export function DistanceFeedbackDiagram(props: {
             ))}
           </div>
           {steps.map((step) => (
-            <div key={step.distance} className="ui-distance-diagram__step">
+            <div
+              key={step.distance}
+              className={
+                step.distance === 0
+                  ? "ui-distance-diagram__step ui-distance-diagram__step--has-base-markers"
+                  : "ui-distance-diagram__step"
+              }
+            >
               <div className="ui-distance-diagram__annotation-stack">
                 {annotations
                   .filter((annotation) => annotation.distance === step.distance)
@@ -264,12 +280,23 @@ export function DistanceFeedbackDiagram(props: {
                 className="ui-distance-diagram__arrow-spacer"
                 aria-hidden="true"
               />
-              <div className="ui-distance-diagram__track" />
-              <div
-                className="ui-distance-diagram__marker"
-                data-tone={step.tone}
-              />
-              <span className="ui-distance-diagram__label">{step.label}</span>
+              {step.distance === 0 && (
+                <div
+                  className="ui-distance-diagram__base-markers"
+                  aria-hidden="true"
+                >
+                  <div
+                    className="ui-distance-diagram__marker ui-distance-diagram__marker--base"
+                    data-lane="upper"
+                    data-tone="neutral"
+                  />
+                  <div
+                    className="ui-distance-diagram__marker ui-distance-diagram__marker--base"
+                    data-lane="lower"
+                    data-tone="neutral"
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>
