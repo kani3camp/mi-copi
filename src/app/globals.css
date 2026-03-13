@@ -1673,17 +1673,31 @@ a {
 }
 
 .ui-distance-diagram__step--has-base-markers {
-  grid-template-rows: minmax(36px, auto) 22px 22px;
+  grid-template-rows: minmax(36px, auto) 22px;
+}
+
+.ui-distance-diagram__arrow-row {
+  position: relative;
+  width: 100%;
+  height: 22px;
 }
 
 .ui-distance-diagram__base-markers {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 22px;
   align-items: center;
   border: none;
   background: transparent;
+  pointer-events: none;
+}
+
+.ui-distance-diagram__base-markers .ui-distance-diagram__marker--base {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
 }
 
 .ui-distance-diagram__arrow-layer {

@@ -231,9 +231,9 @@ export function DistanceFeedbackDiagram(props: {
                   aria-hidden="true"
                 >
                   <line
-                    x1={arrow.direction === "forward" ? "2" : "98"}
+                    x1={arrow.direction === "forward" ? "0" : "100"}
                     y1="6"
-                    x2={arrow.direction === "forward" ? "98" : "2"}
+                    x2={arrow.direction === "forward" ? "100" : "0"}
                     y2="6"
                     className="ui-distance-diagram__arrow-line"
                     data-tone={arrow.tone}
@@ -264,27 +264,29 @@ export function DistanceFeedbackDiagram(props: {
                     </span>
                   ))}
               </div>
-              <div
-                className="ui-distance-diagram__arrow-spacer"
-                aria-hidden="true"
-              />
-              {step.distance === 0 && (
+              <div className="ui-distance-diagram__arrow-row">
                 <div
-                  className="ui-distance-diagram__base-markers"
+                  className="ui-distance-diagram__arrow-spacer"
                   aria-hidden="true"
-                >
+                />
+                {step.distance === 0 && (
                   <div
-                    className="ui-distance-diagram__marker ui-distance-diagram__marker--base"
-                    data-lane="upper"
-                    data-tone="neutral"
-                  />
-                  <div
-                    className="ui-distance-diagram__marker ui-distance-diagram__marker--base"
-                    data-lane="lower"
-                    data-tone="neutral"
-                  />
-                </div>
-              )}
+                    className="ui-distance-diagram__base-markers"
+                    aria-hidden="true"
+                  >
+                    <div
+                      className="ui-distance-diagram__marker ui-distance-diagram__marker--base"
+                      data-lane="upper"
+                      data-tone="neutral"
+                    />
+                    <div
+                      className="ui-distance-diagram__marker ui-distance-diagram__marker--base"
+                      data-lane="lower"
+                      data-tone="neutral"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
