@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
-import { shouldStartAnsweringTransition } from "../../../features/training/model/answering-transition";
+import {
+  shouldStartAnsweringTransition,
+  shouldStartQuestionPlayback,
+} from "../../../features/training/model/answering-transition";
 import { shouldApplyDeferredTrainingBootstrap } from "../../../features/training/model/bootstrap";
 import {
   clampIntervalMaxSemitone,
@@ -156,7 +159,7 @@ export function DistanceTrainClient({
   const persistedConfigSessionRef = useRef<string | null>(null);
   const autoSaveAttemptedSessionRef = useRef<string | null>(null);
   const playbackIdRef = useRef(0);
-  const playedNonceRef = useRef<number | null>(null);
+  const inFlightPlaybackNonceRef = useRef<number | null>(null);
   const playbackLockRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const questionGeneratorStateRef = useRef<QuestionGeneratorState | null>(null);
@@ -166,6 +169,7 @@ export function DistanceTrainClient({
   const bootstrapRequestedRef = useRef(false);
   const phaseRef = useRef<DistanceTrainPhase>("config");
   const startedAtRef = useRef<string | null>(null);
+  const activeQuestionRef = useRef<ActiveQuestionState | null>(null);
   const answeringUnlockTimeoutRef = useRef<ReturnType<
     typeof globalThis.setTimeout
   > | null>(null);
@@ -206,6 +210,10 @@ export function DistanceTrainClient({
   useEffect(() => {
     startedAtRef.current = startedAt;
   }, [startedAt]);
+
+  useEffect(() => {
+    activeQuestionRef.current = activeQuestion;
+  }, [activeQuestion]);
 
   useEffect(() => {
     if (!loadBootstrapAction || bootstrapRequestedRef.current) {
@@ -261,11 +269,17 @@ export function DistanceTrainClient({
       return;
     }
 
-    if (playedNonceRef.current === activeQuestion.playNonce) {
+    if (
+      !shouldStartQuestionPlayback({
+        phase,
+        activePlayNonce: activeQuestion.playNonce,
+        inFlightPlayNonce: inFlightPlaybackNonceRef.current,
+      })
+    ) {
       return;
     }
 
-    playedNonceRef.current = activeQuestion.playNonce;
+    inFlightPlaybackNonceRef.current = activeQuestion.playNonce;
     answeringHandledNonceRef.current = null;
     let cancelled = false;
     const playNonce = activeQuestion.playNonce;
@@ -275,7 +289,7 @@ export function DistanceTrainClient({
         cancelled ||
         !shouldStartAnsweringTransition({
           phase: phaseRef.current,
-          activePlayNonce: activeQuestion.playNonce,
+          activePlayNonce: activeQuestionRef.current?.playNonce ?? null,
           targetPlayNonce: playNonce,
           handledPlayNonce: answeringHandledNonceRef.current,
         })
@@ -284,6 +298,9 @@ export function DistanceTrainClient({
       }
 
       answeringHandledNonceRef.current = playNonce;
+      if (inFlightPlaybackNonceRef.current === playNonce) {
+        inFlightPlaybackNonceRef.current = null;
+      }
       if (answeringUnlockTimeoutRef.current !== null) {
         globalThis.clearTimeout(answeringUnlockTimeoutRef.current);
         answeringUnlockTimeoutRef.current = null;
@@ -323,6 +340,9 @@ export function DistanceTrainClient({
 
     return () => {
       cancelled = true;
+      if (inFlightPlaybackNonceRef.current === playNonce) {
+        inFlightPlaybackNonceRef.current = null;
+      }
       if (answeringUnlockTimeoutRef.current !== null) {
         globalThis.clearTimeout(answeringUnlockTimeoutRef.current);
         answeringUnlockTimeoutRef.current = null;
@@ -638,6 +658,12 @@ export function DistanceTrainClient({
     questionGeneratorStateRef.current = null;
     sessionDeadlineAtRef.current = null;
     timeoutHandledRef.current = false;
+    inFlightPlaybackNonceRef.current = null;
+    answeringHandledNonceRef.current = null;
+    if (answeringUnlockTimeoutRef.current !== null) {
+      globalThis.clearTimeout(answeringUnlockTimeoutRef.current);
+      answeringUnlockTimeoutRef.current = null;
+    }
     setRemainingTimeMs(null);
   }
 

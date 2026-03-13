@@ -4,6 +4,10 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
+import {
+  shouldStartAnsweringTransition,
+  shouldStartQuestionPlayback,
+} from "../../../features/training/model/answering-transition";
 import { shouldApplyDeferredTrainingBootstrap } from "../../../features/training/model/bootstrap";
 import {
   clampIntervalMaxSemitone,
@@ -14,7 +18,6 @@ import {
   getTimeLimitSecondsSelectOptions,
   TRAINING_CONFIG_LIMITS,
 } from "../../../features/training/model/config";
-import { shouldStartAnsweringTransition } from "../../../features/training/model/answering-transition";
 import { formatDirectionModeLabel } from "../../../features/training/model/interval-notation";
 import type {
   buildKeyboardGuestSaveInput,
@@ -153,7 +156,7 @@ export function KeyboardTrainClient({
   const persistedConfigSessionRef = useRef<string | null>(null);
   const autoSaveAttemptedSessionRef = useRef<string | null>(null);
   const playbackIdRef = useRef(0);
-  const playedNonceRef = useRef<number | null>(null);
+  const inFlightPlaybackNonceRef = useRef<number | null>(null);
   const playbackLockRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const questionGeneratorStateRef = useRef<QuestionGeneratorState | null>(null);
@@ -163,6 +166,7 @@ export function KeyboardTrainClient({
   const bootstrapRequestedRef = useRef(false);
   const phaseRef = useRef<KeyboardTrainPhase>("config");
   const startedAtRef = useRef<string | null>(null);
+  const activeQuestionRef = useRef<ActiveQuestionState | null>(null);
   const resultsRef = useRef<KeyboardGuestResult[]>([]);
   const runtimeRef = useRef<KeyboardTrainRuntimeModule | null>(null);
   const runtimePromiseRef = useRef<Promise<KeyboardTrainRuntimeModule> | null>(
@@ -207,6 +211,10 @@ export function KeyboardTrainClient({
   useEffect(() => {
     resultsRef.current = results;
   }, [results]);
+
+  useEffect(() => {
+    activeQuestionRef.current = activeQuestion;
+  }, [activeQuestion]);
 
   const loadKeyboardRuntime = useCallback(() => {
     if (runtimeRef.current) {
@@ -307,11 +315,17 @@ export function KeyboardTrainClient({
       return;
     }
 
-    if (playedNonceRef.current === activeQuestion.playNonce) {
+    if (
+      !shouldStartQuestionPlayback({
+        phase,
+        activePlayNonce: activeQuestion.playNonce,
+        inFlightPlayNonce: inFlightPlaybackNonceRef.current,
+      })
+    ) {
       return;
     }
 
-    playedNonceRef.current = activeQuestion.playNonce;
+    inFlightPlaybackNonceRef.current = activeQuestion.playNonce;
     answeringHandledNonceRef.current = null;
     let cancelled = false;
     const playNonce = activeQuestion.playNonce;
@@ -321,7 +335,7 @@ export function KeyboardTrainClient({
         cancelled ||
         !shouldStartAnsweringTransition({
           phase: phaseRef.current,
-          activePlayNonce: activeQuestion.playNonce,
+          activePlayNonce: activeQuestionRef.current?.playNonce ?? null,
           targetPlayNonce: playNonce,
           handledPlayNonce: answeringHandledNonceRef.current,
         })
@@ -330,6 +344,9 @@ export function KeyboardTrainClient({
       }
 
       answeringHandledNonceRef.current = playNonce;
+      if (inFlightPlaybackNonceRef.current === playNonce) {
+        inFlightPlaybackNonceRef.current = null;
+      }
       if (answeringUnlockTimeoutRef.current !== null) {
         globalThis.clearTimeout(answeringUnlockTimeoutRef.current);
         answeringUnlockTimeoutRef.current = null;
@@ -372,6 +389,9 @@ export function KeyboardTrainClient({
 
     return () => {
       cancelled = true;
+      if (inFlightPlaybackNonceRef.current === playNonce) {
+        inFlightPlaybackNonceRef.current = null;
+      }
       if (answeringUnlockTimeoutRef.current !== null) {
         globalThis.clearTimeout(answeringUnlockTimeoutRef.current);
         answeringUnlockTimeoutRef.current = null;
@@ -749,6 +769,12 @@ export function KeyboardTrainClient({
     questionGeneratorStateRef.current = null;
     sessionDeadlineAtRef.current = null;
     timeoutHandledRef.current = false;
+    inFlightPlaybackNonceRef.current = null;
+    answeringHandledNonceRef.current = null;
+    if (answeringUnlockTimeoutRef.current !== null) {
+      globalThis.clearTimeout(answeringUnlockTimeoutRef.current);
+      answeringUnlockTimeoutRef.current = null;
+    }
     setRemainingTimeMs(null);
   }, []);
 
