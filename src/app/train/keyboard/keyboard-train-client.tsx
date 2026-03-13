@@ -14,7 +14,6 @@ import {
   getTimeLimitSecondsSelectOptions,
   TRAINING_CONFIG_LIMITS,
 } from "../../../features/training/model/config";
-import { formatDateTimeLabel } from "../../../features/training/model/format";
 import { formatDirectionModeLabel } from "../../../features/training/model/interval-notation";
 import type {
   buildKeyboardGuestSaveInput,
@@ -48,7 +47,7 @@ import {
 } from "../../ui/primitives";
 import type { PlaybackKind } from "../audio-playback";
 import { formatRemainingTimeLabel } from "../train-ui-shared";
-import { TrainingPageHero } from "../training-page-shell";
+import { TrainingProgressHeader } from "../training-page-shell";
 import { formatKeyboardNoteLabel } from "./keyboard-note-label";
 
 const KeyboardQuestionPanel = dynamic(async () => {
@@ -760,48 +759,46 @@ export function KeyboardTrainClient({
 
   return (
     <AppShell narrow className="ui-train-shell">
-      <TrainingPageHero
-        title="鍵盤モード"
-        subtitle="設定から結果表示まで、鍵盤モードの MVP セッションを 1 画面内で進められます。"
-        phase={phase}
-        phaseLabel={formatPhaseLabel(phase)}
+      <TrainingProgressHeader
+        modeLabel="鍵盤モード"
+        modeTone="teal"
+        questionLabel={getKeyboardHeaderLabel(
+          phase,
+          activeQuestion,
+          plannedQuestionCount,
+        )}
+        meta={getKeyboardHeaderMeta({
+          phase,
+          remainingTimeMs,
+          isAuthenticated: isAuthenticatedState,
+          saveResult,
+        })}
         actions={
           <>
-            <ButtonLink href="/" pendingLabel="ホームを開いています...">
+            <ButtonLink
+              href="/"
+              variant="ghost"
+              pendingLabel="ホームを開いています..."
+            >
               ホームへ戻る
             </ButtonLink>
             <ButtonLink
               href="/train/distance"
+              variant="ghost"
               pendingLabel="距離モードを開いています..."
             >
               距離モードへ
             </ButtonLink>
           </>
         }
-      >
-        <div className="ui-train-status-grid">
-          <KeyValueCard label="進行状態" value={formatPhaseLabel(phase)} />
-          {startedAt ? (
-            <KeyValueCard
-              label="開始時刻"
-              value={formatDateTimeLabel(startedAt)}
-            />
-          ) : null}
-          {config.endCondition.type === "time_limit" &&
-          remainingTimeMs !== null ? (
-            <KeyValueCard
-              label="残り時間"
-              value={formatRemainingTimeLabel(remainingTimeMs)}
-            />
-          ) : null}
-        </div>
-        <p className="ui-subtitle">
-          {isAuthenticatedState
-            ? "ログイン中は、結果画面に進むとセッション結果を自動保存します。"
-            : "ゲストでは結果を画面内にのみ保持し、保存は行いません。"}
-        </p>
-        {audioError ? <Notice tone="error">{audioError}</Notice> : null}
-      </TrainingPageHero>
+        notice={
+          audioError
+            ? audioError
+            : isAuthenticatedState
+              ? "結果画面では自動保存されます。"
+              : "ゲストでは保存されません。"
+        }
+      />
 
       {phase === "config" ? (
         <Surface tone="accent">
@@ -1164,6 +1161,47 @@ function createActiveQuestion(
     playbackKind: "question",
     playNonce: nextPlaybackNonce(playbackIdRef),
   };
+}
+
+function getKeyboardHeaderLabel(
+  phase: KeyboardTrainPhase,
+  activeQuestion: ActiveQuestionState | null,
+  plannedQuestionCount: number,
+): string | undefined {
+  if (phase === "result") {
+    return "結果";
+  }
+
+  if (activeQuestion && plannedQuestionCount > 0) {
+    return `${activeQuestion.question.questionIndex + 1} / ${plannedQuestionCount}`;
+  }
+
+  if (activeQuestion) {
+    return `${activeQuestion.question.questionIndex + 1}`;
+  }
+
+  return phase === "config" ? "設定" : formatPhaseLabel(phase);
+}
+
+function getKeyboardHeaderMeta(props: {
+  phase: KeyboardTrainPhase;
+  remainingTimeMs: number | null;
+  isAuthenticated: boolean;
+  saveResult: SaveTrainingSessionResult | null;
+}): string | null {
+  if (props.phase === "result") {
+    if (props.saveResult?.ok) {
+      return "保存済み";
+    }
+
+    return props.isAuthenticated ? "保存待機" : "ゲスト";
+  }
+
+  if (props.remainingTimeMs !== null) {
+    return formatRemainingTimeLabel(props.remainingTimeMs);
+  }
+
+  return null;
 }
 
 function nextPlaybackNonce(

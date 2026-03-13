@@ -21,7 +21,6 @@ import {
   getDistanceQuestionCount,
   validateDistanceTrainingConfig,
 } from "../../../features/training/model/distance-guest";
-import { formatDateTimeLabel } from "../../../features/training/model/format";
 import {
   formatDirectionModeLabel,
   getIntervalLabel,
@@ -66,7 +65,7 @@ import {
   playQuestionAudio,
 } from "../audio-playback";
 import { formatRemainingTimeLabel } from "../train-ui-shared";
-import { TrainingPageHero } from "../training-page-shell";
+import { TrainingProgressHeader } from "../training-page-shell";
 import {
   DistanceFeedbackPanel,
   DistanceQuestionPanel,
@@ -638,19 +637,33 @@ export function DistanceTrainClient({
 
   return (
     <AppShell narrow className="ui-train-shell">
-      <TrainingPageHero
-        title="距離モード"
-        subtitle="設定から結果表示まで、距離モードの MVP セッションを 1 画面内で進められます。"
-        phase={phase}
-        phaseLabel={formatPhaseLabel(phase)}
+      <TrainingProgressHeader
+        modeLabel="距離モード"
+        modeTone="brand"
+        questionLabel={getDistanceHeaderLabel(
+          phase,
+          activeQuestion,
+          plannedQuestionCount,
+        )}
+        meta={getDistanceHeaderMeta({
+          phase,
+          remainingTimeMs,
+          isAuthenticated: isAuthenticatedState,
+          saveResult,
+        })}
         actions={
           <>
-            <ButtonLink href="/" pendingLabel="ホームを開いています...">
+            <ButtonLink
+              href="/"
+              variant="ghost"
+              pendingLabel="ホームを開いています..."
+            >
               ホームへ戻る
             </ButtonLink>
             {!isAuthenticatedState ? (
               <ButtonLink
                 href="/login"
+                variant="ghost"
                 pendingLabel="ログイン画面を開いています..."
               >
                 ログイン
@@ -658,30 +671,14 @@ export function DistanceTrainClient({
             ) : null}
           </>
         }
-      >
-        <div className="ui-train-status-grid">
-          <KeyValueCard label="進行状態" value={formatPhaseLabel(phase)} />
-          {startedAt ? (
-            <KeyValueCard
-              label="開始時刻"
-              value={formatDateTimeLabel(startedAt)}
-            />
-          ) : null}
-          {config.endCondition.type === "time_limit" &&
-          remainingTimeMs !== null ? (
-            <KeyValueCard
-              label="残り時間"
-              value={formatRemainingTimeLabel(remainingTimeMs)}
-            />
-          ) : null}
-        </div>
-        <p className="ui-subtitle">
-          {isAuthenticatedState
-            ? "ログイン中は、結果画面に進むとセッション結果を自動保存します。"
-            : "ゲストでは結果を画面内にのみ保持し、保存は行いません。"}
-        </p>
-        {audioError ? <Notice tone="error">{audioError}</Notice> : null}
-      </TrainingPageHero>
+        notice={
+          audioError
+            ? audioError
+            : isAuthenticatedState
+              ? "結果画面では自動保存されます。"
+              : "ゲストでは保存されません。"
+        }
+      />
 
       {phase === "config" ? (
         <Surface tone="accent">
@@ -1043,6 +1040,43 @@ function createActiveQuestion(
     playbackKind: "question",
     playNonce: nextPlaybackNonce(playbackIdRef),
   };
+}
+
+function getDistanceHeaderLabel(
+  phase: DistanceTrainPhase,
+  activeQuestion: ActiveQuestionState | null,
+  plannedQuestionCount: number,
+): string | undefined {
+  if (phase === "result") {
+    return "結果";
+  }
+
+  if (activeQuestion) {
+    return `${activeQuestion.question.questionIndex + 1} / ${plannedQuestionCount}`;
+  }
+
+  return phase === "config" ? "設定" : formatPhaseLabel(phase);
+}
+
+function getDistanceHeaderMeta(props: {
+  phase: DistanceTrainPhase;
+  remainingTimeMs: number | null;
+  isAuthenticated: boolean;
+  saveResult: SaveTrainingSessionResult | null;
+}): string | null {
+  if (props.phase === "result") {
+    if (props.saveResult?.ok) {
+      return "保存済み";
+    }
+
+    return props.isAuthenticated ? "保存待機" : "ゲスト";
+  }
+
+  if (props.remainingTimeMs !== null) {
+    return formatRemainingTimeLabel(props.remainingTimeMs);
+  }
+
+  return null;
 }
 
 function nextPlaybackNonce(

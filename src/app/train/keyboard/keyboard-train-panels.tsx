@@ -22,16 +22,17 @@ import type {
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
 import {
   Button,
+  Chip,
   KeyValueCard,
-  KeyValueGrid,
   Notice,
   SectionHeader,
+  SummaryBlock,
+  SummaryStat,
   Surface,
 } from "../../ui/primitives";
 import {
   formatFinishReasonLabel,
-  getPlaybackStatusLabel,
-  PlaybackIcon,
+  PlaybackButtonPair,
   type TrainingPlaybackKind,
   TrainingResultPersistenceSection,
 } from "../train-ui-shared";
@@ -39,10 +40,7 @@ import { formatKeyboardNoteLabel } from "./keyboard-note-label";
 
 const WHITE_KEY_NOTES: NoteClass[] = ["C", "D", "E", "F", "G", "A", "B"];
 
-const BLACK_KEY_LAYOUT: Array<{
-  note: NoteClass;
-  left: string;
-}> = [
+const BLACK_KEY_LAYOUT: Array<{ note: NoteClass; left: string }> = [
   { note: "C#", left: "calc(14.2857% - 5.4%)" },
   { note: "D#", left: "calc(28.5714% - 5.4%)" },
   { note: "F#", left: "calc(57.1428% - 5.4%)" },
@@ -65,71 +63,45 @@ export const KeyboardQuestionPanel = memo(
     onReplayTarget: () => void;
     onAnswer: (note: NoteClass) => void;
   }) {
+    const isPlaybackLocked = props.phase === "playing";
+
     return (
       <Surface tone="accent">
         <SectionHeader
-          title={`問題 ${props.questionIndex + 1}`}
-          description="基準音と問題音を聞いて、鍵盤上の音名で回答してください。"
+          title="音を聴いて鍵盤で答える"
+          description="基準音の位置を見ながら、問題音の鍵盤を選びます。"
+          actions={<Chip tone="teal">回答中</Chip>}
         />
-        <div className="ui-train-status-grid">
+        <PlaybackButtonPair
+          isPlaybackLocked={isPlaybackLocked}
+          playbackKind={props.playbackKind}
+          onReplayBase={props.onReplayBase}
+          onReplayTarget={props.onReplayTarget}
+        />
+        <div className="ui-mini-stat-row">
           <KeyValueCard
+            className="ui-kv-card--dense"
             label="方向"
             value={formatQuestionDirectionLabel(props.direction)}
           />
           <KeyValueCard
-            label="基準音の再生回数"
-            value={props.replayBaseCount}
+            className="ui-kv-card--dense"
+            label="基準音"
+            value={`${props.replayBaseCount}回`}
           />
           <KeyValueCard
-            label="問題音の再生回数"
-            value={props.replayTargetCount}
+            className="ui-kv-card--dense"
+            label="問題音"
+            value={`${props.replayTargetCount}回`}
           />
         </div>
-
-        {props.phase === "playing" ? (
-          <Notice>{getPlaybackStatusLabel(props.playbackKind)}</Notice>
-        ) : null}
-
-        {props.phase === "answering" ? (
-          <div className="ui-stack-md">
-            <div className="ui-sticky-actions">
-              <div className="ui-replay-panel">
-                <div className="ui-stack-sm">
-                  <strong>もう一度聞く</strong>
-                  <span className="ui-muted">
-                    再生中の追加タップは無効です。
-                  </span>
-                </div>
-                <div className="ui-replay-panel__row">
-                  <Button
-                    type="button"
-                    onClick={props.onReplayBase}
-                    className="ui-icon-button"
-                    aria-label="基準音をもう一度聞く"
-                  >
-                    <PlaybackIcon />
-                    <span className="ui-icon-button__label">基準音</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={props.onReplayTarget}
-                    className="ui-icon-button"
-                    aria-label="問題音をもう一度聞く"
-                  >
-                    <PlaybackIcon />
-                    <span className="ui-icon-button__label">問題音</span>
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <KeyboardAnswerPad
-              answerChoices={props.answerChoices}
-              referenceNote={props.referenceNote}
-              onAnswer={props.onAnswer}
-              showLabels={props.showLabels}
-            />
-          </div>
-        ) : null}
+        <KeyboardAnswerPad
+          answerChoices={props.answerChoices}
+          referenceNote={props.referenceNote}
+          onAnswer={props.onAnswer}
+          showLabels={props.showLabels}
+          disabled={isPlaybackLocked}
+        />
       </Surface>
     );
   },
@@ -144,48 +116,55 @@ export const KeyboardFeedbackPanel = memo(
     onContinue: () => void;
   }) {
     return (
-      <Surface>
-        <SectionHeader title="フィードバック" />
-        <Notice tone={props.feedbackResult.isCorrect ? "success" : "error"}>
-          {props.feedbackResult.isCorrect ? "正解" : "不正解"}
-        </Notice>
-        <KeyValueGrid>
-          <KeyValueCard
-            label="正解の音"
+      <Surface tone="elevated">
+        <SectionHeader
+          title="フィードバック"
+          actions={
+            <Chip tone={props.feedbackResult.isCorrect ? "brand" : "teal"}>
+              {props.feedbackResult.isCorrect ? "正解" : "確認"}
+            </Chip>
+          }
+        />
+        <SummaryBlock>
+          <SummaryStat
+            label="正解"
             value={formatKeyboardNoteLabel(
               props.feedbackResult.question.targetNote,
             )}
+            emphasis="primary"
           />
-          <KeyValueCard
-            label="あなたの回答"
+          <SummaryStat
+            label="回答"
             value={formatKeyboardNoteLabel(props.feedbackResult.answeredNote)}
           />
-          <KeyValueCard
+        </SummaryBlock>
+        <FeedbackKeyboardView
+          answeredNote={props.feedbackResult.answeredNote}
+          correctNote={props.feedbackResult.question.targetNote}
+          referenceNote={props.feedbackResult.question.baseNote}
+          showLabels={props.showLabels}
+        />
+        <SummaryBlock>
+          <SummaryStat
             label="誤差"
             value={formatSignedSemitoneLabel(
               props.feedbackResult.errorSemitones,
             )}
           />
-          <KeyValueCard
+          <SummaryStat
             label="回答時間"
             value={formatResponseTimeMsLabel(
               props.feedbackResult.responseTimeMs,
             )}
           />
-          <KeyValueCard
+          <SummaryStat
             label="スコア"
             value={formatScoreLabel(props.feedbackResult.score)}
           />
-        </KeyValueGrid>
-        <FeedbackKeyboardView
-          answeredNote={props.feedbackResult.answeredNote}
-          correctNote={props.feedbackResult.question.targetNote}
-          isCorrect={props.feedbackResult.isCorrect}
-          showLabels={props.showLabels}
-        />
+        </SummaryBlock>
         <div className="ui-sticky-actions">
           <Button type="button" onClick={props.onReplayCorrectTarget} block>
-            正解の音をもう一度聞く
+            正解の音を再生
           </Button>
           <Button
             type="button"
@@ -193,7 +172,7 @@ export const KeyboardFeedbackPanel = memo(
             variant="primary"
             block
           >
-            {props.lastAnsweredWasFinal ? "結果を見る" : "次の問題へ"}
+            {props.lastAnsweredWasFinal ? "結果を見る" : "次へ"}
           </Button>
         </div>
       </Surface>
@@ -213,35 +192,35 @@ export const KeyboardResultPanel = memo(function KeyboardResultPanel(props: {
   onReset: () => void;
 }) {
   return (
-    <Surface>
+    <Surface tone="elevated">
       <SectionHeader
         title="結果"
-        description="今回のセッションの精度と反応速度をまとめています。"
+        description="今回の精度と反応速度をまとめました。"
       />
-      <KeyValueGrid>
-        <KeyValueCard label="回答数" value={props.summary.questionCount} />
-        <KeyValueCard
-          label="終了理由"
-          value={formatFinishReasonLabel(props.finishReason)}
+      <SummaryBlock>
+        <SummaryStat
+          label="セッションスコア"
+          value={formatScoreLabel(props.summary.sessionScore)}
+          emphasis="primary"
         />
-        <KeyValueCard label="正解数" value={props.summary.correctCount} />
-        <KeyValueCard
+        <SummaryStat
           label="正答率"
           value={formatAccuracyLabel(props.summary.accuracyRate)}
         />
-        <KeyValueCard
+        <SummaryStat label="回答数" value={props.summary.questionCount} />
+        <SummaryStat
           label="平均誤差"
           value={formatAvgErrorLabel(props.summary.avgErrorAbs)}
         />
-        <KeyValueCard
+        <SummaryStat
           label="平均回答時間"
           value={formatResponseTimeMsLabel(props.summary.avgResponseTimeMs)}
         />
-        <KeyValueCard
-          label="セッションスコア"
-          value={formatScoreLabel(props.summary.sessionScore)}
+        <SummaryStat
+          label="終了理由"
+          value={formatFinishReasonLabel(props.finishReason)}
         />
-      </KeyValueGrid>
+      </SummaryBlock>
 
       {props.finishReason === "time_up" ? (
         <Notice>
@@ -266,26 +245,25 @@ export const KeyboardResultPanel = memo(function KeyboardResultPanel(props: {
 
       <div className="ui-sticky-actions">
         <div className="ui-stack-sm">
-          <strong>次に進む</strong>
-          <span className="ui-muted">
-            結果を確認したら新しいセッションを始められます。
-          </span>
+          <strong>次のセッション</strong>
+          <span className="ui-muted">設定に戻って続けて練習できます。</span>
         </div>
-        <Button type="button" onClick={props.onReset} block>
+        <Button type="button" onClick={props.onReset} block variant="primary">
           {props.cannotSaveBecauseNoAnswers
             ? "新しいセッションを始める"
-            : "最初からやり直す"}
+            : "もう一度始める"}
         </Button>
       </div>
     </Surface>
   );
 });
 
-export const KeyboardAnswerPad = memo(function KeyboardAnswerPad(props: {
+const KeyboardAnswerPad = memo(function KeyboardAnswerPad(props: {
   answerChoices: NoteClass[];
   referenceNote: NoteClass;
   onAnswer: (note: NoteClass) => void;
   showLabels: boolean;
+  disabled: boolean;
 }) {
   const enabledNotes = new Set(props.answerChoices);
 
@@ -298,11 +276,11 @@ export const KeyboardAnswerPad = memo(function KeyboardAnswerPad(props: {
               key={note}
               type="button"
               aria-label={formatKeyboardNoteLabel(note)}
-              disabled={!enabledNotes.has(note)}
+              disabled={!enabledNotes.has(note) || props.disabled}
               onClick={() => props.onAnswer(note)}
               style={getKeyboardKeyStyle(note, {
-                disabled: !enabledNotes.has(note),
-                highlight: note === props.referenceNote ? "reference" : "idle",
+                disabled: !enabledNotes.has(note) || props.disabled,
+                reference: note === props.referenceNote,
                 interactive: true,
               })}
             >
@@ -315,11 +293,11 @@ export const KeyboardAnswerPad = memo(function KeyboardAnswerPad(props: {
             key={note}
             type="button"
             aria-label={formatKeyboardNoteLabel(note)}
-            disabled={!enabledNotes.has(note)}
+            disabled={!enabledNotes.has(note) || props.disabled}
             onClick={() => props.onAnswer(note)}
             style={getKeyboardKeyStyle(note, {
-              disabled: !enabledNotes.has(note),
-              highlight: note === props.referenceNote ? "reference" : "idle",
+              disabled: !enabledNotes.has(note) || props.disabled,
+              reference: note === props.referenceNote,
               interactive: true,
               left,
               position: "absolute",
@@ -330,16 +308,20 @@ export const KeyboardAnswerPad = memo(function KeyboardAnswerPad(props: {
         ))}
       </div>
       <div style={feedbackLegendStyle}>
-        <span style={legendItemStyle("#2f5f3f", "#e7f1ea")}>基準音の位置</span>
+        <span
+          style={legendItemStyle("var(--text-secondary)", "var(--bg-subtle)")}
+        >
+          マーカー=基準音
+        </span>
       </div>
     </div>
   );
 });
 
-export const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
+const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
   answeredNote: NoteClass;
   correctNote: NoteClass;
-  isCorrect: boolean;
+  referenceNote: NoteClass;
   showLabels: boolean;
 }) {
   return (
@@ -352,11 +334,9 @@ export const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
               aria-hidden="true"
               style={getKeyboardKeyStyle(note, {
                 interactive: false,
-                highlight: getKeyboardHighlightTone(
-                  note,
-                  props.correctNote,
-                  props.answeredNote,
-                ),
+                reference: note === props.referenceNote,
+                correct: note === props.correctNote,
+                answered: note === props.answeredNote,
               })}
             >
               {props.showLabels ? <KeyLabel note={note} /> : null}
@@ -371,11 +351,9 @@ export const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
               interactive: false,
               left,
               position: "absolute",
-              highlight: getKeyboardHighlightTone(
-                note,
-                props.correctNote,
-                props.answeredNote,
-              ),
+              reference: note === props.referenceNote,
+              correct: note === props.correctNote,
+              answered: note === props.answeredNote,
             })}
           >
             {props.showLabels ? <KeyLabel note={note} compact /> : null}
@@ -383,12 +361,13 @@ export const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
         ))}
       </div>
       <div style={feedbackLegendStyle}>
-        <span style={legendItemStyle("#166534", "#dcfce7")}>正解の鍵盤</span>
-        {props.isCorrect ? null : (
-          <span style={legendItemStyle("#9a3412", "#ffedd5")}>
-            あなたの回答
-          </span>
-        )}
+        <span
+          style={legendItemStyle("var(--text-secondary)", "var(--bg-subtle)")}
+        >
+          マーカー=基準音
+        </span>
+        <span style={legendItemStyle("#ffffff", "#5f8f66")}>塗り=正解</span>
+        <span style={legendItemStyle("#4f8e8a", "#dceeee")}>枠=回答</span>
       </div>
     </div>
   );
@@ -398,47 +377,24 @@ function getKeyboardKeyStyle(
   note: NoteClass,
   options: {
     disabled?: boolean;
-    highlight?: "idle" | "reference" | "correct" | "answered" | "both";
+    reference?: boolean;
+    correct?: boolean;
+    answered?: boolean;
     interactive: boolean;
     left?: string;
     position?: "relative" | "absolute";
   },
 ): CSSProperties {
   const blackKey = isBlackKey(note);
-  const highlight = options.highlight ?? "idle";
-  const isReference = highlight === "reference";
-  const isCorrect = highlight === "correct" || highlight === "both";
-  const isAnswered = highlight === "answered";
-  const background = blackKey
-    ? isReference
-      ? "linear-gradient(180deg, #6aa57a 0%, #2f5f3f 100%)"
-      : isCorrect
-        ? "linear-gradient(180deg, #34d399 0%, #065f46 100%)"
-        : isAnswered
-          ? "linear-gradient(180deg, #fb923c 0%, #9a3412 100%)"
-          : "linear-gradient(180deg, #374151 0%, #111827 100%)"
-    : isReference
-      ? "linear-gradient(180deg, #ffffff 0%, #e7f1ea 100%)"
-      : isCorrect
-        ? "linear-gradient(180deg, #ffffff 0%, #dcfce7 100%)"
-        : isAnswered
-          ? "linear-gradient(180deg, #ffffff 0%, #ffedd5 100%)"
-          : "linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%)";
-  const border = blackKey
-    ? isReference
-      ? "2px solid #7db08b"
-      : isCorrect
-        ? "2px solid #34d399"
-        : isAnswered
-          ? "2px solid #fdba74"
-          : "1px solid #111827"
-    : isReference
-      ? "2px solid var(--color-primary)"
-      : isCorrect
-        ? "2px solid #16a34a"
-        : isAnswered
-          ? "2px solid #f97316"
-          : "1px solid #d1d5db";
+  const fillColor = options.correct
+    ? blackKey
+      ? "#5f8f66"
+      : "#5f8f66"
+    : blackKey
+      ? "#202722"
+      : "#ffffff";
+  const baseBorder = blackKey ? "#0f1511" : "#d8e1d8";
+  const outlineColor = options.answered ? "#4f8e8a" : baseBorder;
 
   return {
     position: options.position ?? "relative",
@@ -446,13 +402,23 @@ function getKeyboardKeyStyle(
     top: options.position === "absolute" ? 0 : undefined,
     width: blackKey ? "10.8%" : undefined,
     minHeight: blackKey
-      ? "clamp(110px, 24vw, 148px)"
-      : "clamp(176px, 42vw, 240px)",
-    padding: blackKey ? "14px 4px 10px" : "18px 6px 14px",
-    borderRadius: blackKey ? "0 0 14px 14px" : "0 0 18px 18px",
-    border,
-    background,
-    color: blackKey ? "#f9fafb" : "#111827",
+      ? "clamp(106px, 24vw, 148px)"
+      : "clamp(170px, 42vw, 234px)",
+    padding: blackKey ? "16px 4px 10px" : "18px 6px 14px",
+    borderRadius: blackKey ? "0 0 12px 12px" : "0 0 16px 16px",
+    border: `${options.answered ? 2 : 1}px solid ${outlineColor}`,
+    background: fillColor,
+    color:
+      options.correct && !blackKey
+        ? "#ffffff"
+        : blackKey
+          ? "#f4f7f4"
+          : "#18201b",
+    boxShadow: options.correct
+      ? "0 8px 18px rgba(76, 119, 84, 0.18)"
+      : blackKey
+        ? "0 6px 16px rgba(24, 32, 27, 0.18)"
+        : "0 4px 12px rgba(24, 32, 27, 0.06)",
     fontWeight: 700,
     fontSize: blackKey ? "11px" : "13px",
     lineHeight: 1.1,
@@ -461,26 +427,11 @@ function getKeyboardKeyStyle(
     justifyContent: "center",
     textAlign: "center",
     cursor: options.interactive && !options.disabled ? "pointer" : "default",
-    opacity: options.disabled ? 0.5 : 1,
-    boxShadow: blackKey
-      ? isReference
-        ? "0 12px 24px rgba(78, 143, 99, 0.26)"
-        : isCorrect
-          ? "0 12px 24px rgba(5, 150, 105, 0.34)"
-          : isAnswered
-            ? "0 12px 24px rgba(234, 88, 12, 0.3)"
-            : "0 10px 20px rgba(17, 24, 39, 0.28)"
-      : isReference
-        ? "0 10px 24px rgba(78, 143, 99, 0.16)"
-        : isCorrect
-          ? "0 10px 24px rgba(34, 197, 94, 0.18)"
-          : isAnswered
-            ? "0 10px 24px rgba(249, 115, 22, 0.18)"
-            : "0 8px 18px rgba(15, 23, 42, 0.08)",
-    transform:
-      options.interactive && !options.disabled ? "translateY(0)" : undefined,
+    opacity: options.disabled ? 0.45 : 1,
     touchAction: "manipulation",
     zIndex: blackKey ? 2 : 1,
+    outline: options.answered ? "2px solid rgba(79, 142, 138, 0.18)" : "none",
+    outlineOffset: options.answered ? "-4px" : undefined,
   };
 }
 
@@ -506,26 +457,6 @@ function KeyLabel(props: { note: NoteClass; compact?: boolean }) {
   return <span>{props.note}</span>;
 }
 
-function getKeyboardHighlightTone(
-  note: NoteClass,
-  correctNote: NoteClass,
-  answeredNote: NoteClass,
-): "idle" | "correct" | "answered" | "both" {
-  if (note === correctNote && note === answeredNote) {
-    return "both";
-  }
-
-  if (note === correctNote) {
-    return "correct";
-  }
-
-  if (note === answeredNote) {
-    return "answered";
-  }
-
-  return "idle";
-}
-
 function isBlackKey(note: NoteClass): boolean {
   return (
     note === "C#" ||
@@ -545,12 +476,10 @@ const pianoShellStyle: CSSProperties = {
   position: "relative",
   overflow: "hidden",
   padding: "12px 10px 16px",
-  borderRadius: "22px",
-  border: "1px solid #d6ccbb",
-  background:
-    "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(245,241,232,0.96) 100%)",
-  boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.9), 0 16px 32px rgba(15, 23, 42, 0.08)",
+  borderRadius: "16px",
+  border: "1px solid var(--border-subtle)",
+  background: "var(--surface-elevated)",
+  boxShadow: "var(--shadow-soft)",
 };
 
 const whiteKeyRowStyle: CSSProperties = {
@@ -570,7 +499,8 @@ function legendItemStyle(color: string, background: string): CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: "6px",
-    padding: "6px 10px",
+    minHeight: "28px",
+    padding: "0 10px",
     borderRadius: "999px",
     background,
     color,

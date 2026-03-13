@@ -1,7 +1,12 @@
-import type { SessionFinishReason } from "../../features/training/model/types";
+import type { ReactNode } from "react";
+
+import type {
+  QuestionDirection,
+  SessionFinishReason,
+} from "../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
 import { ButtonLink } from "../ui/navigation-link";
-import { Button, Notice } from "../ui/primitives";
+import { Button, Chip, Notice } from "../ui/primitives";
 
 export type TrainingPlaybackKind = "question" | "base" | "target";
 
@@ -31,12 +36,180 @@ export function formatFinishReasonLabel(
 export function getPlaybackStatusLabel(playbackKind: TrainingPlaybackKind) {
   switch (playbackKind) {
     case "base":
-      return "基準音を再生しています...";
+      return "基準音を再生中";
     case "target":
-      return "問題音を再生しています...";
+      return "問題音を再生中";
     default:
-      return "基準音のあとに問題音を再生しています...";
+      return "基準音のあとに問題音を再生中";
   }
+}
+
+export function PlaybackButtonPair(props: {
+  isPlaybackLocked: boolean;
+  playbackKind: TrainingPlaybackKind;
+  onReplayBase: () => void;
+  onReplayTarget: () => void;
+}) {
+  return (
+    <div className="ui-playback-pair">
+      <PlaybackButton
+        label="基準音"
+        isActive={
+          props.playbackKind === "base" || props.playbackKind === "question"
+        }
+        disabled={props.isPlaybackLocked}
+        onClick={props.onReplayBase}
+      />
+      <PlaybackButton
+        label="問題音"
+        isActive={props.playbackKind === "target"}
+        disabled={props.isPlaybackLocked}
+        onClick={props.onReplayTarget}
+      />
+    </div>
+  );
+}
+
+function PlaybackButton(props: {
+  label: string;
+  isActive: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      onClick={props.onClick}
+      disabled={props.disabled}
+      className="ui-playback-button"
+      aria-label={`${props.label}を再生`}
+    >
+      <span className="ui-playback-button__icon" aria-hidden="true">
+        <svg viewBox="0 0 20 20" width="20" height="20" fill="none">
+          <title>{props.label}</title>
+          <path
+            d="M4 7.5a1 1 0 0 1 1.6-.8l7 5a1 1 0 0 1 0 1.6l-7 5A1 1 0 0 1 4 17.5v-10Z"
+            fill="currentColor"
+          />
+        </svg>
+      </span>
+      <span className="ui-playback-button__label">{props.label}</span>
+      <span
+        className="ui-playback-button__state"
+        data-active={props.isActive ? "true" : "false"}
+        aria-hidden="true"
+      >
+        <span />
+        <span />
+        <span />
+      </span>
+    </Button>
+  );
+}
+
+export function MiniStatRow(props: {
+  items: Array<{
+    label: ReactNode;
+    value: ReactNode;
+    tone?: "neutral" | "teal" | "amber" | "coral" | "blue";
+  }>;
+}) {
+  return (
+    <div className="ui-mini-stat-row">
+      {props.items.map((item) => (
+        <div
+          key={`${item.label}-${item.value}`}
+          className="ui-mini-stat"
+          data-tone={item.tone ?? "neutral"}
+        >
+          <span className="ui-mini-stat__label">{item.label}</span>
+          <strong className="ui-mini-stat__value">{item.value}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function FeedbackStatusChip(props: {
+  errorSemitones: number;
+  isCorrect: boolean;
+  direction: QuestionDirection;
+  answeredDirection: QuestionDirection;
+}) {
+  const absError = Math.abs(props.errorSemitones);
+  const tone = props.isCorrect
+    ? "brand"
+    : absError === 1
+      ? "amber"
+      : absError === 2
+        ? "blue"
+        : "coral";
+  const label = props.isCorrect
+    ? "完全一致"
+    : absError === 1
+      ? "惜しい"
+      : absError === 2
+        ? "ややズレ"
+        : "大きくズレ";
+  const directionLabel =
+    props.direction === props.answeredDirection ? "方向は正しい" : "方向が逆";
+
+  return (
+    <div className="ui-feedback-status">
+      <Chip tone={tone}>{label}</Chip>
+      {!props.isCorrect ? <Chip tone="neutral">{directionLabel}</Chip> : null}
+    </div>
+  );
+}
+
+export function DistanceFeedbackDiagram(props: {
+  correctSemitones: number;
+  answeredSemitones: number;
+}) {
+  const min = Math.min(0, props.correctSemitones, props.answeredSemitones);
+  const max = Math.max(0, props.correctSemitones, props.answeredSemitones);
+  const steps = Array.from(
+    { length: max - min + 1 },
+    (_, index) => min + index,
+  );
+
+  return (
+    <div className="ui-distance-diagram">
+      <div className="ui-distance-diagram__scale">
+        {steps.map((step) => (
+          <div key={step} className="ui-distance-diagram__step">
+            <div className="ui-distance-diagram__track" />
+            <div
+              className="ui-distance-diagram__marker"
+              data-tone={
+                step === 0
+                  ? "neutral"
+                  : step === props.correctSemitones
+                    ? "brand"
+                    : step === props.answeredSemitones
+                      ? "teal"
+                      : "idle"
+              }
+            />
+            <span className="ui-distance-diagram__label">
+              {step > 0 ? `+${step}` : step}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="ui-distance-diagram__legend">
+        <span className="ui-distance-diagram__legend-item" data-tone="neutral">
+          基準音
+        </span>
+        <span className="ui-distance-diagram__legend-item" data-tone="brand">
+          正解
+        </span>
+        <span className="ui-distance-diagram__legend-item" data-tone="teal">
+          回答
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export function TrainingResultPersistenceSection(props: {
@@ -133,26 +306,6 @@ export function TrainingResultPersistenceSection(props: {
         </div>
       ) : null}
     </>
-  );
-}
-
-export function PlaybackIcon() {
-  return (
-    <span className="ui-icon-button__icon" aria-hidden="true">
-      <svg viewBox="0 0 20 20" width="20" height="20" fill="none">
-        <title>再生</title>
-        <path
-          d="M4 7.5a1 1 0 0 1 1.6-.8l7 5a1 1 0 0 1 0 1.6l-7 5A1 1 0 0 1 4 17.5v-10Z"
-          fill="currentColor"
-        />
-        <path
-          d="M14.5 5.5a5.5 5.5 0 0 1 0 9"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
-      </svg>
-    </span>
   );
 }
 

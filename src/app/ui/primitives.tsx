@@ -31,38 +31,58 @@ export function AppShell(
   );
 }
 
-export function PageHero(
-  props: PropsWithChildren<{
-    title: string;
-    subtitle?: ReactNode;
-    eyebrow?: ReactNode;
-    actions?: ReactNode;
-    className?: string;
-  }>,
-) {
+interface BaseHeaderProps {
+  title: string;
+  subtitle?: ReactNode;
+  eyebrow?: ReactNode;
+  actions?: ReactNode;
+  supporting?: ReactNode;
+  className?: string;
+}
+
+export function PageHeader(props: BaseHeaderProps) {
   return (
-    <header className={cn("ui-hero", props.className)}>
-      <div className="ui-stack-md">
+    <header className={cn("ui-page-header", props.className)}>
+      <div className="ui-page-header__main">
         {props.eyebrow ? (
-          <div className="ui-hero__eyebrow">{props.eyebrow}</div>
+          <div className="ui-page-header__eyebrow">{props.eyebrow}</div>
         ) : null}
-        <div className="ui-hero__header">
+        <div className="ui-page-header__copy">
           <h1 className="ui-title">{props.title}</h1>
           {props.subtitle ? (
-            <p className="ui-subtitle">{props.subtitle}</p>
+            <p className="ui-subtitle ui-page-header__subtitle">
+              {props.subtitle}
+            </p>
           ) : null}
         </div>
       </div>
-      {props.children}
-      {props.actions ? <div className="ui-nav-row">{props.actions}</div> : null}
+      {props.actions ? (
+        <div className="ui-page-header__actions">{props.actions}</div>
+      ) : null}
+      {props.supporting ? (
+        <div className="ui-page-header__supporting">{props.supporting}</div>
+      ) : null}
     </header>
+  );
+}
+
+export function PageHero(props: PropsWithChildren<BaseHeaderProps>) {
+  return (
+    <PageHeader
+      title={props.title}
+      subtitle={props.subtitle}
+      eyebrow={props.eyebrow}
+      actions={props.actions}
+      supporting={props.children}
+      className={cn("ui-page-header--hero", props.className)}
+    />
   );
 }
 
 export function Surface(
   props: PropsWithChildren<{
     as?: "section" | "div" | "article";
-    tone?: "default" | "muted" | "accent";
+    tone?: "default" | "muted" | "accent" | "elevated";
     className?: string;
   }>,
 ) {
@@ -74,6 +94,7 @@ export function Surface(
         "ui-surface",
         props.tone === "muted" && "ui-surface--muted",
         props.tone === "accent" && "ui-surface--accent",
+        props.tone === "elevated" && "ui-surface--elevated",
         props.className,
       )}
     >
@@ -86,13 +107,21 @@ export function SectionHeader(props: {
   title: string;
   description?: ReactNode;
   actions?: ReactNode;
+  eyebrow?: ReactNode;
   className?: string;
 }) {
   return (
     <div className={cn("ui-section-header", props.className)}>
       <div className="ui-inline-split">
-        <h2 className="ui-section-title">{props.title}</h2>
-        {props.actions}
+        <div className="ui-section-header__copy">
+          {props.eyebrow ? (
+            <div className="ui-section-header__eyebrow">{props.eyebrow}</div>
+          ) : null}
+          <h2 className="ui-section-title">{props.title}</h2>
+        </div>
+        {props.actions ? (
+          <div className="ui-section-header__actions">{props.actions}</div>
+        ) : null}
       </div>
       {props.description ? (
         <p className="ui-subtitle">{props.description}</p>
@@ -153,7 +182,18 @@ export function Notice(
 
 export function Chip(
   props: PropsWithChildren<{
-    tone?: "neutral" | "active" | "info" | "success" | "error";
+    tone?:
+      | "neutral"
+      | "brand"
+      | "teal"
+      | "amber"
+      | "coral"
+      | "blue"
+      | "active"
+      | "info"
+      | "success"
+      | "warning"
+      | "error";
     className?: string;
   }>,
 ) {
@@ -198,6 +238,42 @@ export function MetricCard(props: {
         {props.value}
       </span>
       {props.detail ? <span className="ui-muted">{props.detail}</span> : null}
+    </div>
+  );
+}
+
+export function SummaryBlock(
+  props: PropsWithChildren<{
+    className?: string;
+  }>,
+) {
+  return (
+    <div className={cn("ui-summary-block", props.className)}>
+      {props.children}
+    </div>
+  );
+}
+
+export function SummaryStat(props: {
+  label: ReactNode;
+  value: ReactNode;
+  detail?: ReactNode;
+  emphasis?: "primary" | "default";
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "ui-summary-stat",
+        props.emphasis === "primary" && "ui-summary-stat--primary",
+        props.className,
+      )}
+    >
+      <span className="ui-summary-stat__label">{props.label}</span>
+      <strong className="ui-summary-stat__value">{props.value}</strong>
+      {props.detail ? (
+        <span className="ui-summary-stat__detail">{props.detail}</span>
+      ) : null}
     </div>
   );
 }
@@ -256,6 +332,30 @@ export function List(
   const Tag = props.as ?? "ul";
 
   return <Tag className={cn("ui-list", props.className)}>{props.children}</Tag>;
+}
+
+export function GraphCard(
+  props: PropsWithChildren<{
+    title: ReactNode;
+    subtitle?: ReactNode;
+    className?: string;
+    actions?: ReactNode;
+  }>,
+) {
+  return (
+    <section className={cn("ui-graph-card", props.className)}>
+      <div className="ui-graph-card__header">
+        <div className="ui-stack-sm">
+          <strong className="ui-graph-card__title">{props.title}</strong>
+          {props.subtitle ? (
+            <span className="ui-muted">{props.subtitle}</span>
+          ) : null}
+        </div>
+        {props.actions ? <div>{props.actions}</div> : null}
+      </div>
+      {props.children}
+    </section>
+  );
 }
 
 export function Divider(props: { className?: string }) {

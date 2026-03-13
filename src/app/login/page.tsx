@@ -7,11 +7,11 @@ import {
 import { ButtonLink } from "../ui/navigation-link";
 import {
   AppShell,
-  KeyValueCard,
-  KeyValueGrid,
   Notice,
-  PageHero,
+  PageHeader,
   SectionHeader,
+  SummaryBlock,
+  SummaryStat,
   Surface,
 } from "../ui/primitives";
 import { LoginControls } from "./login-controls";
@@ -21,36 +21,38 @@ export default async function LoginPage() {
 
   return (
     <AppShell narrow>
-      <PageHero
+      <PageHeader
         title="ログイン"
         eyebrow="Account Access"
-        subtitle="Google ログインまたはゲスト開始の入口です。相対音感トレーニングをすぐ始めつつ、必要なときだけ保存機能に切り替えられます。"
+        subtitle="Google でログインするか、ゲストでそのまま始めるかを選びます。"
         actions={
           <>
-            <ButtonLink href="/" pendingLabel="ホームを開いています...">
-              ホームへ戻る
+            <ButtonLink
+              href="/"
+              variant="ghost"
+              pendingLabel="ホームを開いています..."
+            >
+              ホーム
             </ButtonLink>
             <ButtonLink
               href="/train/distance"
+              variant="ghost"
               pendingLabel="距離モードを開いています..."
             >
-              距離モードへ
-            </ButtonLink>
-            <ButtonLink
-              href="/train/keyboard"
-              pendingLabel="鍵盤モードを開いています..."
-            >
-              鍵盤モードへ
+              距離モード
             </ButtonLink>
           </>
         }
       />
 
+      {hasSessionToken ? (
+        <Notice tone="success">
+          すでにサインイン済みです。必要ならこのままホームへ戻って学習を始められます。
+        </Notice>
+      ) : null}
+
       <Surface tone="accent">
-        <SectionHeader
-          title="開始方法"
-          description="ミーコピ MVP ではゲストでも練習できます。保存済み履歴や成長確認を使う場合だけログインしてください。"
-        />
+        <SectionHeader title="開始方法" />
         <LoginControls />
       </Surface>
 
@@ -72,20 +74,18 @@ async function LoginCurrentUserSection() {
 
   return (
     <Surface>
-      <SectionHeader
-        title="サインイン中のアカウント"
-        description="保存済み履歴と同期設定はこのアカウントに紐づきます。"
-      />
-      <Notice tone="success">
-        すでにサインイン済みです。ホームからそのまま学習を始められます。
-      </Notice>
-      <KeyValueGrid>
-        <KeyValueCard label="名前" value={currentUser.name ?? "不明"} />
-        <KeyValueCard
+      <SectionHeader title="サインイン中のアカウント" />
+      <SummaryBlock>
+        <SummaryStat
+          label="名前"
+          value={currentUser.name ?? "不明"}
+          emphasis="primary"
+        />
+        <SummaryStat
           label="メールアドレス"
           value={currentUser.email ?? "不明"}
         />
-      </KeyValueGrid>
+      </SummaryBlock>
     </Surface>
   );
 }
@@ -93,10 +93,7 @@ async function LoginCurrentUserSection() {
 function LoginAccountLoading() {
   return (
     <Surface>
-      <SectionHeader
-        title="アカウント状態を確認中"
-        description="サインイン状態を読み込んでいます。"
-      />
+      <SectionHeader title="アカウント状態を確認中" />
     </Surface>
   );
 }

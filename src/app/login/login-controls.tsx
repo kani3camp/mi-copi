@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { getAuthClient } from "../../lib/auth/client";
 import { ButtonLink } from "../ui/navigation-link";
-import { Button, Notice } from "../ui/primitives";
+import { Button, Chip, Notice } from "../ui/primitives";
 
 export function LoginControls() {
   const authClient = getAuthClient();
@@ -36,10 +36,10 @@ export function LoginControls() {
     <div className="ui-auth-choice-grid">
       <div className="ui-auth-choice-card">
         <div className="ui-stack-sm">
-          <span className="ui-hero__eyebrow">Cloud Save</span>
+          <Chip tone="brand">Cloud Save</Chip>
           <strong>Google でログイン</strong>
           <p className="ui-muted">
-            結果の保存、統計、設定のクラウド同期を使う場合はこちら。
+            結果の保存、統計、設定の同期を使う場合はこちら。
           </p>
         </div>
         <Button
@@ -56,11 +56,9 @@ export function LoginControls() {
 
       <div className="ui-auth-choice-card">
         <div className="ui-stack-sm">
-          <span className="ui-hero__eyebrow">Guest Start</span>
+          <Chip tone="teal">Guest Start</Chip>
           <strong>ゲストでそのまま練習</strong>
-          <p className="ui-muted">
-            保存なしで今すぐ始める軽い反復練習向けです。
-          </p>
+          <p className="ui-muted">保存なしで今すぐ試したいときはこちらです。</p>
         </div>
         <ButtonLink href="/" block pendingLabel="ホームを開いています...">
           ゲストで始める

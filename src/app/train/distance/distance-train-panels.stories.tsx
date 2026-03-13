@@ -84,12 +84,8 @@ export const Answering: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
 
-    await userEvent.click(
-      canvas.getByRole("button", { name: "基準音をもう一度聞く" }),
-    );
-    await userEvent.click(
-      canvas.getByRole("button", { name: "問題音をもう一度聞く" }),
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "基準音を再生" }));
+    await userEvent.click(canvas.getByRole("button", { name: "問題音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "完全5度" }));
 
     await expect(args.onReplayBase).toHaveBeenCalledTimes(1);
@@ -121,9 +117,9 @@ export const FeedbackIncorrect: Story = {
     const canvas = within(canvasElement);
 
     await userEvent.click(
-      canvas.getByRole("button", { name: "正解の音をもう一度聞く" }),
+      canvas.getByRole("button", { name: "正解の音を再生" }),
     );
-    await userEvent.click(canvas.getByRole("button", { name: "次の問題へ" }));
+    await userEvent.click(canvas.getByRole("button", { name: "次へ" }));
 
     await expect(args.onReplayCorrectTarget).toHaveBeenCalledTimes(1);
     await expect(args.onContinue).toHaveBeenCalledTimes(1);
@@ -161,7 +157,7 @@ export const ResultGuest: Story = {
     ).toBeVisible();
 
     await userEvent.click(
-      canvas.getByRole("button", { name: "最初からやり直す" }),
+      canvas.getByRole("button", { name: "もう一度始める" }),
     );
     await expect(args.onReset).toHaveBeenCalledTimes(1);
   },

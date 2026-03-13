@@ -99,12 +99,8 @@ export const AnsweringWithReferenceKey: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
 
-    await userEvent.click(
-      canvas.getByRole("button", { name: "基準音をもう一度聞く" }),
-    );
-    await userEvent.click(
-      canvas.getByRole("button", { name: "問題音をもう一度聞く" }),
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "基準音を再生" }));
+    await userEvent.click(canvas.getByRole("button", { name: "問題音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "G" }));
 
     await expect(args.onReplayBase).toHaveBeenCalledTimes(1);
@@ -137,7 +133,7 @@ export const FeedbackIncorrect: Story = {
     const canvas = within(canvasElement);
 
     await userEvent.click(
-      canvas.getByRole("button", { name: "正解の音をもう一度聞く" }),
+      canvas.getByRole("button", { name: "正解の音を再生" }),
     );
     await userEvent.click(canvas.getByRole("button", { name: "結果を見る" }));
 
@@ -175,7 +171,7 @@ export const ResultSaveSuccess: Story = {
       canvas.getByRole("link", { name: "セッション詳細を見る" }),
     ).toBeVisible();
     await userEvent.click(
-      canvas.getByRole("button", { name: "最初からやり直す" }),
+      canvas.getByRole("button", { name: "もう一度始める" }),
     );
     await expect(args.onReset).toHaveBeenCalledTimes(1);
   },

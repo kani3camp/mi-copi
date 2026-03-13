@@ -21,18 +21,19 @@ import type {
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
 import {
   Button,
-  FieldGrid,
+  Chip,
   KeyValueCard,
-  KeyValueGrid,
-  List,
   Notice,
   SectionHeader,
+  SummaryBlock,
+  SummaryStat,
   Surface,
 } from "../../ui/primitives";
 import {
+  DistanceFeedbackDiagram,
+  FeedbackStatusChip,
   formatFinishReasonLabel,
-  getPlaybackStatusLabel,
-  PlaybackIcon,
+  PlaybackButtonPair,
   type TrainingPlaybackKind,
   TrainingResultPersistenceSection,
 } from "../train-ui-shared";
@@ -50,72 +51,52 @@ export function DistanceQuestionPanel(props: {
   onReplayTarget: () => void;
   onAnswer: (value: number) => void;
 }) {
+  const isPlaybackLocked = props.phase === "playing";
+
   return (
     <Surface tone="accent">
       <SectionHeader
-        title={`問題 ${props.questionIndex + 1}`}
-        description="基準音と問題音を聞いて、音程名で回答してください。"
+        title="音を聴いて答える"
+        description="再生ボタンで聞き直しながら、音程名をひとつ選びます。"
+        actions={<Chip tone="teal">回答中</Chip>}
       />
-      <div className="ui-train-status-grid">
+      <PlaybackButtonPair
+        isPlaybackLocked={isPlaybackLocked}
+        playbackKind={props.playbackKind}
+        onReplayBase={props.onReplayBase}
+        onReplayTarget={props.onReplayTarget}
+      />
+      <div className="ui-mini-stat-row">
         <KeyValueCard
+          className="ui-kv-card--dense"
           label="方向"
           value={formatQuestionDirectionLabel(props.direction)}
         />
-        <KeyValueCard label="基準音の再生回数" value={props.replayBaseCount} />
         <KeyValueCard
-          label="問題音の再生回数"
-          value={props.replayTargetCount}
+          className="ui-kv-card--dense"
+          label="基準音"
+          value={`${props.replayBaseCount}回`}
+        />
+        <KeyValueCard
+          className="ui-kv-card--dense"
+          label="問題音"
+          value={`${props.replayTargetCount}回`}
         />
       </div>
-
-      {props.phase === "playing" ? (
-        <Notice>{getPlaybackStatusLabel(props.playbackKind)}</Notice>
-      ) : null}
-
-      {props.phase === "answering" ? (
-        <div className="ui-stack-md">
-          <div className="ui-sticky-actions">
-            <div className="ui-replay-panel">
-              <div className="ui-stack-sm">
-                <strong>もう一度聞く</strong>
-                <span className="ui-muted">再生中の追加タップは無効です。</span>
-              </div>
-              <div className="ui-replay-panel__row">
-                <Button
-                  type="button"
-                  onClick={props.onReplayBase}
-                  className="ui-icon-button"
-                  aria-label="基準音をもう一度聞く"
-                >
-                  <PlaybackIcon />
-                  <span className="ui-icon-button__label">基準音</span>
-                </Button>
-                <Button
-                  type="button"
-                  onClick={props.onReplayTarget}
-                  className="ui-icon-button"
-                  aria-label="問題音をもう一度聞く"
-                >
-                  <PlaybackIcon />
-                  <span className="ui-icon-button__label">問題音</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-          <div className="ui-train-answer-grid">
-            {props.answerChoiceValues.map((choice) => (
-              <Button
-                key={choice}
-                type="button"
-                onClick={() => props.onAnswer(choice)}
-                block
-              >
-                {getIntervalLabel(choice, props.intervalNotationStyle)}
-              </Button>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      <div className="ui-train-answer-grid">
+        {props.answerChoiceValues.map((choice) => (
+          <Button
+            key={choice}
+            type="button"
+            onClick={() => props.onAnswer(choice)}
+            block
+            disabled={isPlaybackLocked}
+            variant="secondary"
+          >
+            {getIntervalLabel(choice, props.intervalNotationStyle)}
+          </Button>
+        ))}
+      </div>
     </Surface>
   );
 }
@@ -127,50 +108,69 @@ export function DistanceFeedbackPanel(props: {
   onReplayCorrectTarget: () => void;
   onContinue: () => void;
 }) {
+  const answeredDirection =
+    props.feedbackResult.answeredDistanceSemitones >= 0 ? "up" : "down";
+
   return (
-    <Surface>
-      <SectionHeader title="フィードバック" />
-      <Notice tone={props.feedbackResult.isCorrect ? "success" : "error"}>
-        <strong>{props.feedbackResult.isCorrect ? "正解" : "不正解"}</strong>
-        <div>
-          {formatQuestionDirectionLabel(
-            props.feedbackResult.question.direction,
-          )}
-        </div>
-      </Notice>
-      <FieldGrid>
-        <KeyValueCard
+    <Surface tone="elevated">
+      <SectionHeader
+        title="フィードバック"
+        actions={
+          <FeedbackStatusChip
+            errorSemitones={props.feedbackResult.errorSemitones}
+            isCorrect={props.feedbackResult.isCorrect}
+            direction={props.feedbackResult.question.direction}
+            answeredDirection={answeredDirection}
+          />
+        }
+      />
+
+      <SummaryBlock>
+        <SummaryStat
           label="正解"
           value={getIntervalLabel(
             props.feedbackResult.question.distanceSemitones,
             props.intervalNotationStyle,
           )}
+          emphasis="primary"
         />
-        <KeyValueCard
-          label="あなたの回答"
+        <SummaryStat
+          label="回答"
           value={getIntervalLabel(
             props.feedbackResult.answeredDistanceSemitones,
             props.intervalNotationStyle,
           )}
         />
-      </FieldGrid>
-      <KeyValueGrid>
-        <KeyValueCard
+      </SummaryBlock>
+
+      <DistanceFeedbackDiagram
+        correctSemitones={props.feedbackResult.question.distanceSemitones}
+        answeredSemitones={props.feedbackResult.answeredDistanceSemitones}
+      />
+
+      <DistanceMiniKeyboard
+        correctSemitones={props.feedbackResult.question.distanceSemitones}
+        answeredSemitones={props.feedbackResult.answeredDistanceSemitones}
+      />
+
+      <SummaryBlock>
+        <SummaryStat
           label="誤差"
           value={formatSignedSemitoneLabel(props.feedbackResult.errorSemitones)}
         />
-        <KeyValueCard
+        <SummaryStat
           label="回答時間"
           value={formatResponseTimeMsLabel(props.feedbackResult.responseTimeMs)}
         />
-        <KeyValueCard
+        <SummaryStat
           label="スコア"
           value={formatScoreLabel(props.feedbackResult.score)}
         />
-      </KeyValueGrid>
+      </SummaryBlock>
+
       <div className="ui-sticky-actions">
         <Button type="button" onClick={props.onReplayCorrectTarget} block>
-          正解の音をもう一度聞く
+          正解の音を再生
         </Button>
         <Button
           type="button"
@@ -178,7 +178,7 @@ export function DistanceFeedbackPanel(props: {
           variant="primary"
           block
         >
-          {props.lastAnsweredWasFinal ? "結果を見る" : "次の問題へ"}
+          {props.lastAnsweredWasFinal ? "結果を見る" : "次へ"}
         </Button>
       </div>
     </Surface>
@@ -199,52 +199,54 @@ export function DistanceResultPanel(props: {
   onReset: () => void;
 }) {
   return (
-    <Surface>
+    <Surface tone="elevated">
       <SectionHeader
         title="結果"
-        description="今回のセッションの精度と反応速度をまとめています。"
+        description="今回の精度と反応速度をまとめました。"
       />
-      <KeyValueGrid>
-        <KeyValueCard label="回答数" value={props.summary.questionCount} />
-        <KeyValueCard
-          label="終了理由"
-          value={formatFinishReasonLabel(props.finishReason)}
+
+      <SummaryBlock>
+        <SummaryStat
+          label="セッションスコア"
+          value={formatScoreLabel(props.summary.sessionScore)}
+          emphasis="primary"
         />
-        <KeyValueCard label="正解数" value={props.summary.correctCount} />
-        <KeyValueCard
+        <SummaryStat
           label="正答率"
           value={formatAccuracyLabel(props.summary.accuracyRate)}
         />
-        <KeyValueCard
+        <SummaryStat label="回答数" value={props.summary.questionCount} />
+        <SummaryStat
           label="平均誤差"
           value={formatAvgErrorLabel(props.summary.avgErrorAbs)}
         />
-        <KeyValueCard
+        <SummaryStat
           label="平均回答時間"
           value={formatResponseTimeMsLabel(props.summary.avgResponseTimeMs)}
         />
-        <KeyValueCard
-          label="セッションスコア"
-          value={formatScoreLabel(props.summary.sessionScore)}
+        <SummaryStat
+          label="終了理由"
+          value={formatFinishReasonLabel(props.finishReason)}
         />
-      </KeyValueGrid>
+      </SummaryBlock>
 
       {props.recentResults.length > 0 ? (
         <div className="ui-stack-md">
-          <h3 className="ui-section-title">直近の回答</h3>
-          <List as="div">
+          <SectionHeader title="直近の回答" />
+          <div className="ui-list">
             {props.recentResults.map((result) => (
-              <div key={result.answeredAt} className="ui-kv-card">
+              <div
+                key={result.answeredAt}
+                className="ui-list-link ui-list-link--compact"
+              >
                 <strong>問題 {result.question.questionIndex + 1}</strong>
                 <span className="ui-muted">
-                  正解:{" "}
+                  正解{" "}
                   {getIntervalLabel(
                     result.question.distanceSemitones,
                     props.intervalNotationStyle,
-                  )}
-                </span>
-                <span className="ui-muted">
-                  回答:{" "}
+                  )}{" "}
+                  / 回答{" "}
                   {getIntervalLabel(
                     result.answeredDistanceSemitones,
                     props.intervalNotationStyle,
@@ -256,7 +258,7 @@ export function DistanceResultPanel(props: {
                 </span>
               </div>
             ))}
-          </List>
+          </div>
         </div>
       ) : null}
 
@@ -283,17 +285,63 @@ export function DistanceResultPanel(props: {
 
       <div className="ui-sticky-actions">
         <div className="ui-stack-sm">
-          <strong>次に進む</strong>
-          <span className="ui-muted">
-            結果を確認したら新しいセッションを始められます。
-          </span>
+          <strong>次のセッション</strong>
+          <span className="ui-muted">設定に戻って続けて練習できます。</span>
         </div>
-        <Button type="button" onClick={props.onReset} block>
+        <Button type="button" onClick={props.onReset} block variant="primary">
           {props.cannotSaveBecauseNoAnswers
             ? "新しいセッションを始める"
-            : "最初からやり直す"}
+            : "もう一度始める"}
         </Button>
       </div>
     </Surface>
+  );
+}
+
+function DistanceMiniKeyboard(props: {
+  correctSemitones: number;
+  answeredSemitones: number;
+}) {
+  const keys = Array.from({ length: 13 }, (_, index) => index);
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: "8px",
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(13, minmax(0, 1fr))",
+          gap: "4px",
+        }}
+      >
+        {keys.map((key) => {
+          const isBase = key === 0;
+          const isCorrect = key === props.correctSemitones;
+          const isAnswered = key === props.answeredSemitones;
+
+          return (
+            <div
+              key={key}
+              style={{
+                minHeight: "34px",
+                borderRadius: "10px",
+                border: isAnswered ? "2px solid #4f8e8a" : "1px solid #d8e1d8",
+                background: isCorrect ? "#5f8f66" : "#fbfcfa",
+                boxShadow: isBase ? "inset 0 3px 0 #b9c7bb" : "none",
+              }}
+            />
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        <Chip tone="neutral">上部マーカー=基準音</Chip>
+        <Chip tone="brand">塗り=正解</Chip>
+        <Chip tone="teal">枠=回答</Chip>
+      </div>
+    </div>
   );
 }
