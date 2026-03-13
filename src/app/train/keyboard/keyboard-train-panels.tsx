@@ -289,6 +289,8 @@ const KeyboardAnswerPad = memo(function KeyboardAnswerPad(props: {
               key={note}
               type="button"
               aria-label={formatKeyboardNoteLabel(note)}
+              data-note={note}
+              data-reference={note === props.referenceNote ? "true" : undefined}
               disabled={!enabledNotes.has(note) || props.disabled}
               onClick={() => props.onAnswer(note)}
               style={getKeyboardKeyStyle(note, {
@@ -306,6 +308,8 @@ const KeyboardAnswerPad = memo(function KeyboardAnswerPad(props: {
             key={note}
             type="button"
             aria-label={formatKeyboardNoteLabel(note)}
+            data-note={note}
+            data-reference={note === props.referenceNote ? "true" : undefined}
             disabled={!enabledNotes.has(note) || props.disabled}
             onClick={() => props.onAnswer(note)}
             style={getKeyboardKeyStyle(note, {
@@ -345,6 +349,8 @@ const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
             <div
               key={note}
               aria-hidden="true"
+              data-note={note}
+              data-reference={note === props.referenceNote ? "true" : undefined}
               style={getKeyboardKeyStyle(note, {
                 interactive: false,
                 reference: note === props.referenceNote,
@@ -360,6 +366,8 @@ const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
           <div
             key={note}
             aria-hidden="true"
+            data-note={note}
+            data-reference={note === props.referenceNote ? "true" : undefined}
             style={getKeyboardKeyStyle(note, {
               interactive: false,
               left,
@@ -399,6 +407,8 @@ function getKeyboardKeyStyle(
   },
 ): CSSProperties {
   const blackKey = isBlackKey(note);
+  const referenceStripeColor = blackKey ? "#d9ebdf" : "var(--brand-strong)";
+  const referenceStripeHeight = blackKey ? "10px" : "12px";
   const fillColor = options.correct
     ? blackKey
       ? "#5f8f66"
@@ -408,6 +418,19 @@ function getKeyboardKeyStyle(
       : "#ffffff";
   const baseBorder = blackKey ? "#0f1511" : "#d8e1d8";
   const outlineColor = options.answered ? "#4f8e8a" : baseBorder;
+  const boxShadowParts = [
+    options.correct
+      ? "0 8px 18px rgba(76, 119, 84, 0.18)"
+      : blackKey
+        ? "0 6px 16px rgba(24, 32, 27, 0.18)"
+        : "0 4px 12px rgba(24, 32, 27, 0.06)",
+  ];
+
+  if (options.reference) {
+    boxShadowParts.push(
+      `inset 0 ${referenceStripeHeight} 0 0 ${referenceStripeColor}`,
+    );
+  }
 
   return {
     position: options.position ?? "relative",
@@ -421,17 +444,17 @@ function getKeyboardKeyStyle(
     borderRadius: blackKey ? "0 0 10px 10px" : "0 0 14px 14px",
     border: `${options.answered ? 2 : 1}px solid ${outlineColor}`,
     background: fillColor,
+    backgroundImage: options.reference
+      ? `linear-gradient(to bottom, ${referenceStripeColor} 0, ${referenceStripeColor} ${referenceStripeHeight}, transparent ${referenceStripeHeight}, transparent 100%)`
+      : undefined,
+    backgroundRepeat: "no-repeat",
     color:
       options.correct && !blackKey
         ? "#ffffff"
         : blackKey
           ? "#f4f7f4"
           : "#18201b",
-    boxShadow: options.correct
-      ? "0 8px 18px rgba(76, 119, 84, 0.18)"
-      : blackKey
-        ? "0 6px 16px rgba(24, 32, 27, 0.18)"
-        : "0 4px 12px rgba(24, 32, 27, 0.06)",
+    boxShadow: boxShadowParts.join(", "),
     fontWeight: 700,
     fontSize: blackKey ? "11px" : "13px",
     lineHeight: 1.1,
