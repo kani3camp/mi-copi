@@ -15,6 +15,7 @@ import { getCurrentUserOrNullCached } from "../../lib/auth/server";
 import { ListLinkCard } from "../ui/navigation-link";
 import {
   AppShell,
+  Chip,
   GraphCard,
   Notice,
   PageHeader,
@@ -44,36 +45,49 @@ export default async function StatsPage() {
       {stats.isAuthenticated ? (
         <>
           <Surface tone="accent">
-            <SectionHeader title="全体概要" />
-            <SummaryBlock>
+            <SectionHeader
+              title="全体概要"
+              description={`累計 ${stats.totalSessions} セッション / 保存済み回答 ${stats.totalSavedQuestionResults} 件の流れです。`}
+            />
+            <SummaryBlock className="ui-summary-block--insight">
               <SummaryStat
                 label="累計スコア"
                 value={formatScoreLabel(stats.overview.cumulativeScore)}
                 emphasis="primary"
+                className="ui-summary-stat--brand"
               />
               <SummaryStat
                 label="正答率"
                 value={formatAccuracyLabel(stats.overview.correctRate)}
+                detail="回答の安定度"
+                className="ui-summary-stat--teal"
               />
               <SummaryStat
                 label="平均誤差"
                 value={formatAvgErrorLabel(stats.overview.averageError)}
+                detail="ズレの大きさ"
+                className="ui-summary-stat--coral"
               />
               <SummaryStat
                 label="平均回答時間"
                 value={formatResponseTimeMsLabel(
                   stats.overview.averageResponseTimeMs,
                 )}
+                detail="反応速度"
+                className="ui-summary-stat--blue"
               />
             </SummaryBlock>
           </Surface>
 
           <GraphCard
             title="日次スコア推移"
-            subtitle={`累計 ${stats.totalSessions} セッション / 保存済み回答 ${stats.totalSavedQuestionResults} 件`}
+            subtitle="主指標として、日ごとの平均スコアを確認します。"
+            className="ui-graph-card--feature"
+            actions={<Chip tone="brand">主グラフ</Chip>}
           >
             <MetricLineChart
               title="日次スコア"
+              tone="brand"
               valueFormatter={formatScoreLabel}
               points={stats.dailyTrends.map((trend) => ({
                 key: trend.date,
@@ -86,9 +100,14 @@ export default async function StatsPage() {
           </GraphCard>
 
           <div className="ui-grid-chart-panels">
-            <GraphCard title="正答率">
+            <GraphCard
+              title="正答率"
+              subtitle="回答の安定度"
+              actions={<Chip tone="teal">比較</Chip>}
+            >
               <MetricLineChart
                 title="正答率"
+                tone="teal"
                 valueFormatter={formatAccuracyLabel}
                 points={stats.dailyTrends.map((trend) => ({
                   key: `${trend.date}-accuracy`,
@@ -99,9 +118,14 @@ export default async function StatsPage() {
                 denseLabels
               />
             </GraphCard>
-            <GraphCard title="平均誤差">
+            <GraphCard
+              title="平均誤差"
+              subtitle="ズレの大きさ"
+              actions={<Chip tone="coral">注意</Chip>}
+            >
               <MetricLineChart
                 title="平均誤差"
+                tone="coral"
                 valueFormatter={formatAvgErrorLabel}
                 points={stats.dailyTrends.map((trend) => ({
                   key: `${trend.date}-error`,
@@ -112,9 +136,14 @@ export default async function StatsPage() {
                 denseLabels
               />
             </GraphCard>
-            <GraphCard title="平均回答時間">
+            <GraphCard
+              title="平均回答時間"
+              subtitle="反応速度"
+              actions={<Chip tone="blue">情報</Chip>}
+            >
               <MetricLineChart
                 title="平均回答時間"
+                tone="blue"
                 valueFormatter={formatResponseTimeMsLabel}
                 points={stats.dailyTrends.map((trend) => ({
                   key: `${trend.date}-response`,
@@ -128,10 +157,14 @@ export default async function StatsPage() {
           </div>
 
           <Surface>
-            <SectionHeader title="モード別と直近の傾向" />
-            <div className="ui-grid-cards">
-              <SummaryCard
+            <SectionHeader
+              title="モード別と直近の傾向"
+              description="モード差と直近の手応えを、同じ読み方で並べて確認できます。"
+            />
+            <div className="ui-flat-panel-list">
+              <ComparisonPanel
                 title="距離モード"
+                tone="teal"
                 stats={[
                   {
                     label: "累計スコア",
@@ -159,8 +192,9 @@ export default async function StatsPage() {
                   },
                 ]}
               />
-              <SummaryCard
+              <ComparisonPanel
                 title="鍵盤モード"
+                tone="blue"
                 stats={[
                   {
                     label: "累計スコア",
@@ -188,10 +222,9 @@ export default async function StatsPage() {
                   },
                 ]}
               />
-            </div>
-            <div className="ui-grid-cards">
-              <SummaryCard
+              <ComparisonPanel
                 title="直近 10 問"
+                tone="amber"
                 stats={[
                   {
                     label: "平均スコア",
@@ -213,8 +246,9 @@ export default async function StatsPage() {
                   },
                 ]}
               />
-              <SummaryCard
+              <ComparisonPanel
                 title="直近 30 問"
+                tone="brand"
                 stats={[
                   {
                     label: "平均スコア",
@@ -239,9 +273,14 @@ export default async function StatsPage() {
             </div>
           </Surface>
 
-          <GraphCard title="苦手分析" subtitle="音程別の平均誤差を確認します。">
+          <GraphCard
+            title="苦手分析"
+            subtitle="平均誤差が大きい音程を、強いズレの順に見ます。"
+            actions={<Chip tone="coral">誤差分析</Chip>}
+          >
             <MetricBarChart
               title="音程別の平均誤差"
+              tone="coral"
               valueFormatter={formatAvgErrorLabel}
               points={stats.intervalPerformance.map((interval) => ({
                 key: `${interval.intervalSemitones}-error`,
@@ -253,7 +292,10 @@ export default async function StatsPage() {
           </GraphCard>
 
           <Surface>
-            <SectionHeader title="最近のセッション" />
+            <SectionHeader
+              title="最近のセッション"
+              description="ホームと同じ圧縮リストで、直近の保存結果を振り返れます。"
+            />
             {stats.recentSessions.length > 0 ? (
               <div className="ui-list">
                 {stats.recentSessions.map((session) => (
@@ -261,9 +303,16 @@ export default async function StatsPage() {
                     key={session.id}
                     href={`/sessions/${session.id}`}
                     pendingLabel="セッション詳細を開いています..."
-                    className="ui-list-link--compact"
+                    className="ui-list-link--compact ui-list-link--session"
                   >
-                    <strong>{formatSecondaryModeLabel(session.mode)}</strong>
+                    <div className="ui-list-link__split">
+                      <strong>{formatSecondaryModeLabel(session.mode)}</strong>
+                      <Chip
+                        tone={session.mode === "distance" ? "teal" : "blue"}
+                      >
+                        {session.mode === "distance" ? "回答比較" : "鍵盤回答"}
+                      </Chip>
+                    </div>
                     <span className="ui-muted">
                       スコア {formatScoreLabel(session.sessionScore)} / 問題数{" "}
                       {session.answeredQuestionCount} / 正答率{" "}
@@ -291,26 +340,49 @@ export default async function StatsPage() {
   );
 }
 
-function SummaryCard(props: {
+function ComparisonPanel(props: {
   title: string;
+  tone: "brand" | "teal" | "amber" | "blue";
   stats: Array<{ label: string; value: string }>;
 }) {
   return (
-    <div className="ui-panel-card">
-      <strong>{props.title}</strong>
-      <div className="ui-stack-sm">
-        {props.stats.map((stat) => (
-          <span key={`${props.title}-${stat.label}`} className="ui-muted">
-            {stat.label} {stat.value}
-          </span>
-        ))}
+    <section className="ui-flat-panel" data-tone={props.tone}>
+      <div className="ui-flat-panel__header">
+        <strong>{props.title}</strong>
+        <Chip tone={props.tone}>{getComparisonChipLabel(props.tone)}</Chip>
       </div>
-    </div>
+      <dl className="ui-flat-panel__list">
+        {props.stats.map((stat) => (
+          <div
+            key={`${props.title}-${stat.label}`}
+            className="ui-flat-panel__row"
+          >
+            <dt>{stat.label}</dt>
+            <dd>{stat.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
 function formatSecondaryModeLabel(value: "distance" | "keyboard"): string {
   return value === "distance" ? "距離モード" : "鍵盤モード";
+}
+
+function getComparisonChipLabel(
+  tone: "brand" | "teal" | "amber" | "blue",
+): string {
+  switch (tone) {
+    case "teal":
+      return "モード比較";
+    case "amber":
+      return "短期";
+    case "blue":
+      return "入力差";
+    default:
+      return "基準";
+  }
 }
 
 type ChartPoint = {
@@ -322,6 +394,7 @@ type ChartPoint = {
 
 function MetricLineChart(props: {
   title: string;
+  tone: "brand" | "teal" | "coral" | "blue";
   valueFormatter: (value: number) => string;
   points: ChartPoint[];
   denseLabels?: boolean;
@@ -345,7 +418,7 @@ function MetricLineChart(props: {
     .join(" ");
 
   return (
-    <div className="ui-chart-card">
+    <div className="ui-chart-card" data-tone={props.tone}>
       <strong>{props.title}</strong>
       <div className="ui-line-chart">
         <div className="ui-line-chart__axis">
@@ -441,6 +514,7 @@ function MetricLineChart(props: {
 
 function MetricBarChart(props: {
   title: string;
+  tone: "brand" | "teal" | "coral" | "blue";
   valueFormatter: (value: number) => string;
   points: ChartPoint[];
   denseLabels?: boolean;
@@ -448,7 +522,7 @@ function MetricBarChart(props: {
   const maxValue = Math.max(...props.points.map((point) => point.value), 1);
 
   return (
-    <div className="ui-chart-card">
+    <div className="ui-chart-card" data-tone={props.tone}>
       <strong>{props.title}</strong>
       <div className="ui-bar-chart">
         <div className="ui-bar-chart__axis">

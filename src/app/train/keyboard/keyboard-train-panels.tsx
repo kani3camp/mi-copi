@@ -23,7 +23,6 @@ import type { SaveTrainingSessionResult } from "../../../features/training/serve
 import {
   Button,
   Chip,
-  KeyValueCard,
   Notice,
   SectionHeader,
   SummaryBlock,
@@ -32,6 +31,7 @@ import {
 } from "../../ui/primitives";
 import {
   formatFinishReasonLabel,
+  MiniStatRow,
   PlaybackButtonPair,
   type TrainingPlaybackKind,
   TrainingResultPersistenceSection,
@@ -69,7 +69,7 @@ export const KeyboardQuestionPanel = memo(
       <Surface tone="accent">
         <SectionHeader
           title="音を聴いて鍵盤で答える"
-          description="基準音の位置を見ながら、問題音の鍵盤を選びます。"
+          description="基準音マーカーを見て、問題音の鍵盤を選びます。"
           actions={<Chip tone="teal">回答中</Chip>}
         />
         <PlaybackButtonPair
@@ -78,23 +78,25 @@ export const KeyboardQuestionPanel = memo(
           onReplayBase={props.onReplayBase}
           onReplayTarget={props.onReplayTarget}
         />
-        <div className="ui-mini-stat-row">
-          <KeyValueCard
-            className="ui-kv-card--dense"
-            label="方向"
-            value={formatQuestionDirectionLabel(props.direction)}
-          />
-          <KeyValueCard
-            className="ui-kv-card--dense"
-            label="基準音"
-            value={`${props.replayBaseCount}回`}
-          />
-          <KeyValueCard
-            className="ui-kv-card--dense"
-            label="問題音"
-            value={`${props.replayTargetCount}回`}
-          />
-        </div>
+        <MiniStatRow
+          items={[
+            {
+              label: "方向",
+              value: formatQuestionDirectionLabel(props.direction),
+              tone: "teal",
+            },
+            {
+              label: "基準",
+              value: `${props.referenceNote} / ${props.replayBaseCount}回`,
+              tone: "amber",
+            },
+            {
+              label: "問題",
+              value: `${props.replayTargetCount}回`,
+              tone: "blue",
+            },
+          ]}
+        />
         <KeyboardAnswerPad
           answerChoices={props.answerChoices}
           referenceNote={props.referenceNote}
@@ -115,15 +117,22 @@ export const KeyboardFeedbackPanel = memo(
     onReplayCorrectTarget: () => void;
     onContinue: () => void;
   }) {
+    const feedbackTone = props.feedbackResult.isCorrect
+      ? "brand"
+      : Math.abs(props.feedbackResult.errorSemitones) === 1
+        ? "amber"
+        : "coral";
+    const feedbackLabel = props.feedbackResult.isCorrect
+      ? "正解"
+      : Math.abs(props.feedbackResult.errorSemitones) === 1
+        ? "惜しい"
+        : "大きくズレ";
+
     return (
       <Surface tone="elevated">
         <SectionHeader
           title="フィードバック"
-          actions={
-            <Chip tone={props.feedbackResult.isCorrect ? "brand" : "teal"}>
-              {props.feedbackResult.isCorrect ? "正解" : "確認"}
-            </Chip>
-          }
+          actions={<Chip tone={feedbackTone}>{feedbackLabel}</Chip>}
         />
         <SummaryBlock>
           <SummaryStat
@@ -309,9 +318,9 @@ const KeyboardAnswerPad = memo(function KeyboardAnswerPad(props: {
       </div>
       <div style={feedbackLegendStyle}>
         <span
-          style={legendItemStyle("var(--text-secondary)", "var(--bg-subtle)")}
+          style={legendItemStyle("var(--brand-strong)", "var(--brand-soft)")}
         >
-          マーカー=基準音
+          基準音マーカー
         </span>
       </div>
     </div>
@@ -362,12 +371,12 @@ const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
       </div>
       <div style={feedbackLegendStyle}>
         <span
-          style={legendItemStyle("var(--text-secondary)", "var(--bg-subtle)")}
+          style={legendItemStyle("var(--brand-strong)", "var(--brand-soft)")}
         >
-          マーカー=基準音
+          基準音
         </span>
-        <span style={legendItemStyle("#ffffff", "#5f8f66")}>塗り=正解</span>
-        <span style={legendItemStyle("#4f8e8a", "#dceeee")}>枠=回答</span>
+        <span style={legendItemStyle("#ffffff", "#5f8f66")}>正解</span>
+        <span style={legendItemStyle("#4f8e8a", "#dceeee")}>回答</span>
       </div>
     </div>
   );
@@ -402,10 +411,10 @@ function getKeyboardKeyStyle(
     top: options.position === "absolute" ? 0 : undefined,
     width: blackKey ? "10.8%" : undefined,
     minHeight: blackKey
-      ? "clamp(106px, 24vw, 148px)"
-      : "clamp(170px, 42vw, 234px)",
-    padding: blackKey ? "16px 4px 10px" : "18px 6px 14px",
-    borderRadius: blackKey ? "0 0 12px 12px" : "0 0 16px 16px",
+      ? "clamp(92px, 21vw, 132px)"
+      : "clamp(148px, 38vw, 206px)",
+    padding: blackKey ? "14px 4px 8px" : "14px 6px 12px",
+    borderRadius: blackKey ? "0 0 10px 10px" : "0 0 14px 14px",
     border: `${options.answered ? 2 : 1}px solid ${outlineColor}`,
     background: fillColor,
     color:
@@ -469,14 +478,14 @@ function isBlackKey(note: NoteClass): boolean {
 
 const pianoSectionStyle: CSSProperties = {
   display: "grid",
-  gap: "12px",
+  gap: "8px",
 };
 
 const pianoShellStyle: CSSProperties = {
   position: "relative",
   overflow: "hidden",
-  padding: "12px 10px 16px",
-  borderRadius: "16px",
+  padding: "8px 8px 12px",
+  borderRadius: "14px",
   border: "1px solid var(--border-subtle)",
   background: "var(--surface-elevated)",
   boxShadow: "var(--shadow-soft)",
@@ -490,7 +499,7 @@ const whiteKeyRowStyle: CSSProperties = {
 
 const feedbackLegendStyle: CSSProperties = {
   display: "flex",
-  gap: "8px",
+  gap: "6px",
   flexWrap: "wrap",
 };
 
@@ -499,12 +508,12 @@ function legendItemStyle(color: string, background: string): CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: "6px",
-    minHeight: "28px",
-    padding: "0 10px",
+    minHeight: "24px",
+    padding: "0 8px",
     borderRadius: "999px",
     background,
     color,
-    fontSize: "12px",
+    fontSize: "11px",
     fontWeight: 700,
   };
 }

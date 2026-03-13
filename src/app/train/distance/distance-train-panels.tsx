@@ -22,7 +22,6 @@ import type { SaveTrainingSessionResult } from "../../../features/training/serve
 import {
   Button,
   Chip,
-  KeyValueCard,
   Notice,
   SectionHeader,
   SummaryBlock,
@@ -33,6 +32,7 @@ import {
   DistanceFeedbackDiagram,
   FeedbackStatusChip,
   formatFinishReasonLabel,
+  MiniStatRow,
   PlaybackButtonPair,
   type TrainingPlaybackKind,
   TrainingResultPersistenceSection,
@@ -66,23 +66,24 @@ export function DistanceQuestionPanel(props: {
         onReplayBase={props.onReplayBase}
         onReplayTarget={props.onReplayTarget}
       />
-      <div className="ui-mini-stat-row">
-        <KeyValueCard
-          className="ui-kv-card--dense"
-          label="方向"
-          value={formatQuestionDirectionLabel(props.direction)}
-        />
-        <KeyValueCard
-          className="ui-kv-card--dense"
-          label="基準音"
-          value={`${props.replayBaseCount}回`}
-        />
-        <KeyValueCard
-          className="ui-kv-card--dense"
-          label="問題音"
-          value={`${props.replayTargetCount}回`}
-        />
-      </div>
+      <MiniStatRow
+        items={[
+          {
+            label: "方向",
+            value: formatQuestionDirectionLabel(props.direction),
+            tone: "teal",
+          },
+          {
+            label: "基準音",
+            value: `${props.replayBaseCount}回`,
+          },
+          {
+            label: "問題音",
+            value: `${props.replayTargetCount}回`,
+            tone: "blue",
+          },
+        ]}
+      />
       <div className="ui-train-answer-grid">
         {props.answerChoiceValues.map((choice) => (
           <Button

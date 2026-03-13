@@ -137,27 +137,28 @@ export function FeedbackStatusChip(props: {
   answeredDirection: QuestionDirection;
 }) {
   const absError = Math.abs(props.errorSemitones);
+  const directionMatched = props.direction === props.answeredDirection;
   const tone = props.isCorrect
     ? "brand"
-    : absError === 1
-      ? "amber"
-      : absError === 2
-        ? "blue"
+    : !directionMatched
+      ? "coral"
+      : absError === 1
+        ? "amber"
         : "coral";
   const label = props.isCorrect
     ? "完全一致"
-    : absError === 1
-      ? "惜しい"
-      : absError === 2
-        ? "ややズレ"
+    : !directionMatched
+      ? "方向が逆"
+      : absError === 1
+        ? "惜しい"
         : "大きくズレ";
-  const directionLabel =
-    props.direction === props.answeredDirection ? "方向は正しい" : "方向が逆";
 
   return (
     <div className="ui-feedback-status">
       <Chip tone={tone}>{label}</Chip>
-      {!props.isCorrect ? <Chip tone="neutral">{directionLabel}</Chip> : null}
+      {!props.isCorrect && directionMatched ? (
+        <Chip tone="teal">方向は正しい</Chip>
+      ) : null}
     </div>
   );
 }
