@@ -7,13 +7,14 @@ import {
   formatScoreLabel,
 } from "../../../features/training/model/format";
 import {
+  formatPitchComparisonSemitoneLabel,
   formatQuestionDirectionLabel,
-  formatSignedSemitoneLabel,
 } from "../../../features/training/model/interval-notation";
 import type {
   KeyboardGuestResult,
   KeyboardGuestSummary,
 } from "../../../features/training/model/keyboard-guest";
+import { getTargetMidi } from "../../../features/training/model/pitch";
 import type {
   NoteClass,
   QuestionDirection,
@@ -137,6 +138,11 @@ export const KeyboardFeedbackPanel = memo(
       : Math.abs(props.feedbackResult.errorSemitones) === 1
         ? "惜しい"
         : "大きくズレ";
+    const answerMidi = getTargetMidi(
+      props.feedbackResult.question.baseMidi,
+      props.feedbackResult.question.direction,
+      props.feedbackResult.answeredDistanceSemitones,
+    );
 
     return (
       <Surface tone="elevated">
@@ -166,9 +172,10 @@ export const KeyboardFeedbackPanel = memo(
         <SummaryBlock>
           <SummaryStat
             label="誤差"
-            value={formatSignedSemitoneLabel(
-              props.feedbackResult.errorSemitones,
-            )}
+            value={formatPitchComparisonSemitoneLabel({
+              targetMidi: props.feedbackResult.question.targetMidi,
+              answerMidi,
+            })}
           />
           <SummaryStat
             label="回答時間"

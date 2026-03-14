@@ -58,6 +58,25 @@ export function formatSignedSemitoneLabel(value: number): string {
   return `${value > 0 ? "+" : "-"}${magnitude}半音（${direction}）`;
 }
 
+export function formatPitchComparisonSemitoneLabel(params: {
+  targetMidi: number;
+  answerMidi: number;
+}): string {
+  const difference = params.answerMidi - params.targetMidi;
+
+  if (difference === 0) {
+    return "0半音（ぴったり）";
+  }
+
+  const absolute = Math.abs(difference);
+  const magnitude = Number.isInteger(absolute)
+    ? absolute.toString()
+    : absolute.toFixed(1);
+  const relation = difference > 0 ? "高い" : "低い";
+
+  return `${difference > 0 ? "+" : "-"}${magnitude}半音（${relation}）`;
+}
+
 export function formatQuestionDirectionLabel(
   direction: QuestionDirection,
 ): string {

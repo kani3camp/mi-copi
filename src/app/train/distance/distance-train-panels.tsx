@@ -9,10 +9,11 @@ import {
   formatScoreLabel,
 } from "../../../features/training/model/format";
 import {
+  formatPitchComparisonSemitoneLabel,
   formatQuestionDirectionLabel,
-  formatSignedSemitoneLabel,
   getIntervalLabel,
 } from "../../../features/training/model/interval-notation";
+import { getTargetMidi } from "../../../features/training/model/pitch";
 import type {
   IntervalNotationStyle,
   QuestionDirection,
@@ -117,6 +118,11 @@ export function DistanceFeedbackPanel(props: {
     props.feedbackResult.answeredDistanceSemitones,
     props.intervalNotationStyle,
   );
+  const answerMidi = getTargetMidi(
+    props.feedbackResult.question.baseMidi,
+    props.feedbackResult.question.direction,
+    props.feedbackResult.answeredDistanceSemitones,
+  );
 
   return (
     <Surface tone="elevated">
@@ -149,7 +155,10 @@ export function DistanceFeedbackPanel(props: {
       <SummaryBlock>
         <SummaryStat
           label="誤差"
-          value={formatSignedSemitoneLabel(props.feedbackResult.errorSemitones)}
+          value={formatPitchComparisonSemitoneLabel({
+            targetMidi: props.feedbackResult.question.targetMidi,
+            answerMidi,
+          })}
         />
         <SummaryStat
           label="回答時間"
@@ -246,7 +255,7 @@ export function DistanceResultPanel(props: {
                   )}
                 </span>
                 <span className="ui-muted">
-                  {formatSignedSemitoneLabel(result.errorSemitones)} /{" "}
+                  {formatDistanceErrorLabel(result)} /{" "}
                   {formatResponseTimeMsLabel(result.responseTimeMs)}
                 </span>
               </div>
@@ -289,4 +298,17 @@ export function DistanceResultPanel(props: {
       </div>
     </Surface>
   );
+}
+
+function formatDistanceErrorLabel(result: DistanceGuestResult): string {
+  const answerMidi = getTargetMidi(
+    result.question.baseMidi,
+    result.question.direction,
+    result.answeredDistanceSemitones,
+  );
+
+  return formatPitchComparisonSemitoneLabel({
+    targetMidi: result.question.targetMidi,
+    answerMidi,
+  });
 }
