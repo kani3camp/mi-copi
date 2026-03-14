@@ -1,6 +1,7 @@
 import { and, asc, eq } from "drizzle-orm";
 
-import type { CurrentUser } from "../../../lib/auth/server.ts";
+import type { CurrentUserResolverDependencies } from "../../../lib/auth/server.ts";
+import { resolveCurrentUserOrNull } from "../../../lib/auth/server.ts";
 import { normalizeTrainingConfigOrDefault } from "../model/config.ts";
 import type {
   NoteClass,
@@ -8,6 +9,7 @@ import type {
   TrainingConfigSnapshot,
   TrainingMode,
 } from "../model/types.ts";
+import type { SelectOnlyDb } from "./query-types.ts";
 
 export interface TrainingSessionDetailQuestionResult {
   id: string;
@@ -39,27 +41,61 @@ export interface TrainingSessionDetail {
 }
 
 export interface TrainingSessionDetailDependencies {
-  db?: {
-    select: (...args: unknown[]) => any;
-  };
-  getCurrentUser?: () => Promise<CurrentUser | null>;
+  db?: SelectOnlyDb;
+  currentUser?: CurrentUserResolverDependencies["currentUser"];
+  getCurrentUser?: CurrentUserResolverDependencies["getCurrentUser"];
+}
+
+type AppSchemaModule = typeof import("../../../lib/db/schema/app.ts");
+
+type SessionDetailTables = {
+  questionResults: AppSchemaModule["questionResults"];
+  trainingSessions: AppSchemaModule["trainingSessions"];
+};
+
+interface TrainingSessionRow {
+  id: string;
+  mode: TrainingMode;
+  configSnapshot: unknown;
+  createdAt: Date;
+  endedAt: Date;
+  answeredQuestionCount: number;
+  correctQuestionCount: number;
+  accuracyRate: number | string;
+  avgErrorAbs: number | string;
+  avgResponseTimeMs: number | string;
+  sessionScore: number | string;
+}
+
+interface QuestionResultRow {
+  id: string;
+  questionIndex: number;
+  baseNoteName: NoteClass;
+  targetNoteName: NoteClass;
+  answerNoteName: NoteClass;
+  targetIntervalSemitones: number | string;
+  answerIntervalSemitones: number | string;
+  direction: QuestionDirection;
+  isCorrect: boolean;
+  errorSemitones: number | string;
+  responseTimeMs: number;
 }
 
 export async function getTrainingSessionDetailForCurrentUser(
   sessionId: string,
   deps: TrainingSessionDetailDependencies = {},
 ): Promise<TrainingSessionDetail | null> {
-  const currentUser = await (deps.getCurrentUser ?? getCurrentUserOrNull)();
+  const currentUser = await resolveCurrentUserOrNull(deps);
 
   if (!currentUser || !isUuid(sessionId)) {
     return null;
   }
 
-  const db = deps.db ?? (await getDb());
-  const { questionResults, trainingSessions }: any = deps.db
+  const db = (deps.db ?? (await getDb())) as SelectOnlyDb;
+  const { questionResults, trainingSessions } = deps.db
     ? getPlaceholderSessionDetailTables()
     : await getSessionDetailTables();
-  const [session] = await db
+  const [session] = (await db
     .select({
       id: trainingSessions.id,
       mode: trainingSessions.mode,
@@ -80,13 +116,13 @@ export async function getTrainingSessionDetailForCurrentUser(
         eq(trainingSessions.userId, currentUser.id),
       ),
     )
-    .limit(1);
+    .limit(1)) as TrainingSessionRow[];
 
   if (!session) {
     return null;
   }
 
-  const results = await db
+  const results = (await db
     .select({
       id: questionResults.id,
       questionIndex: questionResults.questionIndex,
@@ -107,7 +143,7 @@ export async function getTrainingSessionDetailForCurrentUser(
         eq(questionResults.userId, currentUser.id),
       ),
     )
-    .orderBy(asc(questionResults.questionIndex));
+    .orderBy(asc(questionResults.questionIndex))) as QuestionResultRow[];
 
   return {
     id: session.id,
@@ -124,7 +160,7 @@ export async function getTrainingSessionDetailForCurrentUser(
     avgErrorAbs: Number(session.avgErrorAbs),
     avgResponseTimeMs: Number(session.avgResponseTimeMs),
     sessionScore: Number(session.sessionScore),
-    results: results.map((result: any) => ({
+    results: results.map((result) => ({
       id: result.id,
       questionIndex: result.questionIndex,
       baseNoteName: result.baseNoteName,
@@ -146,14 +182,6 @@ function isUuid(value: string): boolean {
   );
 }
 
-async function getCurrentUserOrNull(): Promise<CurrentUser | null> {
-  const { getCurrentUserOrNull: resolveCurrentUserOrNull } = await import(
-    "../../../lib/auth/server.ts"
-  );
-
-  return resolveCurrentUserOrNull();
-}
-
 async function getDb() {
   const { getDb: resolveDb } = await import("../../../lib/db/client.ts");
 
@@ -168,7 +196,7 @@ async function getSessionDetailTables() {
   return { questionResults, trainingSessions };
 }
 
-function getPlaceholderSessionDetailTables() {
+function getPlaceholderSessionDetailTables(): SessionDetailTables {
   return {
     questionResults: {
       id: "question_results.id",
@@ -199,5 +227,5 @@ function getPlaceholderSessionDetailTables() {
       avgResponseTimeMs: "training_sessions.avg_response_time_ms",
       sessionScore: "training_sessions.session_score",
     },
-  };
+  } as unknown as SessionDetailTables;
 }

@@ -2,7 +2,10 @@
 
 import { eq } from "drizzle-orm";
 
-import { getCurrentUserOrNull } from "../../../lib/auth/server";
+import {
+  type CurrentUserResolverDependencies,
+  getCurrentUserOrNull,
+} from "../../../lib/auth/server.ts";
 import { getDb } from "../../../lib/db/client";
 import { userSettings } from "../../../lib/db/schema/app";
 import { normalizeTrainingConfigOrDefault } from "../../training/model/config";
@@ -11,21 +14,16 @@ import type {
   KeyboardTrainingConfig,
 } from "../../training/model/types";
 import {
-  createDefaultGlobalUserSettings,
   type GlobalUserSettings,
   normalizeGlobalUserSettings,
 } from "../model/global-user-settings";
+import { getCurrentUserSettingsSnapshot } from "./getCurrentUserSettingsSnapshot";
 import { isRecoverableUserSettingsStorageError } from "./user-settings-storage";
 
-interface UserSettingsRow {
-  masterVolume: number;
-  soundEffectsEnabled: boolean;
-  intervalNotationStyle: GlobalUserSettings["intervalNotationStyle"];
-  keyboardNoteLabelsVisible: boolean;
+interface StoredUserSettingsRow {
   lastDistanceConfig: DistanceTrainingConfig;
   lastKeyboardConfig: KeyboardTrainingConfig;
   createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface CurrentGlobalUserSettingsResult {
@@ -33,6 +31,9 @@ export interface CurrentGlobalUserSettingsResult {
   settings: GlobalUserSettings;
   updatedAt: string | null;
 }
+
+export interface GlobalUserSettingsReadDependencies
+  extends CurrentUserResolverDependencies {}
 
 export type GlobalUserSettingsSaveResult =
   | {
@@ -45,30 +46,15 @@ export type GlobalUserSettingsSaveResult =
       message: string;
     };
 
-export async function getGlobalUserSettingsForCurrentUser(): Promise<CurrentGlobalUserSettingsResult> {
-  const currentUser = await getCurrentUserOrNull();
-
-  if (!currentUser) {
-    return {
-      isAuthenticated: false,
-      settings: createDefaultGlobalUserSettings(),
-      updatedAt: null,
-    };
-  }
-
-  const existing = await getUserSettingsRowForUserId(currentUser.id);
+export async function getGlobalUserSettingsForCurrentUser(
+  deps: GlobalUserSettingsReadDependencies = {},
+): Promise<CurrentGlobalUserSettingsResult> {
+  const snapshot = await getCurrentUserSettingsSnapshot(deps);
 
   return {
-    isAuthenticated: true,
-    settings: existing
-      ? normalizeGlobalUserSettings({
-          masterVolume: existing.masterVolume,
-          soundEffectsEnabled: existing.soundEffectsEnabled,
-          intervalNotationStyle: existing.intervalNotationStyle,
-          keyboardNoteLabelsVisible: existing.keyboardNoteLabelsVisible,
-        })
-      : createDefaultGlobalUserSettings(),
-    updatedAt: existing?.updatedAt.toISOString() ?? null,
+    isAuthenticated: snapshot.isAuthenticated,
+    settings: snapshot.settings,
+    updatedAt: snapshot.updatedAt,
   };
 }
 
@@ -156,20 +142,15 @@ export async function updateGlobalUserSettingsForCurrentUser(
 
 async function getUserSettingsRowForUserId(
   userId: string,
-): Promise<UserSettingsRow | null> {
+): Promise<StoredUserSettingsRow | null> {
   const db = getDb();
 
   try {
     const [existing] = await db
       .select({
-        masterVolume: userSettings.masterVolume,
-        soundEffectsEnabled: userSettings.soundEffectsEnabled,
-        intervalNotationStyle: userSettings.intervalNotationStyle,
-        keyboardNoteLabelsVisible: userSettings.keyboardNoteLabelsVisible,
         lastDistanceConfig: userSettings.lastDistanceConfig,
         lastKeyboardConfig: userSettings.lastKeyboardConfig,
         createdAt: userSettings.createdAt,
-        updatedAt: userSettings.updatedAt,
       })
       .from(userSettings)
       .where(eq(userSettings.userId, userId))

@@ -1,90 +1,60 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useReducer, useState } from "react";
 
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
-import {
-  clampIntervalMaxSemitone,
-  clampIntervalMinSemitone,
-  createDefaultQuestionCountEndCondition,
-  createDefaultTimeLimitEndCondition,
-  getQuestionCountSelectOptions,
-  getTimeLimitSecondsSelectOptions,
-  TRAINING_CONFIG_LIMITS,
-} from "../../../features/training/model/config";
-import { formatDateTimeLabel } from "../../../features/training/model/format";
+import { useTrainingSessionCore } from "../../../features/training/client/use-training-session-core";
+import { TRAINING_CONFIG_LIMITS } from "../../../features/training/model/config";
+import { getTrainingModeTone } from "../../../features/training/model/format";
 import { formatDirectionModeLabel } from "../../../features/training/model/interval-notation";
-import {
-  type buildKeyboardGuestSaveInput,
-  buildKeyboardGuestSummary,
-  evaluateKeyboardAnswer,
-  getKeyboardAnswerChoices,
-  getKeyboardQuestionCount,
-  getNoteFrequency,
-  type KeyboardGuestResult,
-  validateKeyboardTrainingConfig,
-} from "../../../features/training/model/keyboard-guest";
-import {
-  createQuestionGeneratorState,
-  type QuestionGeneratorState,
-  takeNextQuestion,
-} from "../../../features/training/model/question-generator";
-import {
-  canRetryTrainingResultSave,
-  hasTrainingResultSavePayload,
-  shouldAutoSaveTrainingResult,
-} from "../../../features/training/model/result-save";
-import {
-  getNextReplayCount,
-  resolvePostFeedbackProgress,
-  resolveTimeLimitExpiry,
-} from "../../../features/training/model/session-flow";
 import type {
   KeyboardTrainingConfig,
   NoteClass,
-  Question,
-  SessionFinishReason,
+  SaveTrainingSessionInput,
 } from "../../../features/training/model/types";
+import type { KeyboardTrainingPageBootstrap } from "../../../features/training/server/getTrainingPageBootstrap";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
+import {
+  getStoredSettingsReadErrorMessage,
+  getTrainingConfigPersistErrorMessage,
+} from "../../../lib/async-action-errors";
+import { ButtonLink } from "../../ui/navigation-link";
 import {
   AppShell,
   Button,
-  ButtonLink,
   Field,
   FieldGrid,
-  KeyValueCard,
   Notice,
   SectionHeader,
   Surface,
 } from "../../ui/primitives";
-import { formatRemainingTimeLabel } from "../train-ui-shared";
-import { TrainingPageHero } from "../training-page-shell";
 import {
-  formatKeyboardNoteLabel,
-  KeyboardFeedbackPanel,
-  KeyboardQuestionPanel,
-  KeyboardResultPanel,
-} from "./keyboard-train-panels";
+  type KeyboardTrainingConfigAction,
+  reduceKeyboardTrainingConfig,
+} from "../training-config-form-state";
+import { TrainingProgressHeader } from "../training-page-shell";
+import { useTrainingRouteBootstrap } from "../training-route-bootstrap";
+import { buildKeyboardTrainViewModel } from "./keyboard-train-presenter";
+import { useKeyboardTrainingRuntime } from "./use-keyboard-training-runtime";
 
-type KeyboardTrainPhase =
-  | "config"
-  | "preparing"
-  | "playing"
-  | "answering"
-  | "feedback"
-  | "result";
+const KeyboardQuestionPanel = dynamic(async () => {
+  const mod = await import("./keyboard-train-panels");
 
-type PlaybackKind = "question" | "base" | "target";
+  return mod.KeyboardQuestionPanel;
+});
 
-interface ActiveQuestionState {
-  question: Question;
-  presentedAt: string;
-  answeringStartedAt: string | null;
-  replayBaseCount: number;
-  replayTargetCount: number;
-  playbackKind: PlaybackKind;
-  playNonce: number;
-}
+const KeyboardFeedbackPanel = dynamic(async () => {
+  const mod = await import("./keyboard-train-panels");
+
+  return mod.KeyboardFeedbackPanel;
+});
+
+const KeyboardResultPanel = dynamic(async () => {
+  const mod = await import("./keyboard-train-panels");
+
+  return mod.KeyboardResultPanel;
+});
 
 const NOTE_CLASS_OPTIONS: NoteClass[] = [
   "C",
@@ -102,681 +72,300 @@ const NOTE_CLASS_OPTIONS: NoteClass[] = [
 ];
 
 interface KeyboardTrainClientProps {
-  isAuthenticated: boolean;
-  initialConfig: KeyboardTrainingConfig;
   hasStoredConfig: boolean;
+  initialConfig: KeyboardTrainingConfig;
+  isAuthenticated: boolean;
+  loadBootstrapAction?: () => Promise<KeyboardTrainingPageBootstrap>;
   persistLastUsedConfigAction: (
     config: KeyboardTrainingConfig,
   ) => Promise<void>;
   saveResultsAction: (
-    input: Parameters<typeof buildKeyboardGuestSaveInput>[0],
+    input: SaveTrainingSessionInput,
   ) => Promise<SaveTrainingSessionResult>;
 }
 
 export function KeyboardTrainClient({
-  isAuthenticated,
-  initialConfig,
   hasStoredConfig,
+  initialConfig,
+  isAuthenticated,
+  loadBootstrapAction,
   persistLastUsedConfigAction,
   saveResultsAction,
 }: KeyboardTrainClientProps) {
-  const { settings } = useGlobalUserSettings();
-  const [config, setConfig] = useState<KeyboardTrainingConfig>(initialConfig);
-  const [phase, setPhase] = useState<KeyboardTrainPhase>("config");
-  const [startedAt, setStartedAt] = useState<string | null>(null);
-  const [endedAt, setEndedAt] = useState<string | null>(null);
-  const [finishReason, setFinishReason] = useState<SessionFinishReason | null>(
-    null,
+  const { settings, hydrateFromServer } = useGlobalUserSettings();
+  const [isAuthenticatedState, setIsAuthenticatedState] =
+    useState(isAuthenticated);
+  const [hasStoredConfigState, setHasStoredConfigState] =
+    useState(hasStoredConfig);
+  const [config, dispatchConfig] = useReducer(
+    reduceKeyboardTrainingConfig,
+    initialConfig,
   );
-  const [activeQuestion, setActiveQuestion] =
-    useState<ActiveQuestionState | null>(null);
-  const [results, setResults] = useState<KeyboardGuestResult[]>([]);
-  const [feedbackResult, setFeedbackResult] =
-    useState<KeyboardGuestResult | null>(null);
-  const [lastAnsweredWasFinal, setLastAnsweredWasFinal] = useState(false);
-  const [configError, setConfigError] = useState<string | null>(null);
-  const [audioError, setAudioError] = useState<string | null>(null);
-  const [saveResult, setSaveResult] =
-    useState<SaveTrainingSessionResult | null>(null);
-  const [isSavePending, startSaveTransition] = useTransition();
-  const persistedConfigSessionRef = useRef<string | null>(null);
-  const autoSaveAttemptedSessionRef = useRef<string | null>(null);
-  const playbackIdRef = useRef(0);
-  const playedNonceRef = useRef<number | null>(null);
-  const playbackLockRef = useRef(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const questionGeneratorStateRef = useRef<QuestionGeneratorState | null>(null);
-  const sessionDeadlineAtRef = useRef<number | null>(null);
-  const timeoutHandledRef = useRef(false);
-  const plannedQuestionCount = getKeyboardQuestionCount(config);
-  const questionCountOptions =
-    getQuestionCountSelectOptions(plannedQuestionCount);
-  const timeLimitOptions =
-    config.endCondition.type === "time_limit"
-      ? getTimeLimitSecondsSelectOptions(config.endCondition.timeLimitSeconds)
-      : getTimeLimitSecondsSelectOptions(
-          createDefaultTimeLimitEndCondition().timeLimitSeconds,
-        );
-  const [remainingTimeMs, setRemainingTimeMs] = useState<number | null>(null);
-  const answerChoices = useMemo(() => getKeyboardAnswerChoices(), []);
-  const summary = useMemo(() => buildKeyboardGuestSummary(results), [results]);
-  const cannotSaveBecauseNoAnswers = phase === "result" && results.length === 0;
-  const saveContext = {
-    isAuthenticated,
-    startedAt,
-    endedAt,
-    finishReason,
-    resultsCount: results.length,
-  };
-  const canSaveResult = hasTrainingResultSavePayload(saveContext);
-
-  useEffect(() => {
-    if (phase !== "playing" || !activeQuestion) {
-      return;
-    }
-
-    if (playedNonceRef.current === activeQuestion.playNonce) {
-      return;
-    }
-
-    playedNonceRef.current = activeQuestion.playNonce;
-    let cancelled = false;
-
-    void playQuestionAudio(
-      activeQuestion.question,
-      activeQuestion.playbackKind,
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    )
-      .catch(() => {
-        if (!cancelled) {
-          setAudioError(
-            "音声の再生に失敗しました。回答と続行はそのまま行えます。",
-          );
-        }
-      })
-      .finally(() => {
-        if (cancelled) {
-          return;
-        }
-
-        setActiveQuestion((current) =>
-          current
-            ? {
-                ...current,
-                answeringStartedAt:
-                  current.answeringStartedAt ?? new Date().toISOString(),
-              }
-            : current,
-        );
-        setPhase("answering");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeQuestion, phase, settings.masterVolume]);
-
-  useEffect(() => {
-    if (
-      !startedAt ||
-      phase === "config" ||
-      phase === "preparing" ||
-      phase === "result" ||
-      config.endCondition.type !== "time_limit" ||
-      sessionDeadlineAtRef.current === null
-    ) {
-      setRemainingTimeMs(null);
-      return;
-    }
-
-    const updateRemaining = () => {
-      if (sessionDeadlineAtRef.current === null) {
-        return;
-      }
-
-      const nextRemaining = Math.max(
-        0,
-        sessionDeadlineAtRef.current - Date.now(),
-      );
-      setRemainingTimeMs(nextRemaining);
-
-      if (nextRemaining === 0 && !timeoutHandledRef.current) {
-        timeoutHandledRef.current = true;
-        const timedOutSession = resolveTimeLimitExpiry(
-          new Date().toISOString(),
-        );
-        setActiveQuestion(null);
-        setFeedbackResult(null);
-        setLastAnsweredWasFinal(timedOutSession.lastAnsweredWasFinal);
-        setFinishReason(timedOutSession.finishReason);
-        setEndedAt(timedOutSession.endedAt);
-        setPhase(timedOutSession.phase);
-      }
-    };
-
-    updateRemaining();
-    const intervalId = window.setInterval(updateRemaining, 250);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [config.endCondition, phase, startedAt]);
-
-  useEffect(() => {
-    if (phase !== "preparing" || !activeQuestion) {
-      return;
-    }
-
-    setPhase("playing");
-  }, [activeQuestion, phase]);
-
-  useEffect(() => {
-    const autoSaveContext = {
+  const [persistConfigErrorMessage, setPersistConfigErrorMessage] = useState<
+    string | null
+  >(null);
+  const applyBootstrapConfig = useCallback(
+    (nextConfig: KeyboardTrainingConfig) => {
+      dispatchConfig({ type: "replace_config", config: nextConfig });
+    },
+    [],
+  );
+  const handleBootstrapResolved = useCallback(
+    ({
+      hasStoredConfig,
       isAuthenticated,
-      startedAt,
-      endedAt,
-      finishReason,
-      resultsCount: results.length,
-      attemptedSessionId: autoSaveAttemptedSessionRef.current,
-      isSavePending,
-      hasSavedResult: Boolean(saveResult?.ok),
-    };
-
-    if (!shouldAutoSaveTrainingResult(autoSaveContext)) {
-      return;
-    }
-
-    autoSaveAttemptedSessionRef.current = autoSaveContext.startedAt;
-
-    startSaveTransition(async () => {
-      const result = await saveResultsAction({
-        config,
-        startedAt: autoSaveContext.startedAt,
-        endedAt: autoSaveContext.endedAt,
-        finishReason: autoSaveContext.finishReason,
-        results,
-      });
-      setSaveResult(result);
-    });
-  }, [
+    }: {
+      hasStoredConfig: boolean;
+      isAuthenticated: boolean;
+    }) => {
+      setHasStoredConfigState(hasStoredConfig);
+      setIsAuthenticatedState(isAuthenticated);
+    },
+    [],
+  );
+  const { adapterRef, ensureReadyForStart } = useKeyboardTrainingRuntime();
+  const session = useTrainingSessionCore({
+    adapterRef,
     config,
-    endedAt,
-    finishReason,
-    isAuthenticated,
-    isSavePending,
-    results,
-    saveResult?.ok,
+    isAuthenticated: isAuthenticatedState,
+    masterVolume: settings.masterVolume,
     saveResultsAction,
-    startedAt,
-  ]);
+    soundEffectsEnabled: settings.soundEffectsEnabled,
+  });
+  const bootstrap = useTrainingRouteBootstrap({
+    loadBootstrapAction,
+    onApplyConfig: applyBootstrapConfig,
+    onBootstrapResolved: handleBootstrapResolved,
+    onHydrateSettings: hydrateFromServer,
+    phase: session.phase,
+    readErrorMessage: getStoredSettingsReadErrorMessage(),
+    startedAt: session.startedAt,
+  });
+  const viewModel = buildKeyboardTrainViewModel({
+    activeQuestionIndex: session.activeQuestion?.question.questionIndex ?? null,
+    audioError: session.audioError,
+    config,
+    isAuthenticated: isAuthenticatedState,
+    phase: session.phase,
+    remainingTimeMs: session.remainingTimeMs,
+    results: session.results,
+    saveResult: session.saveResult,
+    summary: session.summary,
+  });
+  const isStartBlockedByBootstrap =
+    isAuthenticatedState && bootstrap.isBootstrapReady === false;
 
-  function handleStart() {
-    const validationError = validateKeyboardTrainingConfig(config);
-
-    if (validationError) {
-      setConfigError(validationError);
-      return;
-    }
-
-    const nextStartedAt = new Date().toISOString();
-
-    setConfigError(null);
-    setAudioError(null);
-    setSaveResult(null);
-    persistedConfigSessionRef.current = null;
-    autoSaveAttemptedSessionRef.current = null;
-    timeoutHandledRef.current = false;
-    setStartedAt(nextStartedAt);
-    setEndedAt(null);
-    setFinishReason(null);
-    setResults([]);
-    setFeedbackResult(null);
-    setLastAnsweredWasFinal(false);
-    sessionDeadlineAtRef.current =
-      config.endCondition.type === "time_limit"
-        ? Date.parse(nextStartedAt) +
-          config.endCondition.timeLimitSeconds * 1000
-        : null;
-    setRemainingTimeMs(
-      config.endCondition.type === "time_limit"
-        ? config.endCondition.timeLimitSeconds * 1000
-        : null,
-    );
-    questionGeneratorStateRef.current = createQuestionGeneratorState(config);
-    setActiveQuestion(
-      createActiveQuestion(config, 0, playbackIdRef, questionGeneratorStateRef),
-    );
-    if (isAuthenticated) {
-      persistedConfigSessionRef.current = nextStartedAt;
-      void persistLastUsedConfigAction(config);
-    }
-    setPhase("preparing");
+  function dispatchConfigAction(action: KeyboardTrainingConfigAction) {
+    bootstrap.handleConfigEdit();
+    setPersistConfigErrorMessage(null);
+    dispatchConfig(action);
   }
 
-  function handleReplayBase() {
-    if (!activeQuestion) {
+  async function handleStart() {
+    if (isStartBlockedByBootstrap) {
       return;
     }
 
-    void playQuestionAudio(
-      activeQuestion.question,
-      "base",
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    )
-      .then((didStartPlayback) => {
-        if (!didStartPlayback) {
-          return;
-        }
+    await ensureReadyForStart();
 
-        setActiveQuestion((current) =>
-          current
-            ? {
-                ...current,
-                replayBaseCount: getNextReplayCount(
-                  current.replayBaseCount,
-                  didStartPlayback,
-                ),
-              }
-            : current,
-        );
-      })
-      .catch(() => {
-        setAudioError("音声の再生に失敗しました。そのまま続行できます。");
-      });
-  }
+    const result = session.startSession();
 
-  function handleReplayTarget() {
-    if (!activeQuestion) {
+    if (!result.ok) {
       return;
     }
 
-    void playQuestionAudio(
-      activeQuestion.question,
-      "target",
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    )
-      .then((didStartPlayback) => {
-        if (!didStartPlayback) {
-          return;
-        }
+    setPersistConfigErrorMessage(null);
 
-        setActiveQuestion((current) =>
-          current
-            ? {
-                ...current,
-                replayTargetCount: getNextReplayCount(
-                  current.replayTargetCount,
-                  didStartPlayback,
-                ),
-              }
-            : current,
-        );
-      })
-      .catch(() => {
-        setAudioError("音声の再生に失敗しました。そのまま続行できます。");
-      });
-  }
-
-  function handleAnswer(answeredNote: NoteClass) {
-    if (!activeQuestion?.answeringStartedAt) {
-      return;
+    if (isAuthenticatedState) {
+      void persistLastUsedConfigAction(config)
+        .then(() => {
+          setPersistConfigErrorMessage(null);
+        })
+        .catch(() => {
+          setPersistConfigErrorMessage(getTrainingConfigPersistErrorMessage());
+        });
     }
-
-    const answeredAt = new Date().toISOString();
-    const responseTimeMs = Math.max(
-      0,
-      Date.parse(answeredAt) - Date.parse(activeQuestion.answeringStartedAt),
-    );
-    const result = evaluateKeyboardAnswer({
-      question: activeQuestion.question,
-      answeredNote,
-      responseTimeMs,
-      replayBaseCount: activeQuestion.replayBaseCount,
-      replayTargetCount: activeQuestion.replayTargetCount,
-      presentedAt: activeQuestion.presentedAt,
-      answeredAt,
-    });
-
-    const updatedCount = results.length + 1;
-
-    setResults((current) => [...current, result]);
-    setFeedbackResult(result);
-    setLastAnsweredWasFinal(
-      config.endCondition.type === "question_count" &&
-        updatedCount >= config.endCondition.questionCount,
-    );
-    setPhase("feedback");
-    void playFeedbackEffect(
-      audioContextRef,
-      settings.masterVolume,
-      settings.soundEffectsEnabled,
-      result.isCorrect,
-      playbackLockRef,
-    );
-  }
-
-  function handleReplayCorrectTarget() {
-    if (!feedbackResult) {
-      return;
-    }
-
-    void playQuestionAudio(
-      feedbackResult.question,
-      "target",
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    ).catch(() => {
-      setAudioError("音声の再生に失敗しました。そのまま続行できます。");
-    });
-  }
-
-  function handleContinue() {
-    if (!feedbackResult || !activeQuestion) {
-      return;
-    }
-
-    const nextProgress = resolvePostFeedbackProgress({
-      endCondition: config.endCondition,
-      currentQuestionIndex: activeQuestion.question.questionIndex,
-      lastAnsweredWasFinal,
-      answeredAt: feedbackResult.answeredAt,
-    });
-
-    if (nextProgress.phase === "result") {
-      setActiveQuestion(null);
-      setFinishReason(nextProgress.finishReason);
-      setEndedAt(nextProgress.endedAt);
-      setPhase(nextProgress.phase);
-      return;
-    }
-
-    setFeedbackResult(null);
-    setActiveQuestion(
-      createActiveQuestion(
-        config,
-        nextProgress.nextQuestionIndex,
-        playbackIdRef,
-        questionGeneratorStateRef,
-      ),
-    );
-    setPhase(nextProgress.phase);
   }
 
   function handleReset() {
-    setPhase("config");
-    setStartedAt(null);
-    setEndedAt(null);
-    setFinishReason(null);
-    setActiveQuestion(null);
-    setResults([]);
-    setFeedbackResult(null);
-    setLastAnsweredWasFinal(false);
-    setConfigError(null);
-    setAudioError(null);
-    setSaveResult(null);
-    persistedConfigSessionRef.current = null;
-    autoSaveAttemptedSessionRef.current = null;
-    questionGeneratorStateRef.current = null;
-    sessionDeadlineAtRef.current = null;
-    timeoutHandledRef.current = false;
-    setRemainingTimeMs(null);
-  }
-
-  function handleSaveResults() {
-    const retrySaveContext = {
-      isAuthenticated,
-      startedAt,
-      endedAt,
-      finishReason,
-      resultsCount: results.length,
-      hasSavedResult: Boolean(saveResult?.ok),
-    };
-
-    if (!canRetryTrainingResultSave(retrySaveContext)) {
-      return;
-    }
-
-    startSaveTransition(async () => {
-      const result = await saveResultsAction({
-        config,
-        startedAt: retrySaveContext.startedAt,
-        endedAt: retrySaveContext.endedAt,
-        finishReason: retrySaveContext.finishReason,
-        results,
-      });
-      setSaveResult(result);
-    });
+    session.resetSession();
+    setPersistConfigErrorMessage(null);
   }
 
   return (
     <AppShell narrow className="ui-train-shell">
-      <TrainingPageHero
-        title="鍵盤モード"
-        subtitle="設定から結果表示まで、鍵盤モードの MVP セッションを 1 画面内で進められます。"
-        phase={phase}
-        phaseLabel={formatPhaseLabel(phase)}
+      <TrainingProgressHeader
+        modeLabel="鍵盤モード"
+        modeTone={getTrainingModeTone("keyboard")}
+        questionLabel={viewModel.questionLabel}
+        meta={viewModel.headerMeta}
         actions={
-          <>
-            <ButtonLink href="/">ホームへ戻る</ButtonLink>
-            <ButtonLink href="/train/distance">距離モードへ</ButtonLink>
-          </>
+          <ButtonLink
+            href="/"
+            pendingLabel="ホームを開いています..."
+            size="compact"
+            variant="ghost"
+          >
+            戻る
+          </ButtonLink>
         }
-      >
-        <div className="ui-train-status-grid">
-          <KeyValueCard label="進行状態" value={formatPhaseLabel(phase)} />
-          {startedAt ? (
-            <KeyValueCard
-              label="開始時刻"
-              value={formatDateTimeLabel(startedAt)}
-            />
-          ) : null}
-          {config.endCondition.type === "time_limit" &&
-          remainingTimeMs !== null ? (
-            <KeyValueCard
-              label="残り時間"
-              value={formatRemainingTimeLabel(remainingTimeMs)}
-            />
-          ) : null}
-        </div>
-        <p className="ui-subtitle">
-          {isAuthenticated
-            ? "ログイン中は、結果画面に進むとセッション結果を自動保存します。"
-            : "ゲストでは結果を画面内にのみ保持し、保存は行いません。"}
-        </p>
-        {audioError ? <Notice tone="error">{audioError}</Notice> : null}
-      </TrainingPageHero>
+        notice={viewModel.headerNotice}
+      />
 
-      {phase === "config" ? (
+      {session.phase !== "config" && persistConfigErrorMessage ? (
+        <Notice tone="error">{persistConfigErrorMessage}</Notice>
+      ) : null}
+
+      {session.phase === "config" ? (
         <Surface tone="accent">
           <SectionHeader
             title="出題設定"
-            description="終了条件、出題レンジ、基準音条件を整えてから始めます。"
+            description="必要な設定だけを整えて、そのまま開始します。"
           />
-          <div className="ui-grid-cards">
-            <div className="ui-panel-card ui-stack-md">
-              <strong>セッション終了</strong>
-              <Field label="終了条件">
-                <select
-                  className="ui-select"
-                  value={config.endCondition.type}
-                  onChange={(event) =>
-                    setConfig((current) => ({
-                      ...current,
-                      endCondition:
-                        event.target.value === "time_limit"
-                          ? createDefaultTimeLimitEndCondition()
-                          : createDefaultQuestionCountEndCondition(),
-                    }))
-                  }
-                >
-                  <option value="question_count">問題数</option>
-                  <option value="time_limit">制限時間</option>
-                </select>
-              </Field>
-
-              {config.endCondition.type === "question_count" ? (
-                <Field label="問題数">
+          <div className="ui-form-layout">
+            <div className="ui-form-section">
+              <h3 className="ui-form-section__title">終了条件</h3>
+              <FieldGrid>
+                <Field label="終了方法">
                   <select
                     className="ui-select"
-                    value={plannedQuestionCount}
                     onChange={(event) =>
-                      setConfig((current) => ({
-                        ...current,
-                        endCondition: {
-                          type: "question_count",
-                          questionCount: Number(event.target.value),
-                        },
-                      }))
+                      dispatchConfigAction({
+                        type: "set_end_condition_type",
+                        value: event.target.value,
+                      })
                     }
+                    value={config.endCondition.type}
                   >
-                    {questionCountOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option} 問
-                      </option>
-                    ))}
+                    <option value="question_count">問題数</option>
+                    <option value="time_limit">制限時間</option>
                   </select>
                 </Field>
-              ) : (
-                <Field label="制限時間（秒）">
-                  <select
-                    className="ui-select"
-                    value={config.endCondition.timeLimitSeconds}
-                    onChange={(event) =>
-                      setConfig((current) => ({
-                        ...current,
-                        endCondition: {
-                          type: "time_limit",
-                          timeLimitSeconds: Number(event.target.value),
-                        },
-                      }))
-                    }
-                  >
-                    {timeLimitOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option} 秒
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              )}
+                {config.endCondition.type === "question_count" ? (
+                  <Field label="問題数">
+                    <select
+                      className="ui-select"
+                      onChange={(event) =>
+                        dispatchConfigAction({
+                          type: "set_question_count",
+                          value: event.target.value,
+                        })
+                      }
+                      value={config.endCondition.questionCount}
+                    >
+                      {viewModel.questionCountOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option} 問
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : (
+                  <Field label="制限時間（秒）">
+                    <select
+                      className="ui-select"
+                      onChange={(event) =>
+                        dispatchConfigAction({
+                          type: "set_time_limit_seconds",
+                          value: event.target.value,
+                        })
+                      }
+                      value={config.endCondition.timeLimitSeconds}
+                    >
+                      {viewModel.timeLimitOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option} 秒
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
+              </FieldGrid>
             </div>
 
-            <div className="ui-panel-card ui-stack-md">
-              <strong>問題レンジ</strong>
+            <div className="ui-form-section">
+              <h3 className="ui-form-section__title">出題範囲</h3>
               <FieldGrid>
                 <Field label="最小半音数">
                   <input
                     className="ui-input"
-                    type="number"
-                    min={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.min}
                     max={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.max}
-                    value={config.intervalRange.minSemitone}
+                    min={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.min}
                     onChange={(event) =>
-                      setConfig((current) => {
-                        const minSemitone = clampIntervalMinSemitone(
-                          event.target.value,
-                        );
-
-                        return {
-                          ...current,
-                          intervalRange: {
-                            minSemitone,
-                            maxSemitone: clampIntervalMaxSemitone(
-                              current.intervalRange.maxSemitone,
-                              minSemitone,
-                            ),
-                          },
-                        };
+                      dispatchConfigAction({
+                        type: "set_min_semitone",
+                        value: event.target.value,
                       })
                     }
+                    type="number"
+                    value={config.intervalRange.minSemitone}
                   />
                 </Field>
                 <Field label="最大半音数">
                   <input
                     className="ui-input"
-                    type="number"
+                    max={TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.max}
                     min={Math.max(
                       TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.min,
                       config.intervalRange.minSemitone,
                     )}
-                    max={TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.max}
-                    value={config.intervalRange.maxSemitone}
                     onChange={(event) =>
-                      setConfig((current) => ({
-                        ...current,
-                        intervalRange: {
-                          ...current.intervalRange,
-                          maxSemitone: clampIntervalMaxSemitone(
-                            event.target.value,
-                            current.intervalRange.minSemitone,
-                          ),
-                        },
-                      }))
+                      dispatchConfigAction({
+                        type: "set_max_semitone",
+                        value: event.target.value,
+                      })
                     }
+                    type="number"
+                    value={config.intervalRange.maxSemitone}
                   />
                 </Field>
+                <Field label="出題方向">
+                  <select
+                    className="ui-select"
+                    onChange={(event) =>
+                      dispatchConfigAction({
+                        type: "set_direction_mode",
+                        value: event.target.value,
+                      })
+                    }
+                    value={config.directionMode}
+                  >
+                    <option value="mixed">
+                      {formatDirectionModeLabel("mixed")}
+                    </option>
+                    <option value="up_only">
+                      {formatDirectionModeLabel("up_only")}
+                    </option>
+                  </select>
+                </Field>
+                <Field label="基準音モード">
+                  <select
+                    className="ui-select"
+                    onChange={(event) =>
+                      dispatchConfigAction({
+                        type: "set_base_note_mode",
+                        value: event.target.value,
+                      })
+                    }
+                    value={config.baseNoteMode}
+                  >
+                    <option value="random">ランダム</option>
+                    <option value="fixed">固定</option>
+                  </select>
+                </Field>
               </FieldGrid>
-
-              <Field label="出題方向">
-                <select
-                  className="ui-select"
-                  value={config.directionMode}
-                  onChange={(event) =>
-                    setConfig((current) => ({
-                      ...current,
-                      directionMode: event.target
-                        .value as KeyboardTrainingConfig["directionMode"],
-                    }))
-                  }
-                >
-                  <option value="mixed">
-                    {formatDirectionModeLabel("mixed")}
-                  </option>
-                  <option value="up_only">
-                    {formatDirectionModeLabel("up_only")}
-                  </option>
-                </select>
-              </Field>
-
-              <Field label="基準音モード">
-                <select
-                  className="ui-select"
-                  value={config.baseNoteMode}
-                  onChange={(event) =>
-                    setConfig((current) => ({
-                      ...current,
-                      baseNoteMode: event.target
-                        .value as KeyboardTrainingConfig["baseNoteMode"],
-                      fixedBaseNote:
-                        event.target.value === "fixed"
-                          ? (current.fixedBaseNote ?? "C")
-                          : null,
-                    }))
-                  }
-                >
-                  <option value="random">ランダム</option>
-                  <option value="fixed">固定</option>
-                </select>
-              </Field>
 
               {config.baseNoteMode === "fixed" ? (
                 <Field label="固定する基準音">
                   <select
                     className="ui-select"
-                    value={config.fixedBaseNote ?? "C"}
                     onChange={(event) =>
-                      setConfig((current) => ({
-                        ...current,
-                        fixedBaseNote: event.target.value as NoteClass,
-                      }))
+                      dispatchConfigAction({
+                        type: "set_fixed_base_note",
+                        value: event.target.value,
+                      })
                     }
+                    value={config.fixedBaseNote ?? "C"}
                   >
                     {NOTE_CLASS_OPTIONS.map((note) => (
                       <option key={note} value={note}>
@@ -788,317 +377,134 @@ export function KeyboardTrainClient({
               ) : null}
             </div>
 
-            <div className="ui-panel-card ui-stack-md">
-              <strong>回答スタイル</strong>
+            <div className="ui-form-section">
+              <h3 className="ui-form-section__title">回答スタイル</h3>
               <label className="ui-checkbox-card">
                 <input
-                  type="checkbox"
                   checked={config.includeUnison}
                   onChange={(event) =>
-                    setConfig((current) => ({
-                      ...current,
-                      includeUnison: event.target.checked,
-                    }))
+                    dispatchConfigAction({
+                      type: "toggle_include_unison",
+                      checked: event.target.checked,
+                    })
                   }
+                  type="checkbox"
                 />
                 <span>同音を含める</span>
               </label>
-
               <label className="ui-checkbox-card">
                 <input
-                  type="checkbox"
                   checked={config.includeOctave}
                   onChange={(event) =>
-                    setConfig((current) => ({
-                      ...current,
-                      includeOctave: event.target.checked,
-                    }))
+                    dispatchConfigAction({
+                      type: "toggle_include_octave",
+                      checked: event.target.checked,
+                    })
                   }
+                  type="checkbox"
                 />
                 <span>オクターブを含める</span>
               </label>
-
-              <KeyValueCard
-                label="回答候補"
-                value={
-                  settings.keyboardNoteLabelsVisible
-                    ? answerChoices
-                        .map((choice) => formatKeyboardNoteLabel(choice))
-                        .join(", ")
-                    : "鍵盤上の音名ラベルは非表示です。"
-                }
-                detail={
-                  settings.keyboardNoteLabelsVisible
-                    ? "黒鍵はシャープ / フラット表記で表示します。"
-                    : "ラベル表示は設定画面で切り替えられます。"
-                }
-              />
+              <p className="ui-form-inline-note">
+                {settings.keyboardNoteLabelsVisible
+                  ? "鍵盤ラベルは表示中です。黒鍵はシャープ / フラット表記で出ます。"
+                  : "鍵盤ラベルは非表示です。表示切替は設定画面で行えます。"}
+              </p>
+              <p className="ui-mini-note">回答候補は 12 音すべてです。</p>
             </div>
           </div>
 
-          {isAuthenticated && hasStoredConfig ? (
-            <Notice>前回設定を読み込み済みです。</Notice>
+          {bootstrap.isBootstrapPending ? (
+            <Notice>保存済み設定を確認しています...</Notice>
+          ) : null}
+          {bootstrap.bootstrapErrorMessage ? (
+            <Notice tone="error">{bootstrap.bootstrapErrorMessage}</Notice>
+          ) : null}
+          {persistConfigErrorMessage ? (
+            <Notice tone="error">{persistConfigErrorMessage}</Notice>
+          ) : null}
+          {bootstrap.bootstrapNotice ? (
+            <Notice>{bootstrap.bootstrapNotice}</Notice>
+          ) : null}
+          {isAuthenticatedState &&
+          hasStoredConfigState &&
+          !bootstrap.bootstrapNotice &&
+          !bootstrap.bootstrapErrorMessage ? (
+            <Notice>前回設定を読み込めます。</Notice>
           ) : null}
 
-          {configError ? <Notice tone="error">{configError}</Notice> : null}
+          {session.configError ? (
+            <Notice tone="error">{session.configError}</Notice>
+          ) : null}
 
           <div className="ui-sticky-actions">
-            <div className="ui-stack-sm">
-              <strong>準備できたら開始</strong>
-              <span className="ui-muted">
-                開始タップを最初の audio unlock として使います。
-              </span>
-            </div>
-            <Button type="button" onClick={handleStart} variant="primary" block>
+            <Button
+              block
+              disabled={isStartBlockedByBootstrap}
+              onClick={() => void handleStart()}
+              type="button"
+              variant="primary"
+            >
               開始
             </Button>
           </div>
         </Surface>
       ) : null}
 
-      {phase === "preparing" && activeQuestion ? (
+      {session.phase === "preparing" && session.activeQuestion ? (
         <Surface tone="accent">
           <SectionHeader
             title="準備中"
             description="次の問題を準備して、基準音と問題音の再生に入ります。"
           />
           <Notice>
-            問題 {activeQuestion.question.questionIndex + 1} を準備しています...
+            問題 {session.activeQuestion.question.questionIndex + 1}{" "}
+            を準備しています...
           </Notice>
         </Surface>
       ) : null}
 
-      {(phase === "playing" || phase === "answering") && activeQuestion ? (
+      {(session.phase === "playing" || session.phase === "answering") &&
+      session.activeQuestion ? (
         <KeyboardQuestionPanel
-          phase={phase}
-          questionIndex={activeQuestion.question.questionIndex}
-          direction={activeQuestion.question.direction}
-          replayBaseCount={activeQuestion.replayBaseCount}
-          replayTargetCount={activeQuestion.replayTargetCount}
-          playbackKind={activeQuestion.playbackKind}
-          answerChoices={answerChoices}
-          referenceNote={activeQuestion.question.baseNote}
+          answerChoices={NOTE_CLASS_OPTIONS}
+          direction={session.activeQuestion.question.direction}
+          isPlaybackLocked={session.phase === "playing"}
+          onAnswer={session.answerQuestion}
+          onReplayBase={session.replayBase}
+          onReplayTarget={session.replayTarget}
+          questionIndex={session.activeQuestion.question.questionIndex}
+          referenceNote={session.activeQuestion.question.baseNote}
+          replayBaseCount={session.activeQuestion.replayBaseCount}
+          replayTargetCount={session.activeQuestion.replayTargetCount}
           showLabels={settings.keyboardNoteLabelsVisible}
-          onReplayBase={handleReplayBase}
-          onReplayTarget={handleReplayTarget}
-          onAnswer={handleAnswer}
         />
       ) : null}
 
-      {phase === "feedback" && feedbackResult ? (
+      {session.phase === "feedback" && session.feedbackResult ? (
         <KeyboardFeedbackPanel
-          feedbackResult={feedbackResult}
-          lastAnsweredWasFinal={lastAnsweredWasFinal}
+          feedbackResult={session.feedbackResult}
+          lastAnsweredWasFinal={session.lastAnsweredWasFinal}
+          onContinue={session.continueAfterFeedback}
+          onEndSession={session.endSessionManually}
+          onReplayCorrectTarget={session.replayCorrectTarget}
           showLabels={settings.keyboardNoteLabelsVisible}
-          onReplayCorrectTarget={handleReplayCorrectTarget}
-          onContinue={handleContinue}
         />
       ) : null}
 
-      {phase === "result" ? (
+      {session.phase === "result" ? (
         <KeyboardResultPanel
-          summary={summary}
-          finishReason={finishReason}
-          isAuthenticated={isAuthenticated}
-          canSaveResult={canSaveResult}
-          cannotSaveBecauseNoAnswers={cannotSaveBecauseNoAnswers}
-          isSavePending={isSavePending}
-          saveResult={saveResult}
-          onRetrySave={handleSaveResults}
+          canSaveResult={session.canSaveResult}
+          cannotSaveBecauseNoAnswers={viewModel.cannotSaveBecauseNoAnswers}
+          finishReason={session.finishReason}
+          isAuthenticated={isAuthenticatedState}
+          isSavePending={session.isSavePending}
           onReset={handleReset}
+          onRetrySave={session.retrySaveResults}
+          saveResult={session.saveResult}
+          summary={viewModel.summary}
         />
       ) : null}
     </AppShell>
   );
-}
-
-function createActiveQuestion(
-  config: KeyboardTrainingConfig,
-  questionIndex: number,
-  playbackIdRef: React.MutableRefObject<number>,
-  questionGeneratorStateRef: React.MutableRefObject<QuestionGeneratorState | null>,
-): ActiveQuestionState {
-  if (!questionGeneratorStateRef.current) {
-    throw new Error(
-      "Question generator state must be initialized before play.",
-    );
-  }
-
-  const nextQuestion = takeNextQuestion(
-    config,
-    questionGeneratorStateRef.current,
-    questionIndex,
-  );
-  questionGeneratorStateRef.current = nextQuestion.state;
-
-  return {
-    question: nextQuestion.question,
-    presentedAt: new Date().toISOString(),
-    answeringStartedAt: null,
-    replayBaseCount: 0,
-    replayTargetCount: 0,
-    playbackKind: "question",
-    playNonce: nextPlaybackNonce(playbackIdRef),
-  };
-}
-
-function nextPlaybackNonce(
-  playbackIdRef: React.MutableRefObject<number>,
-): number {
-  playbackIdRef.current += 1;
-
-  return playbackIdRef.current;
-}
-
-async function playQuestionAudio(
-  question: Question,
-  playbackKind: PlaybackKind,
-  audioContextRef: React.MutableRefObject<AudioContext | null>,
-  masterVolume: number,
-  playbackLockRef: React.MutableRefObject<boolean>,
-): Promise<boolean> {
-  return runGuardedPlayback(playbackLockRef, async () => {
-    const audioContext = await getAudioContext(audioContextRef);
-
-    if (playbackKind === "base") {
-      await playNote(audioContext, question.baseMidi, masterVolume);
-      return;
-    }
-
-    if (playbackKind === "target") {
-      await playNote(audioContext, question.targetMidi, masterVolume);
-      return;
-    }
-
-    await playNote(audioContext, question.baseMidi, masterVolume);
-    await wait(140);
-    await playNote(audioContext, question.targetMidi, masterVolume);
-  });
-}
-
-function playTone(
-  audioContext: AudioContext,
-  frequency: number,
-  durationSeconds: number,
-  masterVolume: number,
-): Promise<void> {
-  return new Promise((resolve) => {
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    const now = audioContext.currentTime;
-    const peakGain = Math.max(
-      0.0001,
-      (Math.min(100, Math.max(0, masterVolume)) / 100) * 0.15,
-    );
-
-    oscillator.type = "sine";
-    oscillator.frequency.value = frequency;
-    gainNode.gain.setValueAtTime(0.0001, now);
-    gainNode.gain.exponentialRampToValueAtTime(peakGain, now + 0.02);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + durationSeconds);
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    oscillator.start(now);
-    oscillator.stop(now + durationSeconds);
-    oscillator.onended = () => resolve();
-  });
-}
-
-async function playFeedbackEffect(
-  audioContextRef: React.MutableRefObject<AudioContext | null>,
-  masterVolume: number,
-  soundEffectsEnabled: boolean,
-  isCorrect: boolean,
-  playbackLockRef: React.MutableRefObject<boolean>,
-): Promise<void> {
-  if (!soundEffectsEnabled || typeof window === "undefined") {
-    return;
-  }
-
-  await runGuardedPlayback(playbackLockRef, async () => {
-    const audioContext = await getAudioContext(audioContextRef);
-
-    await playTone(
-      audioContext,
-      isCorrect ? 880 : 220,
-      0.08,
-      Math.max(12, Math.round(masterVolume * 0.5)),
-    );
-  });
-}
-
-async function getAudioContext(
-  audioContextRef: React.MutableRefObject<AudioContext | null>,
-): Promise<AudioContext> {
-  if (typeof window === "undefined") {
-    throw new Error("AudioContext is not available.");
-  }
-
-  const AudioContextClass =
-    window.AudioContext ||
-    (window as typeof window & { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext;
-
-  if (!AudioContextClass) {
-    throw new Error("AudioContext is not available.");
-  }
-
-  const audioContext = audioContextRef.current ?? new AudioContextClass();
-  audioContextRef.current = audioContext;
-
-  if (audioContext.state === "suspended") {
-    await audioContext.resume();
-  }
-
-  return audioContext;
-}
-
-async function playNote(
-  audioContext: AudioContext,
-  midi: number,
-  masterVolume: number,
-): Promise<void> {
-  await playTone(audioContext, getNoteFrequency(midi), 0.35, masterVolume);
-}
-
-async function runGuardedPlayback(
-  playbackLockRef: React.MutableRefObject<boolean>,
-  playback: () => Promise<void>,
-): Promise<boolean> {
-  if (playbackLockRef.current) {
-    return false;
-  }
-
-  playbackLockRef.current = true;
-
-  try {
-    await playback();
-    return true;
-  } finally {
-    playbackLockRef.current = false;
-  }
-}
-
-function wait(durationMs: number): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, durationMs);
-  });
-}
-
-function formatPhaseLabel(phase: KeyboardTrainPhase): string {
-  switch (phase) {
-    case "config":
-      return "設定";
-    case "preparing":
-      return "準備中";
-    case "playing":
-      return "再生中";
-    case "answering":
-      return "回答中";
-    case "feedback":
-      return "フィードバック";
-    case "result":
-      return "結果";
-  }
 }

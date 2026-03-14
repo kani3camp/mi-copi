@@ -1,12 +1,14 @@
 import {
   type CurrentUser,
-  getCurrentUserOrNull,
-} from "../../../lib/auth/server";
+  type CurrentUserResolverDependencies,
+  resolveCurrentUserOrNull,
+} from "../../../lib/auth/server.ts";
+import { withRequestTiming } from "../../../lib/server/request-timing.ts";
+import { getCurrentUserSettingsSnapshot } from "../../settings/server/getCurrentUserSettingsSnapshot.ts";
 import type {
   DistanceTrainingConfig,
   KeyboardTrainingConfig,
 } from "../model/types";
-import { getLastUsedTrainingConfigsForCurrentUser } from "./lastUsedTrainingConfig";
 
 export interface SettingsPageData {
   isAuthenticated: boolean;
@@ -16,27 +18,39 @@ export interface SettingsPageData {
   updatedAt: string | null;
 }
 
-export async function getSettingsPageDataForCurrentUser(): Promise<SettingsPageData> {
-  const [currentUser, lastUsedConfigs] = await Promise.all([
-    getCurrentUserOrNull(),
-    getLastUsedTrainingConfigsForCurrentUser(),
-  ]);
+export interface SettingsPageDataDependencies
+  extends CurrentUserResolverDependencies {
+  getCurrentUserSettingsSnapshot?: typeof getCurrentUserSettingsSnapshot;
+}
 
-  if (!currentUser) {
+export async function getSettingsPageDataForCurrentUser(
+  deps: SettingsPageDataDependencies = {},
+): Promise<SettingsPageData> {
+  return withRequestTiming("training.getSettingsPageData", async () => {
+    const currentUser = await resolveCurrentUserOrNull(deps);
+
+    if (!currentUser) {
+      return {
+        isAuthenticated: false,
+        user: null,
+        lastDistanceConfig: null,
+        lastKeyboardConfig: null,
+        updatedAt: null,
+      };
+    }
+
+    const snapshot = await (
+      deps.getCurrentUserSettingsSnapshot ?? getCurrentUserSettingsSnapshot
+    )({
+      currentUser,
+    });
+
     return {
-      isAuthenticated: false,
-      user: null,
-      lastDistanceConfig: null,
-      lastKeyboardConfig: null,
-      updatedAt: null,
+      isAuthenticated: true,
+      user: currentUser,
+      lastDistanceConfig: snapshot.lastDistanceConfig,
+      lastKeyboardConfig: snapshot.lastKeyboardConfig,
+      updatedAt: snapshot.updatedAt,
     };
-  }
-
-  return {
-    isAuthenticated: true,
-    user: currentUser,
-    lastDistanceConfig: lastUsedConfigs.lastDistanceConfig,
-    lastKeyboardConfig: lastUsedConfigs.lastKeyboardConfig,
-    updatedAt: lastUsedConfigs.updatedAt,
-  };
+  });
 }

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Suspense } from "react";
 
 import {
   formatAccuracyLabel,
@@ -9,203 +9,275 @@ import {
   formatTrainingModeLabel,
 } from "../features/training/model/format";
 import { getHomeTrainingSummaryForCurrentUser } from "../features/training/server/getHomeTrainingSummary";
-import { HomeSignOutButton } from "./home-sign-out-button";
 import {
+  getCurrentUserOrNullCached,
+  hasSessionTokenCookieCached,
+} from "../lib/auth/server";
+import { HomeSignOutButton } from "./home-sign-out-button";
+import { ButtonLink, ListLinkCard } from "./ui/navigation-link";
+import {
+  ActionCard,
   AppShell,
-  ButtonLink,
-  Chip,
-  KeyValueCard,
-  KeyValueGrid,
-  List,
-  ListLinkCard,
-  MetricCard,
-  MetricGrid,
-  PageHero,
+  PageHeader,
   SectionHeader,
+  SummaryBlock,
+  SummaryStat,
   Surface,
+  TrainingModeChip,
 } from "./ui/primitives";
 
 export default async function HomePage() {
-  const summary = await getHomeTrainingSummaryForCurrentUser();
+  const hasSessionToken = await hasSessionTokenCookieCached();
 
   return (
     <AppShell>
-      <PageHero
+      <PageHeader
         title="ミーコピ"
-        eyebrow="Relative Pitch MVP"
-        subtitle="基準音ありの相対音感トレーニングを、スマホで短く反復できるホームです。次の練習開始と、保存済みの成長確認をここから行えます。"
-        actions={
-          <>
-            <ButtonLink href="/settings">設定</ButtonLink>
-            <ButtonLink href="/login">
-              {summary.isAuthenticated ? "アカウント" : "ログイン"}
-            </ButtonLink>
-            {summary.isAuthenticated ? <HomeSignOutButton /> : null}
-          </>
-        }
-      >
+        eyebrow="相対音感トレーニング"
+        subtitle="基準音ありの相対音感トレーニングを、短く反復するためのホームです。"
+      />
+
+      <div className="ui-stack-md">
+        <SectionHeader title="すぐ始める" />
         <div className="ui-grid-cards">
-          <TrainModeCard
+          <ModeEntry
             href="/train/distance"
-            eyebrow="距離モード"
+            label="距離モード"
             title="音程名で答える"
-            description="音程名で答える反復練習。誤差と回答速度をすぐ確認できます。"
+            description="半音距離と反応速度を短く繰り返し鍛えます。"
+            pendingLabel="距離モードを開いています..."
+            tone="teal"
           />
-          <TrainModeCard
+          <ModeEntry
             href="/train/keyboard"
-            eyebrow="鍵盤モード"
+            label="鍵盤モード"
             title="鍵盤で答える"
-            description="鍵盤で問題音を答える練習。黒鍵込みで耳コピ寄りに試せます。"
+            description="基準音の位置を見ながら耳コピ寄りに答えます。"
+            pendingLabel="鍵盤モードを開いています..."
+            tone="blue"
           />
         </div>
-      </PageHero>
+      </div>
 
-      {summary.isAuthenticated ? (
-        <>
-          <Surface tone="accent">
-            <SectionHeader
-              title="学習サマリー"
-              description="直近の保存済みセッションから、最後の状態と最近の精度感をすばやく確認できます。"
-              actions={<Chip tone="success">保存済みデータあり</Chip>}
-            />
-            <MetricGrid>
-              <MetricCard
-                label="最終学習日時"
-                value={
-                  summary.lastTrainingTime
-                    ? formatDateTimeLabel(summary.lastTrainingTime)
-                    : "-"
-                }
-                compactValue
-                accent
-                className="ui-metric-card--home-summary"
-              />
-              <MetricCard
-                label="最後に使ったモード"
-                value={
-                  summary.lastUsedMode
-                    ? formatTrainingModeLabel(summary.lastUsedMode)
-                    : "-"
-                }
-                compactValue
-                className="ui-metric-card--home-summary"
-              />
-              <MetricCard
-                label="直近セッションスコア"
-                value={
-                  summary.latestSessionScore === null
-                    ? "-"
-                    : formatScoreLabel(summary.latestSessionScore)
-                }
-              />
-              <MetricCard
-                label="最近の平均誤差"
-                value={
-                  summary.recentAverageError === null
-                    ? "-"
-                    : formatAvgErrorLabel(summary.recentAverageError)
-                }
-              />
-              <MetricCard
-                label="最近の平均回答時間"
-                value={
-                  summary.recentAverageResponseTimeMs === null
-                    ? "-"
-                    : formatResponseTimeMsLabel(
-                        summary.recentAverageResponseTimeMs,
-                      )
-                }
-                compactValue
-              />
-              <MetricCard
-                label="累計セッション数"
-                value={summary.totalSessions}
-              />
-              <MetricCard
-                label="保存済み回答数"
-                value={summary.totalSavedQuestionResults}
-              />
-            </MetricGrid>
-          </Surface>
-
-          <Surface>
-            <SectionHeader
-              title="最近の保存済みセッション"
-              description="前回の仕上がりを見てから次の練習に入れます。"
-              actions={<ButtonLink href="/stats">統計を見る</ButtonLink>}
-            />
-            {summary.recentSessions.length > 0 ? (
-              <List>
-                {summary.recentSessions.map((session) => (
-                  <li key={session.id}>
-                    <ListLinkCard href={`/sessions/${session.id}`}>
-                      <Chip tone={getTrainingModeChipTone(session.mode)}>
-                        {formatTrainingModeLabel(session.mode)}
-                      </Chip>
-                      <span className="ui-muted">
-                        スコア {formatScoreLabel(session.sessionScore)} / 正答率{" "}
-                        {formatAccuracyLabel(session.accuracyRate)} / 問題数{" "}
-                        {session.answeredQuestionCount}
-                      </span>
-                      <span className="ui-muted">
-                        完了日時 {formatDateTimeLabel(session.endedAt)}
-                      </span>
-                    </ListLinkCard>
-                  </li>
-                ))}
-              </List>
-            ) : (
-              <p className="ui-subtitle">
-                保存済みセッションはまだありません。
-              </p>
-            )}
-          </Surface>
-        </>
+      {hasSessionToken ? (
+        <Suspense fallback={<HomeSummaryLoading />}>
+          <AuthenticatedHomeContent />
+        </Suspense>
       ) : (
-        <Surface>
-          <SectionHeader
-            title="ゲスト利用中"
-            description="練習はすぐ始められますが、ホームと統計の保存サマリーはログイン後に有効になります。"
-          />
-          <KeyValueGrid>
-            <KeyValueCard
-              label="今できること"
-              value="距離モードと鍵盤モードの練習"
-              detail="結果はその場で確認できます。"
-            />
-            <KeyValueCard
-              label="ログイン後に増えること"
-              value="保存、統計、設定のクラウド同期"
-              detail="過去の推移を後から見返せます。"
-            />
-          </KeyValueGrid>
-          <div className="ui-nav-row">
-            <ButtonLink href="/login" variant="primary">
-              ログインして履歴を残す
-            </ButtonLink>
-            <ButtonLink href="/settings">設定を見る</ButtonLink>
-          </div>
-        </Surface>
+        <GuestHomeContent />
       )}
+
+      <Surface>
+        <SectionHeader title="メニュー" />
+        <div className="ui-page-aux-actions">
+          <ButtonLink
+            href="/settings"
+            variant="ghost"
+            size="compact"
+            pendingLabel="設定を開いています..."
+          >
+            設定
+          </ButtonLink>
+          <ButtonLink
+            href="/login"
+            variant="ghost"
+            size="compact"
+            pendingLabel="ログイン画面を開いています..."
+          >
+            {hasSessionToken ? "アカウント" : "ログイン"}
+          </ButtonLink>
+          {hasSessionToken ? (
+            <Suspense fallback={null}>
+              <HomeAccountActions />
+            </Suspense>
+          ) : null}
+        </div>
+      </Surface>
     </AppShell>
   );
 }
 
-function getTrainingModeChipTone(mode: "distance" | "keyboard") {
-  return mode === "distance" ? "info" : "active";
-}
-
-function TrainModeCard(props: {
+function ModeEntry(props: {
   href: string;
-  eyebrow: string;
+  label: string;
   title: string;
   description: string;
+  pendingLabel: string;
+  tone: "teal" | "blue";
 }) {
   return (
-    <Link href={props.href} className="ui-list-link">
-      <span className="ui-hero__eyebrow">{props.eyebrow}</span>
-      <strong>{props.title}</strong>
-      <span className="ui-muted">{props.description}</span>
-    </Link>
+    <ActionCard
+      tone={props.tone}
+      eyebrow={
+        <TrainingModeChip
+          mode={props.tone === "teal" ? "distance" : "keyboard"}
+          label={props.label}
+        />
+      }
+      title={props.title}
+      description={props.description}
+      footer={
+        <ButtonLink
+          href={props.href}
+          pendingLabel={props.pendingLabel}
+          variant="primary"
+          block
+        >
+          練習を始める
+        </ButtonLink>
+      }
+    />
+  );
+}
+
+async function HomeAccountActions() {
+  const currentUser = await getCurrentUserOrNullCached();
+
+  if (!currentUser) {
+    return null;
+  }
+
+  return <HomeSignOutButton />;
+}
+
+async function AuthenticatedHomeContent() {
+  const currentUser = await getCurrentUserOrNullCached();
+
+  if (!currentUser) {
+    return <GuestHomeContent />;
+  }
+
+  const summary = await getHomeTrainingSummaryForCurrentUser({ currentUser });
+
+  return (
+    <>
+      <Surface>
+        <SectionHeader title="学習サマリー" />
+        <SummaryBlock className="ui-summary-block--insight">
+          <SummaryStat
+            label="最終学習日時"
+            value={
+              summary.lastTrainingTime
+                ? formatDateTimeLabel(summary.lastTrainingTime)
+                : "-"
+            }
+            detail={
+              summary.lastUsedMode
+                ? formatTrainingModeLabel(summary.lastUsedMode)
+                : "モード未記録"
+            }
+            emphasis="primary"
+            className="ui-summary-stat--brand"
+          />
+          <SummaryStat
+            label="最近の平均誤差"
+            value={
+              summary.recentAverageError === null
+                ? "-"
+                : formatAvgErrorLabel(summary.recentAverageError)
+            }
+            detail="ズレの平均"
+            className="ui-summary-stat--coral"
+          />
+          <SummaryStat
+            label="最近の平均回答時間"
+            value={
+              summary.recentAverageResponseTimeMs === null
+                ? "-"
+                : formatResponseTimeMsLabel(summary.recentAverageResponseTimeMs)
+            }
+            detail="反応速度"
+            className="ui-summary-stat--blue"
+          />
+          <SummaryStat
+            label="最近のセッションスコア"
+            value={
+              summary.latestSessionScore === null
+                ? "-"
+                : formatScoreLabel(summary.latestSessionScore)
+            }
+            detail="直近の手応え"
+            className="ui-summary-stat--teal"
+          />
+        </SummaryBlock>
+      </Surface>
+
+      <Surface>
+        <SectionHeader
+          title="最近の保存済みセッション"
+          actions={
+            <ButtonLink
+              href="/stats"
+              variant="ghost"
+              size="compact"
+              pendingLabel="統計を開いています..."
+            >
+              統計を見る
+            </ButtonLink>
+          }
+        />
+        {summary.recentSessions.length > 0 ? (
+          <div className="ui-list">
+            {summary.recentSessions.map((session) => (
+              <ListLinkCard
+                key={session.id}
+                href={`/sessions/${session.id}`}
+                pendingLabel="セッション詳細を開いています..."
+                className="ui-list-link--compact ui-list-link--session"
+              >
+                <div className="ui-inline-split">
+                  <TrainingModeChip mode={session.mode} />
+                  <strong>{formatScoreLabel(session.sessionScore)}</strong>
+                </div>
+                <span className="ui-muted">
+                  正答率 {formatAccuracyLabel(session.accuracyRate)} / 回答数{" "}
+                  {session.answeredQuestionCount}
+                </span>
+                <span className="ui-mini-note">
+                  完了 {formatDateTimeLabel(session.endedAt)}
+                </span>
+              </ListLinkCard>
+            ))}
+          </div>
+        ) : (
+          <p className="ui-subtitle">保存済みセッションはまだありません。</p>
+        )}
+      </Surface>
+    </>
+  );
+}
+
+function GuestHomeContent() {
+  return (
+    <Surface>
+      <SectionHeader
+        title="ゲスト利用"
+        description="練習はすぐ始められます。保存や統計はログイン後に有効になります。"
+      />
+      <SummaryBlock>
+        <SummaryStat
+          label="今できること"
+          value="距離モード / 鍵盤モード"
+          detail="結果はその場で確認できます。"
+          emphasis="primary"
+          className="ui-summary-stat--teal"
+        />
+        <SummaryStat
+          label="ログイン後に増えること"
+          value="保存 / 統計 / 同期"
+          detail="過去の成長を見返せます。"
+          className="ui-summary-stat--blue"
+        />
+      </SummaryBlock>
+    </Surface>
+  );
+}
+
+function HomeSummaryLoading() {
+  return (
+    <Surface>
+      <SectionHeader title="学習サマリーを読み込み中" />
+      <p className="ui-subtitle">保存済みの学習情報を取得しています。</p>
+    </Surface>
   );
 }
