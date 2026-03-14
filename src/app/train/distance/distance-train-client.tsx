@@ -1,35 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useReducer, useRef, useState } from "react";
 
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
 import { useTrainingSessionCore } from "../../../features/training/client/use-training-session-core";
-import { shouldApplyDeferredTrainingBootstrap } from "../../../features/training/model/bootstrap";
-import {
-  clampIntervalMaxSemitone,
-  clampIntervalMinSemitone,
-  createDefaultQuestionCountEndCondition,
-  createDefaultTimeLimitEndCondition,
-  getQuestionCountSelectOptions,
-  getTimeLimitSecondsSelectOptions,
-  TRAINING_CONFIG_LIMITS,
-} from "../../../features/training/model/config";
-import {
-  buildDistanceGuestSummary,
-  getDistanceAnswerChoices,
-  getDistanceQuestionCount,
-} from "../../../features/training/model/distance-guest";
+import { TRAINING_CONFIG_LIMITS } from "../../../features/training/model/config";
 import { getTrainingModeTone } from "../../../features/training/model/format";
-import {
-  formatDirectionModeLabel,
-  getIntervalLabel,
-} from "../../../features/training/model/interval-notation";
+import { formatDirectionModeLabel } from "../../../features/training/model/interval-notation";
 import { distanceTrainingSessionAdapter } from "../../../features/training/model/modes/distance-session-adapter";
 import type {
   DistanceTrainingConfig,
   NoteClass,
   SaveTrainingSessionInput,
-  SessionPhase,
 } from "../../../features/training/model/types";
 import type { DistanceTrainingPageBootstrap } from "../../../features/training/server/getTrainingPageBootstrap";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
@@ -48,13 +30,18 @@ import {
   SectionHeader,
   Surface,
 } from "../../ui/primitives";
-import { formatRemainingTimeLabel } from "../train-ui-shared";
+import {
+  type DistanceTrainingConfigAction,
+  reduceDistanceTrainingConfig,
+} from "../training-config-form-state";
 import { TrainingProgressHeader } from "../training-page-shell";
+import { useTrainingRouteBootstrap } from "../training-route-bootstrap";
 import {
   DistanceFeedbackPanel,
   DistanceQuestionPanel,
   DistanceResultPanel,
 } from "./distance-train-panels";
+import { buildDistanceTrainViewModel } from "./distance-train-presenter";
 
 const NOTE_CLASS_OPTIONS: NoteClass[] = [
   "C",
@@ -97,20 +84,20 @@ export function DistanceTrainClient({
     useState(isAuthenticated);
   const [hasStoredConfigState, setHasStoredConfigState] =
     useState(hasStoredConfig);
-  const [config, setConfig] = useState<DistanceTrainingConfig>(initialConfig);
-  const [bootstrapNotice, setBootstrapNotice] = useState<string | null>(null);
-  const [bootstrapErrorMessage, setBootstrapErrorMessage] = useState<
-    string | null
-  >(null);
+  const [config, dispatchConfig] = useReducer(
+    reduceDistanceTrainingConfig,
+    initialConfig,
+  );
   const [persistConfigErrorMessage, setPersistConfigErrorMessage] = useState<
     string | null
   >(null);
-  const [isBootstrapPending, startBootstrapTransition] = useTransition();
-  const hasEditedConfigRef = useRef(false);
-  const bootstrapPromiseRef =
-    useRef<Promise<DistanceTrainingPageBootstrap> | null>(null);
+  const applyBootstrapConfig = useCallback(
+    (nextConfig: DistanceTrainingConfig) => {
+      dispatchConfig({ type: "replace_config", config: nextConfig });
+    },
+    [],
+  );
   const adapterRef = useRef(distanceTrainingSessionAdapter);
-
   const session = useTrainingSessionCore({
     adapterRef,
     config,
@@ -119,104 +106,35 @@ export function DistanceTrainClient({
     saveResultsAction,
     soundEffectsEnabled: settings.soundEffectsEnabled,
   });
-
-  const plannedQuestionCount = getDistanceQuestionCount(config);
-  const questionCountOptions =
-    getQuestionCountSelectOptions(plannedQuestionCount);
-  const timeLimitOptions =
-    config.endCondition.type === "time_limit"
-      ? getTimeLimitSecondsSelectOptions(config.endCondition.timeLimitSeconds)
-      : getTimeLimitSecondsSelectOptions(
-          createDefaultTimeLimitEndCondition().timeLimitSeconds,
-        );
-  const answerChoiceValues = useMemo(
-    () => getDistanceAnswerChoices(config),
-    [config],
-  );
-  const summary = session.summary ?? buildDistanceGuestSummary(session.results);
-  const recentResults = useMemo(
-    () => session.results.slice(-3).reverse(),
-    [session.results],
-  );
-  const cannotSaveBecauseNoAnswers =
-    session.phase === "result" && session.results.length === 0;
-  const intervalNotationStyle = settings.intervalNotationStyle;
-  const formatIntervalName = (semitones: number) =>
-    getIntervalLabel(semitones, intervalNotationStyle);
-
-  useEffect(() => {
-    if (!loadBootstrapAction) {
-      return;
-    }
-
-    if (!bootstrapPromiseRef.current) {
-      bootstrapPromiseRef.current = loadBootstrapAction();
-    }
-
-    const bootstrapPromise = bootstrapPromiseRef.current;
-
-    if (!bootstrapPromise) {
-      return;
-    }
-
-    let cancelled = false;
-
-    startBootstrapTransition(async () => {
-      try {
-        const bootstrap = await bootstrapPromise;
-
-        if (cancelled) {
-          return;
-        }
-
-        setIsAuthenticatedState(bootstrap.isAuthenticated);
-        setHasStoredConfigState(bootstrap.hasStoredConfig);
-        setBootstrapErrorMessage(bootstrap.readWarningMessage);
-        hydrateFromServer({
-          isAuthenticated: bootstrap.isAuthenticated,
-          settings: bootstrap.settings,
-          updatedAt: bootstrap.settingsUpdatedAt,
-        });
-
-        if (
-          bootstrap.config &&
-          shouldApplyDeferredTrainingBootstrap({
-            hasEditedConfig: hasEditedConfigRef.current,
-            phase: session.phase,
-            startedAt: session.startedAt,
-          })
-        ) {
-          setConfig(bootstrap.config);
-          setBootstrapNotice("前回設定を読み込み済みです。");
-          return;
-        }
-
-        setBootstrapNotice(null);
-      } catch {
-        if (!cancelled) {
-          setBootstrapNotice(null);
-          setBootstrapErrorMessage(getStoredSettingsReadErrorMessage());
-        }
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    hydrateFromServer,
+  const bootstrap = useTrainingRouteBootstrap({
     loadBootstrapAction,
-    session.phase,
-    session.startedAt,
-  ]);
+    onApplyConfig: applyBootstrapConfig,
+    onBootstrapResolved: ({ hasStoredConfig, isAuthenticated }) => {
+      setHasStoredConfigState(hasStoredConfig);
+      setIsAuthenticatedState(isAuthenticated);
+    },
+    onHydrateSettings: hydrateFromServer,
+    phase: session.phase,
+    readErrorMessage: getStoredSettingsReadErrorMessage(),
+    startedAt: session.startedAt,
+  });
+  const viewModel = buildDistanceTrainViewModel({
+    activeQuestionIndex: session.activeQuestion?.question.questionIndex ?? null,
+    audioError: session.audioError,
+    config,
+    intervalNotationStyle: settings.intervalNotationStyle,
+    isAuthenticated: isAuthenticatedState,
+    phase: session.phase,
+    remainingTimeMs: session.remainingTimeMs,
+    results: session.results,
+    saveResult: session.saveResult,
+    summary: session.summary,
+  });
 
-  function updateConfig(
-    updater: (current: DistanceTrainingConfig) => DistanceTrainingConfig,
-  ) {
-    hasEditedConfigRef.current = true;
-    setBootstrapNotice(null);
+  function dispatchConfigAction(action: DistanceTrainingConfigAction) {
+    bootstrap.handleConfigEdit();
     setPersistConfigErrorMessage(null);
-    setConfig((current) => updater(current));
+    dispatchConfig(action);
   }
 
   function handleStart() {
@@ -249,17 +167,8 @@ export function DistanceTrainClient({
       <TrainingProgressHeader
         modeLabel="距離モード"
         modeTone={getTrainingModeTone("distance")}
-        questionLabel={getDistanceHeaderLabel(
-          session.phase,
-          session.activeQuestion,
-          plannedQuestionCount,
-        )}
-        meta={getDistanceHeaderMeta({
-          isAuthenticated: isAuthenticatedState,
-          phase: session.phase,
-          remainingTimeMs: session.remainingTimeMs,
-          saveResult: session.saveResult,
-        })}
+        questionLabel={viewModel.questionLabel}
+        meta={viewModel.headerMeta}
         actions={
           <ButtonLink
             href="/"
@@ -270,13 +179,7 @@ export function DistanceTrainClient({
             戻る
           </ButtonLink>
         }
-        notice={
-          session.audioError
-            ? session.audioError
-            : isAuthenticatedState
-              ? "結果画面では自動保存されます。"
-              : "ゲストでは保存されません。"
-        }
+        notice={viewModel.headerNotice}
       />
 
       {session.phase !== "config" && persistConfigErrorMessage ? (
@@ -297,13 +200,10 @@ export function DistanceTrainClient({
                   <select
                     className="ui-select"
                     onChange={(event) =>
-                      updateConfig((current) => ({
-                        ...current,
-                        endCondition:
-                          event.target.value === "time_limit"
-                            ? createDefaultTimeLimitEndCondition()
-                            : createDefaultQuestionCountEndCondition(),
-                      }))
+                      dispatchConfigAction({
+                        type: "set_end_condition_type",
+                        value: event.target.value,
+                      })
                     }
                     value={config.endCondition.type}
                   >
@@ -316,17 +216,14 @@ export function DistanceTrainClient({
                     <select
                       className="ui-select"
                       onChange={(event) =>
-                        updateConfig((current) => ({
-                          ...current,
-                          endCondition: {
-                            questionCount: Number(event.target.value),
-                            type: "question_count",
-                          },
-                        }))
+                        dispatchConfigAction({
+                          type: "set_question_count",
+                          value: event.target.value,
+                        })
                       }
-                      value={plannedQuestionCount}
+                      value={config.endCondition.questionCount}
                     >
-                      {questionCountOptions.map((option) => (
+                      {viewModel.questionCountOptions.map((option) => (
                         <option key={option} value={option}>
                           {option} 問
                         </option>
@@ -338,17 +235,14 @@ export function DistanceTrainClient({
                     <select
                       className="ui-select"
                       onChange={(event) =>
-                        updateConfig((current) => ({
-                          ...current,
-                          endCondition: {
-                            timeLimitSeconds: Number(event.target.value),
-                            type: "time_limit",
-                          },
-                        }))
+                        dispatchConfigAction({
+                          type: "set_time_limit_seconds",
+                          value: event.target.value,
+                        })
                       }
                       value={config.endCondition.timeLimitSeconds}
                     >
-                      {timeLimitOptions.map((option) => (
+                      {viewModel.timeLimitOptions.map((option) => (
                         <option key={option} value={option}>
                           {option} 秒
                         </option>
@@ -368,21 +262,9 @@ export function DistanceTrainClient({
                     max={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.max}
                     min={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.min}
                     onChange={(event) =>
-                      updateConfig((current) => {
-                        const minSemitone = clampIntervalMinSemitone(
-                          event.target.value,
-                        );
-
-                        return {
-                          ...current,
-                          intervalRange: {
-                            maxSemitone: clampIntervalMaxSemitone(
-                              current.intervalRange.maxSemitone,
-                              minSemitone,
-                            ),
-                            minSemitone,
-                          },
-                        };
+                      dispatchConfigAction({
+                        type: "set_min_semitone",
+                        value: event.target.value,
                       })
                     }
                     type="number"
@@ -398,16 +280,10 @@ export function DistanceTrainClient({
                       config.intervalRange.minSemitone,
                     )}
                     onChange={(event) =>
-                      updateConfig((current) => ({
-                        ...current,
-                        intervalRange: {
-                          ...current.intervalRange,
-                          maxSemitone: clampIntervalMaxSemitone(
-                            event.target.value,
-                            current.intervalRange.minSemitone,
-                          ),
-                        },
-                      }))
+                      dispatchConfigAction({
+                        type: "set_max_semitone",
+                        value: event.target.value,
+                      })
                     }
                     type="number"
                     value={config.intervalRange.maxSemitone}
@@ -417,11 +293,10 @@ export function DistanceTrainClient({
                   <select
                     className="ui-select"
                     onChange={(event) =>
-                      updateConfig((current) => ({
-                        ...current,
-                        directionMode: event.target
-                          .value as DistanceTrainingConfig["directionMode"],
-                      }))
+                      dispatchConfigAction({
+                        type: "set_direction_mode",
+                        value: event.target.value,
+                      })
                     }
                     value={config.directionMode}
                   >
@@ -437,15 +312,10 @@ export function DistanceTrainClient({
                   <select
                     className="ui-select"
                     onChange={(event) =>
-                      updateConfig((current) => ({
-                        ...current,
-                        baseNoteMode: event.target
-                          .value as DistanceTrainingConfig["baseNoteMode"],
-                        fixedBaseNote:
-                          event.target.value === "fixed"
-                            ? (current.fixedBaseNote ?? "C")
-                            : null,
-                      }))
+                      dispatchConfigAction({
+                        type: "set_base_note_mode",
+                        value: event.target.value,
+                      })
                     }
                     value={config.baseNoteMode}
                   >
@@ -460,10 +330,10 @@ export function DistanceTrainClient({
                   <select
                     className="ui-select"
                     onChange={(event) =>
-                      updateConfig((current) => ({
-                        ...current,
-                        fixedBaseNote: event.target.value as NoteClass,
-                      }))
+                      dispatchConfigAction({
+                        type: "set_fixed_base_note",
+                        value: event.target.value,
+                      })
                     }
                     value={config.fixedBaseNote ?? "C"}
                   >
@@ -483,10 +353,10 @@ export function DistanceTrainClient({
                 <input
                   checked={config.includeUnison}
                   onChange={(event) =>
-                    updateConfig((current) => ({
-                      ...current,
-                      includeUnison: event.target.checked,
-                    }))
+                    dispatchConfigAction({
+                      type: "toggle_include_unison",
+                      checked: event.target.checked,
+                    })
                   }
                   type="checkbox"
                 />
@@ -496,10 +366,10 @@ export function DistanceTrainClient({
                 <input
                   checked={config.includeOctave}
                   onChange={(event) =>
-                    updateConfig((current) => ({
-                      ...current,
-                      includeOctave: event.target.checked,
-                    }))
+                    dispatchConfigAction({
+                      type: "toggle_include_octave",
+                      checked: event.target.checked,
+                    })
                   }
                   type="checkbox"
                 />
@@ -509,11 +379,11 @@ export function DistanceTrainClient({
                 <select
                   className="ui-select"
                   onChange={(event) =>
-                    updateConfig((current) => ({
-                      ...current,
-                      intervalGranularity: event.target
-                        .value as DistanceTrainingConfig["intervalGranularity"],
-                    }))
+                    dispatchConfigAction({
+                      type: "set_interval_granularity",
+                      value:
+                        event.target.value === "aug_dim" ? "aug_dim" : "simple",
+                    })
                   }
                   value={config.intervalGranularity}
                 >
@@ -522,29 +392,31 @@ export function DistanceTrainClient({
                 </select>
               </Field>
               <div className="ui-form-chip-list">
-                {answerChoiceValues.map((choice) => (
-                  <Chip key={choice} tone="teal">
-                    {formatIntervalName(choice)}
+                {viewModel.answerChoiceChips.map((choice) => (
+                  <Chip key={choice.value} tone="teal">
+                    {choice.label}
                   </Chip>
                 ))}
               </div>
             </div>
           </div>
 
-          {isBootstrapPending ? (
+          {bootstrap.isBootstrapPending ? (
             <Notice>保存済み設定を確認しています...</Notice>
           ) : null}
-          {bootstrapErrorMessage ? (
-            <Notice tone="error">{bootstrapErrorMessage}</Notice>
+          {bootstrap.bootstrapErrorMessage ? (
+            <Notice tone="error">{bootstrap.bootstrapErrorMessage}</Notice>
           ) : null}
           {persistConfigErrorMessage ? (
             <Notice tone="error">{persistConfigErrorMessage}</Notice>
           ) : null}
-          {bootstrapNotice ? <Notice>{bootstrapNotice}</Notice> : null}
+          {bootstrap.bootstrapNotice ? (
+            <Notice>{bootstrap.bootstrapNotice}</Notice>
+          ) : null}
           {isAuthenticatedState &&
           hasStoredConfigState &&
-          !bootstrapNotice &&
-          !bootstrapErrorMessage ? (
+          !bootstrap.bootstrapNotice &&
+          !bootstrap.bootstrapErrorMessage ? (
             <Notice>前回設定を読み込めます。</Notice>
           ) : null}
 
@@ -576,14 +448,13 @@ export function DistanceTrainClient({
       {(session.phase === "playing" || session.phase === "answering") &&
       session.activeQuestion ? (
         <DistanceQuestionPanel
-          answerChoiceValues={answerChoiceValues}
+          answerChoiceValues={viewModel.answerChoiceValues}
           direction={session.activeQuestion.question.direction}
-          intervalNotationStyle={intervalNotationStyle}
+          intervalNotationStyle={settings.intervalNotationStyle}
+          isPlaybackLocked={session.phase === "playing"}
           onAnswer={session.answerQuestion}
           onReplayBase={session.replayBase}
           onReplayTarget={session.replayTarget}
-          phase={session.phase}
-          playbackKind={session.activeQuestion.playbackKind}
           questionIndex={session.activeQuestion.question.questionIndex}
           replayBaseCount={session.activeQuestion.replayBaseCount}
           replayTargetCount={session.activeQuestion.replayTargetCount}
@@ -593,7 +464,7 @@ export function DistanceTrainClient({
       {session.phase === "feedback" && session.feedbackResult ? (
         <DistanceFeedbackPanel
           feedbackResult={session.feedbackResult}
-          intervalNotationStyle={intervalNotationStyle}
+          intervalNotationStyle={settings.intervalNotationStyle}
           lastAnsweredWasFinal={session.lastAnsweredWasFinal}
           onContinue={session.continueAfterFeedback}
           onEndSession={session.endSessionManually}
@@ -604,72 +475,18 @@ export function DistanceTrainClient({
       {session.phase === "result" ? (
         <DistanceResultPanel
           canSaveResult={session.canSaveResult}
-          cannotSaveBecauseNoAnswers={cannotSaveBecauseNoAnswers}
+          cannotSaveBecauseNoAnswers={viewModel.cannotSaveBecauseNoAnswers}
           finishReason={session.finishReason}
-          intervalNotationStyle={intervalNotationStyle}
+          intervalNotationStyle={settings.intervalNotationStyle}
           isAuthenticated={isAuthenticatedState}
           isSavePending={session.isSavePending}
           onReset={handleReset}
           onRetrySave={session.retrySaveResults}
-          recentResults={recentResults}
+          recentResults={viewModel.recentResults}
           saveResult={session.saveResult}
-          summary={summary}
+          summary={viewModel.summary}
         />
       ) : null}
     </AppShell>
   );
-}
-
-function getDistanceHeaderLabel(
-  phase: SessionPhase,
-  activeQuestion: { question: { questionIndex: number } } | null,
-  plannedQuestionCount: number,
-): string | undefined {
-  if (phase === "result") {
-    return "結果";
-  }
-
-  if (activeQuestion) {
-    return `${activeQuestion.question.questionIndex + 1} / ${plannedQuestionCount}`;
-  }
-
-  return phase === "config" ? undefined : formatPhaseLabel(phase);
-}
-
-function getDistanceHeaderMeta(props: {
-  isAuthenticated: boolean;
-  phase: SessionPhase;
-  remainingTimeMs: number | null;
-  saveResult: SaveTrainingSessionResult | null;
-}): string | null {
-  if (props.phase === "result") {
-    if (props.saveResult?.ok) {
-      return "保存済み";
-    }
-
-    return props.isAuthenticated ? "保存待機" : "ゲスト";
-  }
-
-  if (props.remainingTimeMs !== null) {
-    return formatRemainingTimeLabel(props.remainingTimeMs);
-  }
-
-  return null;
-}
-
-function formatPhaseLabel(phase: SessionPhase): string {
-  switch (phase) {
-    case "config":
-      return "設定";
-    case "preparing":
-      return "準備中";
-    case "playing":
-      return "再生中";
-    case "answering":
-      return "回答中";
-    case "feedback":
-      return "フィードバック";
-    case "result":
-      return "結果";
-  }
 }

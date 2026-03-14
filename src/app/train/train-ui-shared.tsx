@@ -7,8 +7,6 @@ import { ButtonLink } from "../ui/navigation-link";
 import { Button, Chip, Notice } from "../ui/primitives";
 import { getDistanceFeedbackStatus } from "./distance-feedback-status";
 
-export type TrainingPlaybackKind = "question" | "base" | "target";
-
 export function formatRemainingTimeLabel(valueMs: number): string {
   const totalSeconds = Math.max(0, Math.ceil(valueMs / 1000));
   const minutes = Math.floor(totalSeconds / 60);
@@ -32,20 +30,8 @@ export function formatFinishReasonLabel(
   }
 }
 
-export function getPlaybackStatusLabel(playbackKind: TrainingPlaybackKind) {
-  switch (playbackKind) {
-    case "base":
-      return "基準音を再生中";
-    case "target":
-      return "問題音を再生中";
-    default:
-      return "基準音のあとに問題音を再生中";
-  }
-}
-
 export function PlaybackButtonPair(props: {
   isPlaybackLocked: boolean;
-  playbackKind: TrainingPlaybackKind;
   onReplayBase: () => void;
   onReplayTarget: () => void;
 }) {
@@ -53,15 +39,11 @@ export function PlaybackButtonPair(props: {
     <div className="ui-playback-pair">
       <PlaybackButton
         label="基準音"
-        isActive={
-          props.playbackKind === "base" || props.playbackKind === "question"
-        }
         disabled={props.isPlaybackLocked}
         onClick={props.onReplayBase}
       />
       <PlaybackButton
         label="問題音"
-        isActive={props.playbackKind === "target"}
         disabled={props.isPlaybackLocked}
         onClick={props.onReplayTarget}
       />
@@ -71,7 +53,6 @@ export function PlaybackButtonPair(props: {
 
 function PlaybackButton(props: {
   label: string;
-  isActive: boolean;
   disabled: boolean;
   onClick: () => void;
 }) {
@@ -95,7 +76,7 @@ function PlaybackButton(props: {
       <span className="ui-playback-button__label">{props.label}</span>
       <span
         className="ui-playback-button__state"
-        data-active={props.isActive ? "true" : "false"}
+        data-active="false"
         aria-hidden="true"
       >
         <span />

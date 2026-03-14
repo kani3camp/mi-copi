@@ -64,12 +64,11 @@ type Story = StoryObj<DistancePanelStoryArgs>;
 export const Answering: Story = {
   render: (args) => (
     <DistanceQuestionPanel
-      phase="answering"
+      isPlaybackLocked={false}
       questionIndex={2}
       direction="up"
       replayBaseCount={1}
       replayTargetCount={0}
-      playbackKind="question"
       answerChoiceValues={[0, 3, 5, 7, 12]}
       intervalNotationStyle="ja"
       onReplayBase={args.onReplayBase}

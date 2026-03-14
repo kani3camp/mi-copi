@@ -35,25 +35,21 @@ import {
   formatFinishReasonLabel,
   MiniStatRow,
   PlaybackButtonPair,
-  type TrainingPlaybackKind,
   TrainingResultPersistenceSection,
 } from "../train-ui-shared";
 
 export function DistanceQuestionPanel(props: {
-  phase: "playing" | "answering";
+  isPlaybackLocked: boolean;
   questionIndex: number;
   direction: QuestionDirection;
   replayBaseCount: number;
   replayTargetCount: number;
-  playbackKind: TrainingPlaybackKind;
   answerChoiceValues: number[];
   intervalNotationStyle: IntervalNotationStyle;
   onReplayBase: () => void;
   onReplayTarget: () => void;
   onAnswer: (value: number) => void;
 }) {
-  const isPlaybackLocked = props.phase === "playing";
-
   return (
     <Surface tone="accent">
       <SectionHeader
@@ -62,8 +58,7 @@ export function DistanceQuestionPanel(props: {
         actions={<Chip tone="teal">回答中</Chip>}
       />
       <PlaybackButtonPair
-        isPlaybackLocked={isPlaybackLocked}
-        playbackKind={props.playbackKind}
+        isPlaybackLocked={props.isPlaybackLocked}
         onReplayBase={props.onReplayBase}
         onReplayTarget={props.onReplayTarget}
       />
@@ -92,7 +87,7 @@ export function DistanceQuestionPanel(props: {
             type="button"
             onClick={() => props.onAnswer(choice)}
             block
-            disabled={isPlaybackLocked}
+            disabled={props.isPlaybackLocked}
             variant="secondary"
           >
             {getIntervalLabel(choice, props.intervalNotationStyle)}

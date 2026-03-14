@@ -34,7 +34,6 @@ import {
   formatFinishReasonLabel,
   MiniStatRow,
   PlaybackButtonPair,
-  type TrainingPlaybackKind,
   TrainingResultPersistenceSection,
 } from "../train-ui-shared";
 import { formatKeyboardNoteLabel } from "./keyboard-note-label";
@@ -57,12 +56,11 @@ const KEYBOARD_FEEDBACK_ANSWERED_SOFT = "#cdebf0";
 
 export const KeyboardQuestionPanel = memo(
   function KeyboardQuestionPanel(props: {
-    phase: "playing" | "answering";
+    isPlaybackLocked: boolean;
     questionIndex: number;
     direction: QuestionDirection;
     replayBaseCount: number;
     replayTargetCount: number;
-    playbackKind: TrainingPlaybackKind;
     answerChoices: NoteClass[];
     referenceNote: NoteClass;
     showLabels: boolean;
@@ -70,8 +68,6 @@ export const KeyboardQuestionPanel = memo(
     onReplayTarget: () => void;
     onAnswer: (note: NoteClass) => void;
   }) {
-    const isPlaybackLocked = props.phase === "playing";
-
     return (
       <Surface tone="accent">
         <SectionHeader
@@ -79,13 +75,12 @@ export const KeyboardQuestionPanel = memo(
           description="基準音マーカーを見て、問題音の鍵盤を選びます。"
           actions={
             <Chip tone="teal">
-              {props.phase === "playing" ? "再生中" : "回答中"}
+              {props.isPlaybackLocked ? "再生中" : "回答中"}
             </Chip>
           }
         />
         <PlaybackButtonPair
-          isPlaybackLocked={isPlaybackLocked}
-          playbackKind={props.playbackKind}
+          isPlaybackLocked={props.isPlaybackLocked}
           onReplayBase={props.onReplayBase}
           onReplayTarget={props.onReplayTarget}
         />
@@ -113,7 +108,7 @@ export const KeyboardQuestionPanel = memo(
           referenceNote={props.referenceNote}
           onAnswer={props.onAnswer}
           showLabels={props.showLabels}
-          disabled={isPlaybackLocked}
+          disabled={props.isPlaybackLocked}
         />
       </Surface>
     );

@@ -65,12 +65,11 @@ type Story = StoryObj<KeyboardPanelStoryArgs>;
 export const AnsweringWithReferenceKey: Story = {
   render: (args) => (
     <KeyboardQuestionPanel
-      phase="answering"
+      isPlaybackLocked={false}
       questionIndex={1}
       direction="down"
       replayBaseCount={0}
       replayTargetCount={1}
-      playbackKind="question"
       answerChoices={[
         "C",
         "C#",
@@ -157,12 +156,11 @@ export const FeedbackIncorrect: Story = {
 export const AnsweringWithHiddenLabels: Story = {
   render: (args) => (
     <KeyboardQuestionPanel
-      phase="answering"
+      isPlaybackLocked={false}
       questionIndex={2}
       direction="up"
       replayBaseCount={1}
       replayTargetCount={0}
-      playbackKind="base"
       answerChoices={[
         "C",
         "C#",
