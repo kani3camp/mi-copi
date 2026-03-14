@@ -3,6 +3,7 @@ import test from "node:test";
 
 const {
   getResolvedTrainingBootstrapConfigDecision,
+  isTrainingBootstrapReady,
   shouldApplyDeferredTrainingBootstrap,
   shouldHydrateResolvedTrainingBootstrap,
 } = await import(new URL("./bootstrap.ts", import.meta.url).href);
@@ -54,6 +55,33 @@ test("shouldHydrateResolvedTrainingBootstrap runs once per resolved payload", ()
       hasHydratedSettings: true,
     }),
     false,
+  );
+});
+
+test("isTrainingBootstrapReady waits for bootstrap unless there is no loader or it already errored", () => {
+  assert.equal(
+    isTrainingBootstrapReady({
+      bootstrapErrorMessage: null,
+      hasResolvedBootstrap: false,
+      loadBootstrapAction: true,
+    }),
+    false,
+  );
+  assert.equal(
+    isTrainingBootstrapReady({
+      bootstrapErrorMessage: null,
+      hasResolvedBootstrap: true,
+      loadBootstrapAction: true,
+    }),
+    true,
+  );
+  assert.equal(
+    isTrainingBootstrapReady({
+      bootstrapErrorMessage: "読み込みに失敗しました。",
+      hasResolvedBootstrap: false,
+      loadBootstrapAction: true,
+    }),
+    true,
   );
 });
 

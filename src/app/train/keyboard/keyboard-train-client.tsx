@@ -152,6 +152,8 @@ export function KeyboardTrainClient({
     saveResult: session.saveResult,
     summary: session.summary,
   });
+  const isStartBlockedByBootstrap =
+    isAuthenticatedState && bootstrap.isBootstrapReady === false;
 
   function dispatchConfigAction(action: KeyboardTrainingConfigAction) {
     bootstrap.handleConfigEdit();
@@ -160,6 +162,10 @@ export function KeyboardTrainClient({
   }
 
   async function handleStart() {
+    if (isStartBlockedByBootstrap) {
+      return;
+    }
+
     await ensureReadyForStart();
 
     const result = session.startSession();
@@ -434,6 +440,7 @@ export function KeyboardTrainClient({
           <div className="ui-sticky-actions">
             <Button
               block
+              disabled={isStartBlockedByBootstrap}
               onClick={() => void handleStart()}
               type="button"
               variant="primary"

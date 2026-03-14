@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import type { GlobalUserSettings } from "../../features/settings/model/global-user-settings.ts";
 import {
   getResolvedTrainingBootstrapConfigDecision,
+  isTrainingBootstrapReady,
   shouldHydrateResolvedTrainingBootstrap,
 } from "../../features/training/model/bootstrap.ts";
 import type { SessionPhase } from "../../features/training/model/types.ts";
@@ -170,6 +171,11 @@ export function useTrainingRouteBootstrap<
     bootstrapErrorMessage,
     bootstrapNotice,
     handleConfigEdit,
+    isBootstrapReady: isTrainingBootstrapReady({
+      bootstrapErrorMessage,
+      hasResolvedBootstrap: resolvedBootstrap !== null,
+      loadBootstrapAction: Boolean(loadBootstrapAction),
+    }),
     isBootstrapPending,
   };
 }

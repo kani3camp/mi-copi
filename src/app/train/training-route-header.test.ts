@@ -10,6 +10,7 @@ const {
 test("training header meta shows saved state on result", () => {
   assert.equal(
     buildTrainingHeaderMeta({
+      cannotSaveBecauseNoAnswers: false,
       isAuthenticated: true,
       phase: "result",
       remainingTimeMs: null,
@@ -26,12 +27,26 @@ test("training header meta shows saved state on result", () => {
 test("training header meta shows remaining time outside result", () => {
   assert.equal(
     buildTrainingHeaderMeta({
+      cannotSaveBecauseNoAnswers: false,
       isAuthenticated: true,
       phase: "answering",
       remainingTimeMs: 61_000,
       saveResult: null,
     }),
     "1:01",
+  );
+});
+
+test("training header meta shows out-of-scope save state for empty authenticated results", () => {
+  assert.equal(
+    buildTrainingHeaderMeta({
+      cannotSaveBecauseNoAnswers: true,
+      isAuthenticated: true,
+      phase: "result",
+      remainingTimeMs: null,
+      saveResult: null,
+    }),
+    "保存対象外",
   );
 });
 

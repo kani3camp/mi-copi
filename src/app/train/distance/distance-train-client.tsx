@@ -140,6 +140,8 @@ export function DistanceTrainClient({
     saveResult: session.saveResult,
     summary: session.summary,
   });
+  const isStartBlockedByBootstrap =
+    isAuthenticatedState && bootstrap.isBootstrapReady === false;
 
   function dispatchConfigAction(action: DistanceTrainingConfigAction) {
     bootstrap.handleConfigEdit();
@@ -148,6 +150,10 @@ export function DistanceTrainClient({
   }
 
   function handleStart() {
+    if (isStartBlockedByBootstrap) {
+      return;
+    }
+
     const result = session.startSession();
 
     if (!result.ok) {
@@ -435,7 +441,13 @@ export function DistanceTrainClient({
           ) : null}
 
           <div className="ui-sticky-actions">
-            <Button block onClick={handleStart} type="button" variant="primary">
+            <Button
+              block
+              disabled={isStartBlockedByBootstrap}
+              onClick={handleStart}
+              type="button"
+              variant="primary"
+            >
               開始
             </Button>
           </div>

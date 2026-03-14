@@ -34,11 +34,13 @@ export function buildKeyboardTrainViewModel(props: {
     props.config.endCondition.type === "question_count"
       ? props.config.endCondition.questionCount
       : 0;
+  const cannotSaveBecauseNoAnswers =
+    props.phase === "result" && props.results.length === 0;
 
   return {
-    cannotSaveBecauseNoAnswers:
-      props.phase === "result" && props.results.length === 0,
+    cannotSaveBecauseNoAnswers,
     headerMeta: buildTrainingHeaderMeta({
+      cannotSaveBecauseNoAnswers,
       isAuthenticated: props.isAuthenticated,
       phase: props.phase,
       remainingTimeMs: props.remainingTimeMs,

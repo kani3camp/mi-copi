@@ -19,6 +19,18 @@ export function shouldHydrateResolvedTrainingBootstrap(input: {
   return input.hasResolvedBootstrap && input.hasHydratedSettings === false;
 }
 
+export function isTrainingBootstrapReady(input: {
+  bootstrapErrorMessage: string | null;
+  hasResolvedBootstrap: boolean;
+  loadBootstrapAction: boolean;
+}): boolean {
+  return (
+    input.loadBootstrapAction === false ||
+    input.hasResolvedBootstrap ||
+    input.bootstrapErrorMessage !== null
+  );
+}
+
 export function getResolvedTrainingBootstrapConfigDecision(input: {
   hasResolvedBootstrap: boolean;
   hasStoredConfig: boolean;

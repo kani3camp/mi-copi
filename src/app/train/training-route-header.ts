@@ -19,6 +19,7 @@ export function formatTrainingPhaseLabel(phase: SessionPhase): string {
 }
 
 export function buildTrainingHeaderMeta(props: {
+  cannotSaveBecauseNoAnswers: boolean;
   isAuthenticated: boolean;
   phase: SessionPhase;
   remainingTimeMs: number | null;
@@ -27,6 +28,10 @@ export function buildTrainingHeaderMeta(props: {
   if (props.phase === "result") {
     if (props.saveResult?.ok) {
       return "保存済み";
+    }
+
+    if (props.cannotSaveBecauseNoAnswers) {
+      return props.isAuthenticated ? "保存対象外" : "ゲスト";
     }
 
     return props.isAuthenticated ? "保存待機" : "ゲスト";

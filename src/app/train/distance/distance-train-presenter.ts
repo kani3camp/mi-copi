@@ -47,6 +47,8 @@ export function buildDistanceTrainViewModel(props: {
           createDefaultTimeLimitEndCondition().timeLimitSeconds,
         );
   const answerChoiceValues = getDistanceAnswerChoices(props.config);
+  const cannotSaveBecauseNoAnswers =
+    props.phase === "result" && props.results.length === 0;
 
   return {
     answerChoiceChips: answerChoiceValues.map((choice) => ({
@@ -54,9 +56,9 @@ export function buildDistanceTrainViewModel(props: {
       value: choice,
     })),
     answerChoiceValues,
-    cannotSaveBecauseNoAnswers:
-      props.phase === "result" && props.results.length === 0,
+    cannotSaveBecauseNoAnswers,
     headerMeta: buildTrainingHeaderMeta({
+      cannotSaveBecauseNoAnswers,
       isAuthenticated: props.isAuthenticated,
       phase: props.phase,
       remainingTimeMs: props.remainingTimeMs,
