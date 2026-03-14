@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+import { getLoginStartErrorMessage } from "../../lib/async-action-errors";
 import { getAuthClient } from "../../lib/auth/client";
 import { ButtonLink } from "../ui/navigation-link";
 import { ActionCard, Button, Chip, Notice } from "../ui/primitives";
@@ -25,9 +25,7 @@ export function LoginControls() {
         callbackURL: "/",
       });
     } catch {
-      setErrorMessage(
-        "Google ログインを開始できませんでした。もう一度お試しください。",
-      );
+      setErrorMessage(getLoginStartErrorMessage());
       setIsPending(false);
     }
   }

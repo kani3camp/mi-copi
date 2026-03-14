@@ -14,6 +14,7 @@ interface TrainingPageBootstrapBase {
   settingsUpdatedAt: string | null;
   settings: GlobalUserSettings;
   hasStoredConfig: boolean;
+  readWarningMessage: string | null;
 }
 
 export interface DistanceTrainingPageBootstrap
@@ -28,11 +29,19 @@ export interface KeyboardTrainingPageBootstrap
   config: KeyboardTrainingConfig | null;
 }
 
-export async function getDistanceTrainingPageBootstrapForCurrentUser(): Promise<DistanceTrainingPageBootstrap> {
+export interface TrainingPageBootstrapDependencies {
+  getCurrentUserSettingsSnapshot?: typeof getCurrentUserSettingsSnapshot;
+}
+
+export async function getDistanceTrainingPageBootstrapForCurrentUser(
+  deps: TrainingPageBootstrapDependencies = {},
+): Promise<DistanceTrainingPageBootstrap> {
   return withRequestTiming(
     "training.getDistanceTrainingPageBootstrap",
     async () => {
-      const snapshot = await getCurrentUserSettingsSnapshot();
+      const snapshot = await (
+        deps.getCurrentUserSettingsSnapshot ?? getCurrentUserSettingsSnapshot
+      )();
 
       return {
         mode: "distance",
@@ -41,16 +50,21 @@ export async function getDistanceTrainingPageBootstrapForCurrentUser(): Promise<
         settingsUpdatedAt: snapshot.updatedAt,
         config: snapshot.lastDistanceConfig,
         hasStoredConfig: snapshot.lastDistanceConfig !== null,
+        readWarningMessage: snapshot.readWarningMessage,
       };
     },
   );
 }
 
-export async function getKeyboardTrainingPageBootstrapForCurrentUser(): Promise<KeyboardTrainingPageBootstrap> {
+export async function getKeyboardTrainingPageBootstrapForCurrentUser(
+  deps: TrainingPageBootstrapDependencies = {},
+): Promise<KeyboardTrainingPageBootstrap> {
   return withRequestTiming(
     "training.getKeyboardTrainingPageBootstrap",
     async () => {
-      const snapshot = await getCurrentUserSettingsSnapshot();
+      const snapshot = await (
+        deps.getCurrentUserSettingsSnapshot ?? getCurrentUserSettingsSnapshot
+      )();
 
       return {
         mode: "keyboard",
@@ -59,6 +73,7 @@ export async function getKeyboardTrainingPageBootstrapForCurrentUser(): Promise<
         settingsUpdatedAt: snapshot.updatedAt,
         config: snapshot.lastKeyboardConfig,
         hasStoredConfig: snapshot.lastKeyboardConfig !== null,
+        readWarningMessage: snapshot.readWarningMessage,
       };
     },
   );

@@ -39,6 +39,11 @@ import type {
 } from "../../../features/training/model/types";
 import type { KeyboardTrainingPageBootstrap } from "../../../features/training/server/getTrainingPageBootstrap";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
+import {
+  createTrainingResultSaveFailureResult,
+  getStoredSettingsReadErrorMessage,
+  getTrainingConfigPersistErrorMessage,
+} from "../../../lib/async-action-errors";
 import { ButtonLink } from "../../ui/navigation-link";
 import {
   AppShell,
@@ -152,6 +157,12 @@ export function KeyboardTrainClient({
   const [saveResult, setSaveResult] =
     useState<SaveTrainingSessionResult | null>(null);
   const [bootstrapNotice, setBootstrapNotice] = useState<string | null>(null);
+  const [bootstrapErrorMessage, setBootstrapErrorMessage] = useState<
+    string | null
+  >(null);
+  const [persistConfigErrorMessage, setPersistConfigErrorMessage] = useState<
+    string | null
+  >(null);
   const [isSavePending, startSaveTransition] = useTransition();
   const [isBootstrapPending, startBootstrapTransition] = useTransition();
   const persistedConfigSessionRef = useRef<string | null>(null);
@@ -164,7 +175,8 @@ export function KeyboardTrainClient({
   const sessionDeadlineAtRef = useRef<number | null>(null);
   const timeoutHandledRef = useRef(false);
   const hasEditedConfigRef = useRef(false);
-  const bootstrapRequestedRef = useRef(false);
+  const bootstrapPromiseRef =
+    useRef<Promise<KeyboardTrainingPageBootstrap> | null>(null);
   const phaseRef = useRef<KeyboardTrainPhase>("config");
   const startedAtRef = useRef<string | null>(null);
   const activeQuestionRef = useRef<ActiveQuestionState | null>(null);
@@ -263,38 +275,58 @@ export function KeyboardTrainClient({
   }, [loadKeyboardRuntime]);
 
   useEffect(() => {
-    if (!loadBootstrapAction || bootstrapRequestedRef.current) {
+    if (!loadBootstrapAction) {
       return;
     }
 
-    bootstrapRequestedRef.current = true;
+    if (!bootstrapPromiseRef.current) {
+      bootstrapPromiseRef.current = loadBootstrapAction();
+    }
+
+    const bootstrapPromise = bootstrapPromiseRef.current;
+
+    if (!bootstrapPromise) {
+      return;
+    }
+
     let cancelled = false;
 
     startBootstrapTransition(async () => {
-      const bootstrap = await loadBootstrapAction();
+      try {
+        const bootstrap = await bootstrapPromise;
 
-      if (cancelled) {
-        return;
-      }
+        if (cancelled) {
+          return;
+        }
 
-      setIsAuthenticatedState(bootstrap.isAuthenticated);
-      setHasStoredConfigState(bootstrap.hasStoredConfig);
-      hydrateFromServer({
-        isAuthenticated: bootstrap.isAuthenticated,
-        settings: bootstrap.settings,
-        updatedAt: bootstrap.settingsUpdatedAt,
-      });
+        setIsAuthenticatedState(bootstrap.isAuthenticated);
+        setHasStoredConfigState(bootstrap.hasStoredConfig);
+        setBootstrapErrorMessage(bootstrap.readWarningMessage);
+        hydrateFromServer({
+          isAuthenticated: bootstrap.isAuthenticated,
+          settings: bootstrap.settings,
+          updatedAt: bootstrap.settingsUpdatedAt,
+        });
 
-      if (
-        bootstrap.config &&
-        shouldApplyDeferredTrainingBootstrap({
-          phase: phaseRef.current,
-          startedAt: startedAtRef.current,
-          hasEditedConfig: hasEditedConfigRef.current,
-        })
-      ) {
-        setConfig(bootstrap.config);
-        setBootstrapNotice("前回設定を読み込み済みです。");
+        if (
+          bootstrap.config &&
+          shouldApplyDeferredTrainingBootstrap({
+            phase: phaseRef.current,
+            startedAt: startedAtRef.current,
+            hasEditedConfig: hasEditedConfigRef.current,
+          })
+        ) {
+          setConfig(bootstrap.config);
+          setBootstrapNotice("前回設定を読み込み済みです。");
+          return;
+        }
+
+        setBootstrapNotice(null);
+      } catch {
+        if (!cancelled) {
+          setBootstrapNotice(null);
+          setBootstrapErrorMessage(getStoredSettingsReadErrorMessage());
+        }
       }
     });
 
@@ -308,6 +340,7 @@ export function KeyboardTrainClient({
   ) {
     hasEditedConfigRef.current = true;
     setBootstrapNotice(null);
+    setPersistConfigErrorMessage(null);
     setConfig((current) => updater(current));
   }
 
@@ -480,13 +513,20 @@ export function KeyboardTrainClient({
     autoSaveAttemptedSessionRef.current = autoSaveContext.startedAt;
 
     startSaveTransition(async () => {
-      const result = await saveResultsAction({
-        config,
-        startedAt: autoSaveContext.startedAt,
-        endedAt: autoSaveContext.endedAt,
-        finishReason: autoSaveContext.finishReason,
-        results,
-      });
+      let result: SaveTrainingSessionResult;
+
+      try {
+        result = await saveResultsAction({
+          config,
+          startedAt: autoSaveContext.startedAt,
+          endedAt: autoSaveContext.endedAt,
+          finishReason: autoSaveContext.finishReason,
+          results,
+        });
+      } catch {
+        result = createTrainingResultSaveFailureResult();
+      }
+
       setSaveResult(result);
     });
   }, [
@@ -515,6 +555,7 @@ export function KeyboardTrainClient({
     setConfigError(null);
     setAudioError(null);
     setSaveResult(null);
+    setPersistConfigErrorMessage(null);
     persistedConfigSessionRef.current = null;
     autoSaveAttemptedSessionRef.current = null;
     timeoutHandledRef.current = false;
@@ -548,7 +589,13 @@ export function KeyboardTrainClient({
     );
     if (isAuthenticatedState) {
       persistedConfigSessionRef.current = nextStartedAt;
-      void persistLastUsedConfigAction(config);
+      void persistLastUsedConfigAction(config)
+        .then(() => {
+          setPersistConfigErrorMessage(null);
+        })
+        .catch(() => {
+          setPersistConfigErrorMessage(getTrainingConfigPersistErrorMessage());
+        });
     }
     setPhase("preparing");
   }
@@ -765,6 +812,7 @@ export function KeyboardTrainClient({
     setConfigError(null);
     setAudioError(null);
     setSaveResult(null);
+    setPersistConfigErrorMessage(null);
     persistedConfigSessionRef.current = null;
     autoSaveAttemptedSessionRef.current = null;
     questionGeneratorStateRef.current = null;
@@ -794,13 +842,20 @@ export function KeyboardTrainClient({
     }
 
     startSaveTransition(async () => {
-      const result = await saveResultsAction({
-        config,
-        startedAt: retrySaveContext.startedAt,
-        endedAt: retrySaveContext.endedAt,
-        finishReason: retrySaveContext.finishReason,
-        results,
-      });
+      let result: SaveTrainingSessionResult;
+
+      try {
+        result = await saveResultsAction({
+          config,
+          startedAt: retrySaveContext.startedAt,
+          endedAt: retrySaveContext.endedAt,
+          finishReason: retrySaveContext.finishReason,
+          results,
+        });
+      } catch {
+        result = createTrainingResultSaveFailureResult();
+      }
+
       setSaveResult(result);
     });
   }, [
@@ -848,6 +903,10 @@ export function KeyboardTrainClient({
               : "ゲストでは保存されません。"
         }
       />
+
+      {phase !== "config" && persistConfigErrorMessage ? (
+        <Notice tone="error">{persistConfigErrorMessage}</Notice>
+      ) : null}
 
       {phase === "config" ? (
         <Surface tone="accent">
@@ -1083,8 +1142,17 @@ export function KeyboardTrainClient({
           {isBootstrapPending ? (
             <Notice>保存済み設定を確認しています...</Notice>
           ) : null}
+          {bootstrapErrorMessage ? (
+            <Notice tone="error">{bootstrapErrorMessage}</Notice>
+          ) : null}
+          {persistConfigErrorMessage ? (
+            <Notice tone="error">{persistConfigErrorMessage}</Notice>
+          ) : null}
           {bootstrapNotice ? <Notice>{bootstrapNotice}</Notice> : null}
-          {isAuthenticatedState && hasStoredConfigState && !bootstrapNotice ? (
+          {isAuthenticatedState &&
+          hasStoredConfigState &&
+          !bootstrapNotice &&
+          !bootstrapErrorMessage ? (
             <Notice>前回設定を読み込めます。</Notice>
           ) : null}
 

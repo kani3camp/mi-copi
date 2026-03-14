@@ -52,6 +52,7 @@ test("getSettingsPageDataForCurrentUser prefers the provided current user and re
         lastDistanceConfig: null,
         lastKeyboardConfig: null,
         updatedAt: "2026-03-12T10:00:00.000Z",
+        readWarningMessage: null,
       };
     },
   });

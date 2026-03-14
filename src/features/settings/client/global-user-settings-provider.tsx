@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-
+import { getGlobalUserSettingsSaveErrorMessage } from "../../../lib/async-action-errors";
 import {
   GLOBAL_USER_SETTINGS_STORAGE_KEY,
   type GlobalUserSettings,
@@ -178,14 +178,24 @@ export function GlobalUserSettingsProvider({
         message: null,
       }));
 
-      const result = await persistSettingsAction(snapshot);
+      let result: GlobalUserSettingsSaveResult;
+
+      try {
+        result = await persistSettingsAction(snapshot);
+      } catch {
+        result = {
+          ok: false,
+          code: "SAVE_FAILED",
+          message: getGlobalUserSettingsSaveErrorMessage(),
+        };
+      }
 
       if (!result.ok) {
         retrySettingsRef.current = snapshot;
         setSaveState((current) => ({
           status: "error",
           updatedAt: current.updatedAt,
-          message: result.message,
+          message: getGlobalUserSettingsSaveErrorMessage(result),
         }));
 
         if (!pendingSettingsRef.current) {

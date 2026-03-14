@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import type { SessionFinishReason } from "../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
+import { getTrainingResultSaveErrorMessage } from "../../lib/async-action-errors";
 import { ButtonLink } from "../ui/navigation-link";
 import { Button, Chip, Notice } from "../ui/primitives";
 import { getDistanceFeedbackStatus } from "./distance-feedback-status";
@@ -208,12 +209,7 @@ export function TrainingResultPersistenceSection(props: {
             </div>
           </div>
         ) : props.saveResult ? (
-          <div className="ui-stack-sm">
-            <div>{getSaveFailureMessage(props.saveResult)}</div>
-            <div className="ui-muted">
-              詳細: {props.saveResult.code} / {props.saveResult.message}
-            </div>
-          </div>
+          <div>{getSaveFailureMessage(props.saveResult)}</div>
         ) : props.canSaveResult ? (
           <div>
             {props.isSavePending
@@ -245,13 +241,5 @@ export function TrainingResultPersistenceSection(props: {
 function getSaveFailureMessage(
   result: Extract<SaveTrainingSessionResult, { ok: false }>,
 ): string {
-  if (result.code === "UNAUTHORIZED") {
-    return "ログイン状態を確認できませんでした。再度ログインしてからお試しください。";
-  }
-
-  if (result.code === "INVALID_INPUT") {
-    return "セッション情報が不足しているため、この結果は保存できませんでした。";
-  }
-
-  return "結果を保存できませんでした。もう一度お試しください。";
+  return getTrainingResultSaveErrorMessage(result);
 }

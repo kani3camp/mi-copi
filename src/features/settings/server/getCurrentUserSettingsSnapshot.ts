@@ -1,7 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-
+import { getStoredSettingsReadErrorMessage } from "../../../lib/async-action-errors.ts";
 import {
   type CurrentUserResolverDependencies,
   resolveCurrentUserOrNull,
@@ -42,6 +42,7 @@ export interface CurrentUserSettingsSnapshot {
   lastDistanceConfig: DistanceTrainingConfig | null;
   lastKeyboardConfig: KeyboardTrainingConfig | null;
   updatedAt: string | null;
+  readWarningMessage: string | null;
 }
 
 export interface CurrentUserSettingsSnapshotDependencies
@@ -64,6 +65,7 @@ export async function getCurrentUserSettingsSnapshot(
           lastDistanceConfig: null,
           lastKeyboardConfig: null,
           updatedAt: null,
+          readWarningMessage: null,
         };
       }
 
@@ -92,6 +94,7 @@ export async function getCurrentUserSettingsSnapshot(
           lastDistanceConfig: null,
           lastKeyboardConfig: null,
           updatedAt: null,
+          readWarningMessage: null,
         };
       }
 
@@ -112,6 +115,7 @@ export async function getCurrentUserSettingsSnapshot(
           "keyboard",
         ),
         updatedAt: existing.updatedAt.toISOString(),
+        readWarningMessage: null,
       };
     },
   ).catch((error) => {
@@ -122,6 +126,7 @@ export async function getCurrentUserSettingsSnapshot(
         lastDistanceConfig: null,
         lastKeyboardConfig: null,
         updatedAt: null,
+        readWarningMessage: getStoredSettingsReadErrorMessage(),
       };
     }
 
