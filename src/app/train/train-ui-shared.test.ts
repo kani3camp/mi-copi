@@ -172,6 +172,75 @@ test("distance feedback diagram arrows have direction for fixed scale (13 steps)
   }
 });
 
+test("distance feedback layout input: base index 0 for up, 12 for down", () => {
+  const stepsUp = buildDistanceFeedbackDiagramSteps({
+    direction: "up",
+    correctSemitones: 5,
+    answeredSemitones: 3,
+  });
+  const stepsDown = buildDistanceFeedbackDiagramSteps({
+    direction: "down",
+    correctSemitones: 5,
+    answeredSemitones: 3,
+  });
+  const baseIndexUp = stepsUp.findIndex(
+    (s: { distance: number }) => s.distance === 0,
+  );
+  const baseIndexDown = stepsDown.findIndex(
+    (s: { distance: number }) => s.distance === 0,
+  );
+  assert.equal(baseIndexUp, 0);
+  assert.equal(baseIndexDown, 12);
+});
+
+test("distance feedback layout input: exact match yields same distance for correct and answered annotations", () => {
+  const annotations = buildDistanceFeedbackDiagramAnnotations({
+    correctSemitones: 2,
+    answeredSemitones: 2,
+  });
+  const correctAnn = annotations.find(
+    (a: { label: string }) => a.label === "正解",
+  );
+  const answerAnn = annotations.find(
+    (a: { label: string }) => a.label === "回答",
+  );
+  assert.ok(correctAnn && answerAnn);
+  assert.equal(correctAnn.distance, answerAnn.distance);
+});
+
+test("distance feedback layout input: answer at base has answer distance 0", () => {
+  const annotations = buildDistanceFeedbackDiagramAnnotations({
+    correctSemitones: 3,
+    answeredSemitones: 0,
+  });
+  const answerAnn = annotations.find(
+    (a: { label: string; distance: number }) => a.label === "回答",
+  );
+  assert.ok(answerAnn);
+  assert.equal(answerAnn.distance, 0);
+});
+
+test("distance feedback layout input: 13 steps and valid indices at range edge", () => {
+  const steps = buildDistanceFeedbackDiagramSteps({
+    direction: "up",
+    correctSemitones: 12,
+    answeredSemitones: 11,
+  });
+  assert.equal(steps.length, 13);
+  const baseIndex = steps.findIndex(
+    (s: { distance: number }) => s.distance === 0,
+  );
+  const correctIndex = steps.findIndex(
+    (s: { distance: number }) => s.distance === 12,
+  );
+  const answeredIndex = steps.findIndex(
+    (s: { distance: number }) => s.distance === 11,
+  );
+  assert.equal(baseIndex, 0);
+  assert.equal(correctIndex, 12);
+  assert.equal(answeredIndex, 11);
+});
+
 test("distance feedback status does not infer reverse direction for distance mode", () => {
   assert.deepEqual(
     getDistanceFeedbackStatus({

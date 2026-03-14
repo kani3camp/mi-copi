@@ -137,11 +137,7 @@ export function DistanceFeedbackPanel(props: {
           emphasis="primary"
           tone="success"
         />
-        <SummaryStat
-          label="回答"
-          value={answeredIntervalLabel}
-          tone="teal"
-        />
+        <SummaryStat label="回答" value={answeredIntervalLabel} tone="teal" />
       </SummaryBlock>
 
       <DistanceFeedbackDiagram
