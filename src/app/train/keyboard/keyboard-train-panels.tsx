@@ -125,6 +125,7 @@ export const KeyboardFeedbackPanel = memo(
     feedbackResult: KeyboardGuestResult;
     lastAnsweredWasFinal: boolean;
     showLabels: boolean;
+    onEndSession: () => void;
     onReplayCorrectTarget: () => void;
     onContinue: () => void;
   }) {
@@ -191,6 +192,14 @@ export const KeyboardFeedbackPanel = memo(
         <div className="ui-sticky-actions">
           <Button type="button" onClick={props.onReplayCorrectTarget} block>
             正解の音を再生
+          </Button>
+          <Button
+            type="button"
+            onClick={props.onEndSession}
+            block
+            variant="ghost"
+          >
+            ここで終了
           </Button>
           <Button
             type="button"

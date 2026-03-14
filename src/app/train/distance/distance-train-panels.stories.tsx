@@ -17,6 +17,7 @@ interface DistancePanelStoryArgs {
   onReplayBase: () => void;
   onReplayTarget: () => void;
   onAnswer: (value: number) => void;
+  onEndSession: () => void;
   onReplayCorrectTarget: () => void;
   onContinue: () => void;
   onRetrySave: () => void;
@@ -105,11 +106,13 @@ export const FeedbackIncorrect: Story = {
       })}
       lastAnsweredWasFinal={false}
       intervalNotationStyle="ja"
+      onEndSession={args.onEndSession}
       onReplayCorrectTarget={args.onReplayCorrectTarget}
       onContinue={args.onContinue}
     />
   ),
   args: {
+    onEndSession: fn(),
     onReplayCorrectTarget: fn(),
     onContinue: fn(),
   },
@@ -150,11 +153,13 @@ export const FeedbackIncorrectDownward: Story = {
       })}
       lastAnsweredWasFinal={false}
       intervalNotationStyle="ja"
+      onEndSession={args.onEndSession}
       onReplayCorrectTarget={args.onReplayCorrectTarget}
       onContinue={args.onContinue}
     />
   ),
   args: {
+    onEndSession: fn(),
     onReplayCorrectTarget: fn(),
     onContinue: fn(),
   },
@@ -188,11 +193,13 @@ export const FeedbackExactMatch: Story = {
       })}
       lastAnsweredWasFinal={true}
       intervalNotationStyle="ja"
+      onEndSession={args.onEndSession}
       onReplayCorrectTarget={args.onReplayCorrectTarget}
       onContinue={args.onContinue}
     />
   ),
   args: {
+    onEndSession: fn(),
     onReplayCorrectTarget: fn(),
     onContinue: fn(),
   },

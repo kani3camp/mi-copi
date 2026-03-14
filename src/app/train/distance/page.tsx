@@ -1,7 +1,10 @@
 import { GlobalUserSettingsProvider } from "../../../features/settings/client/global-user-settings-provider";
 import { createDefaultGlobalUserSettings } from "../../../features/settings/model/global-user-settings";
 import { createDefaultDistanceTrainingConfig } from "../../../features/training/model/config";
-import type { DistanceTrainingConfig } from "../../../features/training/model/types";
+import type {
+  DistanceTrainingConfig,
+  SaveTrainingSessionInput,
+} from "../../../features/training/model/types";
 import { getDistanceTrainingPageBootstrapForCurrentUser } from "../../../features/training/server/getTrainingPageBootstrap";
 import { tryUpdateLastUsedTrainingConfigForCurrentUser } from "../../../features/training/server/lastUsedTrainingConfig";
 import { saveTrainingSessionForCurrentUser } from "../../../features/training/server/saveTrainingSession.entry";
@@ -11,20 +14,10 @@ import { DistanceTrainClient } from "./distance-train-client";
 export default async function DistanceTrainPage() {
   const hasSessionToken = await hasSessionTokenCookieCached();
 
-  async function saveResultsAction(
-    input: Parameters<
-      typeof import("../../../features/training/model/distance-guest").buildDistanceGuestSaveInput
-    >[0],
-  ) {
+  async function saveResultsAction(input: SaveTrainingSessionInput) {
     "use server";
 
-    const { buildDistanceGuestSaveInput } = await import(
-      "../../../features/training/model/distance-guest"
-    );
-
-    return saveTrainingSessionForCurrentUser(
-      buildDistanceGuestSaveInput(input),
-    );
+    return saveTrainingSessionForCurrentUser(input);
   }
 
   async function persistLastUsedConfigAction(config: DistanceTrainingConfig) {

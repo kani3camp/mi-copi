@@ -17,6 +17,7 @@ interface KeyboardPanelStoryArgs {
   onReplayBase: () => void;
   onReplayTarget: () => void;
   onAnswer: (note: string) => void;
+  onEndSession: () => void;
   onReplayCorrectTarget: () => void;
   onContinue: () => void;
   onRetrySave: () => void;
@@ -124,11 +125,13 @@ export const FeedbackIncorrect: Story = {
       })}
       lastAnsweredWasFinal
       showLabels
+      onEndSession={args.onEndSession}
       onReplayCorrectTarget={args.onReplayCorrectTarget}
       onContinue={args.onContinue}
     />
   ),
   args: {
+    onEndSession: fn(),
     onReplayCorrectTarget: fn(),
     onContinue: fn(),
   },

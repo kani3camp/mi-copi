@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
-import {
-  shouldStartAnsweringTransition,
-  shouldStartQuestionPlayback,
-} from "../../../features/training/model/answering-transition";
+import { useTrainingSessionCore } from "../../../features/training/client/use-training-session-core";
 import { shouldApplyDeferredTrainingBootstrap } from "../../../features/training/model/bootstrap";
 import {
   clampIntervalMaxSemitone,
@@ -17,44 +15,25 @@ import {
   TRAINING_CONFIG_LIMITS,
 } from "../../../features/training/model/config";
 import {
-  type buildDistanceGuestSaveInput,
   buildDistanceGuestSummary,
-  type DistanceGuestResult,
-  evaluateDistanceAnswer,
   getDistanceAnswerChoices,
   getDistanceQuestionCount,
-  validateDistanceTrainingConfig,
 } from "../../../features/training/model/distance-guest";
 import { getTrainingModeTone } from "../../../features/training/model/format";
 import {
   formatDirectionModeLabel,
   getIntervalLabel,
 } from "../../../features/training/model/interval-notation";
-import {
-  createQuestionGeneratorState,
-  type QuestionGeneratorState,
-  takeNextQuestion,
-} from "../../../features/training/model/question-generator";
-import {
-  canRetryTrainingResultSave,
-  hasTrainingResultSavePayload,
-  shouldAutoSaveTrainingResult,
-} from "../../../features/training/model/result-save";
-import {
-  getNextReplayCount,
-  resolvePostFeedbackProgress,
-  resolveTimeLimitExpiry,
-} from "../../../features/training/model/session-flow";
+import { distanceTrainingSessionAdapter } from "../../../features/training/model/modes/distance-session-adapter";
 import type {
   DistanceTrainingConfig,
   NoteClass,
-  Question,
-  SessionFinishReason,
+  SaveTrainingSessionInput,
+  SessionPhase,
 } from "../../../features/training/model/types";
 import type { DistanceTrainingPageBootstrap } from "../../../features/training/server/getTrainingPageBootstrap";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
 import {
-  createTrainingResultSaveFailureResult,
   getStoredSettingsReadErrorMessage,
   getTrainingConfigPersistErrorMessage,
 } from "../../../lib/async-action-errors";
@@ -69,12 +48,6 @@ import {
   SectionHeader,
   Surface,
 } from "../../ui/primitives";
-import {
-  getQuestionPlaybackDurationMs,
-  type PlaybackKind,
-  playFeedbackEffect,
-  playQuestionAudio,
-} from "../audio-playback";
 import { formatRemainingTimeLabel } from "../train-ui-shared";
 import { TrainingProgressHeader } from "../training-page-shell";
 import {
@@ -82,24 +55,6 @@ import {
   DistanceQuestionPanel,
   DistanceResultPanel,
 } from "./distance-train-panels";
-
-type DistanceTrainPhase =
-  | "config"
-  | "preparing"
-  | "playing"
-  | "answering"
-  | "feedback"
-  | "result";
-
-interface ActiveQuestionState {
-  question: Question;
-  presentedAt: string;
-  answeringStartedAt: string | null;
-  replayBaseCount: number;
-  replayTargetCount: number;
-  playbackKind: PlaybackKind;
-  playNonce: number;
-}
 
 const NOTE_CLASS_OPTIONS: NoteClass[] = [
   "C",
@@ -117,22 +72,22 @@ const NOTE_CLASS_OPTIONS: NoteClass[] = [
 ];
 
 interface DistanceTrainClientProps {
-  isAuthenticated: boolean;
-  initialConfig: DistanceTrainingConfig;
   hasStoredConfig: boolean;
+  initialConfig: DistanceTrainingConfig;
+  isAuthenticated: boolean;
   loadBootstrapAction?: () => Promise<DistanceTrainingPageBootstrap>;
   persistLastUsedConfigAction: (
     config: DistanceTrainingConfig,
   ) => Promise<void>;
   saveResultsAction: (
-    input: Parameters<typeof buildDistanceGuestSaveInput>[0],
+    input: SaveTrainingSessionInput,
   ) => Promise<SaveTrainingSessionResult>;
 }
 
 export function DistanceTrainClient({
-  isAuthenticated,
-  initialConfig,
   hasStoredConfig,
+  initialConfig,
+  isAuthenticated,
   loadBootstrapAction,
   persistLastUsedConfigAction,
   saveResultsAction,
@@ -143,22 +98,6 @@ export function DistanceTrainClient({
   const [hasStoredConfigState, setHasStoredConfigState] =
     useState(hasStoredConfig);
   const [config, setConfig] = useState<DistanceTrainingConfig>(initialConfig);
-  const [phase, setPhase] = useState<DistanceTrainPhase>("config");
-  const [startedAt, setStartedAt] = useState<string | null>(null);
-  const [endedAt, setEndedAt] = useState<string | null>(null);
-  const [finishReason, setFinishReason] = useState<SessionFinishReason | null>(
-    null,
-  );
-  const [activeQuestion, setActiveQuestion] =
-    useState<ActiveQuestionState | null>(null);
-  const [results, setResults] = useState<DistanceGuestResult[]>([]);
-  const [feedbackResult, setFeedbackResult] =
-    useState<DistanceGuestResult | null>(null);
-  const [lastAnsweredWasFinal, setLastAnsweredWasFinal] = useState(false);
-  const [configError, setConfigError] = useState<string | null>(null);
-  const [audioError, setAudioError] = useState<string | null>(null);
-  const [saveResult, setSaveResult] =
-    useState<SaveTrainingSessionResult | null>(null);
   const [bootstrapNotice, setBootstrapNotice] = useState<string | null>(null);
   const [bootstrapErrorMessage, setBootstrapErrorMessage] = useState<
     string | null
@@ -166,27 +105,21 @@ export function DistanceTrainClient({
   const [persistConfigErrorMessage, setPersistConfigErrorMessage] = useState<
     string | null
   >(null);
-  const [isSavePending, startSaveTransition] = useTransition();
   const [isBootstrapPending, startBootstrapTransition] = useTransition();
-  const persistedConfigSessionRef = useRef<string | null>(null);
-  const autoSaveAttemptedSessionRef = useRef<string | null>(null);
-  const playbackIdRef = useRef(0);
-  const inFlightPlaybackNonceRef = useRef<number | null>(null);
-  const playbackLockRef = useRef(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const questionGeneratorStateRef = useRef<QuestionGeneratorState | null>(null);
-  const sessionDeadlineAtRef = useRef<number | null>(null);
-  const timeoutHandledRef = useRef(false);
   const hasEditedConfigRef = useRef(false);
   const bootstrapPromiseRef =
     useRef<Promise<DistanceTrainingPageBootstrap> | null>(null);
-  const phaseRef = useRef<DistanceTrainPhase>("config");
-  const startedAtRef = useRef<string | null>(null);
-  const activeQuestionRef = useRef<ActiveQuestionState | null>(null);
-  const answeringUnlockTimeoutRef = useRef<ReturnType<
-    typeof globalThis.setTimeout
-  > | null>(null);
-  const answeringHandledNonceRef = useRef<number | null>(null);
+  const adapterRef = useRef(distanceTrainingSessionAdapter);
+
+  const session = useTrainingSessionCore({
+    adapterRef,
+    config,
+    isAuthenticated: isAuthenticatedState,
+    masterVolume: settings.masterVolume,
+    saveResultsAction,
+    soundEffectsEnabled: settings.soundEffectsEnabled,
+  });
+
   const plannedQuestionCount = getDistanceQuestionCount(config);
   const questionCountOptions =
     getQuestionCountSelectOptions(plannedQuestionCount);
@@ -196,37 +129,20 @@ export function DistanceTrainClient({
       : getTimeLimitSecondsSelectOptions(
           createDefaultTimeLimitEndCondition().timeLimitSeconds,
         );
-  const [remainingTimeMs, setRemainingTimeMs] = useState<number | null>(null);
   const answerChoiceValues = useMemo(
     () => getDistanceAnswerChoices(config),
     [config],
   );
-  const summary = useMemo(() => buildDistanceGuestSummary(results), [results]);
-  const recentResults = useMemo(() => results.slice(-3).reverse(), [results]);
-  const cannotSaveBecauseNoAnswers = phase === "result" && results.length === 0;
-  const saveContext = {
-    isAuthenticated: isAuthenticatedState,
-    startedAt,
-    endedAt,
-    finishReason,
-    resultsCount: results.length,
-  };
-  const canSaveResult = hasTrainingResultSavePayload(saveContext);
+  const summary = session.summary ?? buildDistanceGuestSummary(session.results);
+  const recentResults = useMemo(
+    () => session.results.slice(-3).reverse(),
+    [session.results],
+  );
+  const cannotSaveBecauseNoAnswers =
+    session.phase === "result" && session.results.length === 0;
   const intervalNotationStyle = settings.intervalNotationStyle;
   const formatIntervalName = (semitones: number) =>
     getIntervalLabel(semitones, intervalNotationStyle);
-
-  useEffect(() => {
-    phaseRef.current = phase;
-  }, [phase]);
-
-  useEffect(() => {
-    startedAtRef.current = startedAt;
-  }, [startedAt]);
-
-  useEffect(() => {
-    activeQuestionRef.current = activeQuestion;
-  }, [activeQuestion]);
 
   useEffect(() => {
     if (!loadBootstrapAction) {
@@ -265,9 +181,9 @@ export function DistanceTrainClient({
         if (
           bootstrap.config &&
           shouldApplyDeferredTrainingBootstrap({
-            phase: phaseRef.current,
-            startedAt: startedAtRef.current,
             hasEditedConfig: hasEditedConfigRef.current,
+            phase: session.phase,
+            startedAt: session.startedAt,
           })
         ) {
           setConfig(bootstrap.config);
@@ -287,7 +203,12 @@ export function DistanceTrainClient({
     return () => {
       cancelled = true;
     };
-  }, [hydrateFromServer, loadBootstrapAction]);
+  }, [
+    hydrateFromServer,
+    loadBootstrapAction,
+    session.phase,
+    session.startedAt,
+  ]);
 
   function updateConfig(
     updater: (current: DistanceTrainingConfig) => DistanceTrainingConfig,
@@ -298,232 +219,16 @@ export function DistanceTrainClient({
     setConfig((current) => updater(current));
   }
 
-  useEffect(() => {
-    if (phase !== "playing" || !activeQuestion) {
-      return;
-    }
-
-    if (
-      !shouldStartQuestionPlayback({
-        phase,
-        activePlayNonce: activeQuestion.playNonce,
-        inFlightPlayNonce: inFlightPlaybackNonceRef.current,
-      })
-    ) {
-      return;
-    }
-
-    inFlightPlaybackNonceRef.current = activeQuestion.playNonce;
-    answeringHandledNonceRef.current = null;
-    let cancelled = false;
-    const playNonce = activeQuestion.playNonce;
-
-    const unlockAnswering = () => {
-      if (
-        cancelled ||
-        !shouldStartAnsweringTransition({
-          phase: phaseRef.current,
-          activePlayNonce: activeQuestionRef.current?.playNonce ?? null,
-          targetPlayNonce: playNonce,
-          handledPlayNonce: answeringHandledNonceRef.current,
-        })
-      ) {
-        return;
-      }
-
-      answeringHandledNonceRef.current = playNonce;
-      if (inFlightPlaybackNonceRef.current === playNonce) {
-        inFlightPlaybackNonceRef.current = null;
-      }
-      if (answeringUnlockTimeoutRef.current !== null) {
-        globalThis.clearTimeout(answeringUnlockTimeoutRef.current);
-        answeringUnlockTimeoutRef.current = null;
-      }
-      setActiveQuestion((current) =>
-        current && current.playNonce === playNonce
-          ? {
-              ...current,
-              answeringStartedAt:
-                current.answeringStartedAt ?? new Date().toISOString(),
-            }
-          : current,
-      );
-      setPhase((current) => (current === "playing" ? "answering" : current));
-    };
-
-    answeringUnlockTimeoutRef.current = globalThis.setTimeout(
-      unlockAnswering,
-      getQuestionPlaybackDurationMs(activeQuestion.playbackKind),
-    );
-
-    void playQuestionAudio(
-      activeQuestion.question,
-      activeQuestion.playbackKind,
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    )
-      .catch(() => {
-        if (!cancelled) {
-          setAudioError(
-            "音声の再生に失敗しました。回答と続行はそのまま行えます。",
-          );
-        }
-      })
-      .finally(unlockAnswering);
-
-    return () => {
-      cancelled = true;
-      if (inFlightPlaybackNonceRef.current === playNonce) {
-        inFlightPlaybackNonceRef.current = null;
-      }
-      if (answeringUnlockTimeoutRef.current !== null) {
-        globalThis.clearTimeout(answeringUnlockTimeoutRef.current);
-        answeringUnlockTimeoutRef.current = null;
-      }
-    };
-  }, [activeQuestion, phase, settings.masterVolume]);
-
-  useEffect(() => {
-    if (
-      !startedAt ||
-      phase === "config" ||
-      phase === "preparing" ||
-      phase === "result" ||
-      config.endCondition.type !== "time_limit" ||
-      sessionDeadlineAtRef.current === null
-    ) {
-      setRemainingTimeMs(null);
-      return;
-    }
-
-    const updateRemaining = () => {
-      if (sessionDeadlineAtRef.current === null) {
-        return;
-      }
-
-      const nextRemaining = Math.max(
-        0,
-        sessionDeadlineAtRef.current - Date.now(),
-      );
-      setRemainingTimeMs(nextRemaining);
-
-      if (nextRemaining === 0 && !timeoutHandledRef.current) {
-        timeoutHandledRef.current = true;
-        const timedOutSession = resolveTimeLimitExpiry(
-          new Date().toISOString(),
-        );
-        setActiveQuestion(null);
-        setFeedbackResult(null);
-        setLastAnsweredWasFinal(timedOutSession.lastAnsweredWasFinal);
-        setFinishReason(timedOutSession.finishReason);
-        setEndedAt(timedOutSession.endedAt);
-        setPhase(timedOutSession.phase);
-      }
-    };
-
-    updateRemaining();
-    const intervalId = window.setInterval(updateRemaining, 250);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [config.endCondition, phase, startedAt]);
-
-  useEffect(() => {
-    if (phase !== "preparing" || !activeQuestion) {
-      return;
-    }
-
-    setPhase("playing");
-  }, [activeQuestion, phase]);
-
-  useEffect(() => {
-    const autoSaveContext = {
-      isAuthenticated: isAuthenticatedState,
-      startedAt,
-      endedAt,
-      finishReason,
-      resultsCount: results.length,
-      attemptedSessionId: autoSaveAttemptedSessionRef.current,
-      isSavePending,
-      hasSavedResult: Boolean(saveResult?.ok),
-    };
-
-    if (!shouldAutoSaveTrainingResult(autoSaveContext)) {
-      return;
-    }
-
-    autoSaveAttemptedSessionRef.current = autoSaveContext.startedAt;
-
-    startSaveTransition(async () => {
-      let result: SaveTrainingSessionResult;
-
-      try {
-        result = await saveResultsAction({
-          config,
-          startedAt: autoSaveContext.startedAt,
-          endedAt: autoSaveContext.endedAt,
-          finishReason: autoSaveContext.finishReason,
-          results,
-        });
-      } catch {
-        result = createTrainingResultSaveFailureResult();
-      }
-
-      setSaveResult(result);
-    });
-  }, [
-    config,
-    endedAt,
-    finishReason,
-    isAuthenticatedState,
-    isSavePending,
-    results,
-    saveResult?.ok,
-    saveResultsAction,
-    startedAt,
-  ]);
-
   function handleStart() {
-    const validationError = validateDistanceTrainingConfig(config);
+    const result = session.startSession();
 
-    if (validationError) {
-      setConfigError(validationError);
+    if (!result.ok) {
       return;
     }
 
-    const nextStartedAt = new Date().toISOString();
-
-    setConfigError(null);
-    setAudioError(null);
-    setSaveResult(null);
     setPersistConfigErrorMessage(null);
-    persistedConfigSessionRef.current = null;
-    autoSaveAttemptedSessionRef.current = null;
-    timeoutHandledRef.current = false;
-    setStartedAt(nextStartedAt);
-    setEndedAt(null);
-    setFinishReason(null);
-    setResults([]);
-    setFeedbackResult(null);
-    setLastAnsweredWasFinal(false);
-    sessionDeadlineAtRef.current =
-      config.endCondition.type === "time_limit"
-        ? Date.parse(nextStartedAt) +
-          config.endCondition.timeLimitSeconds * 1000
-        : null;
-    setRemainingTimeMs(
-      config.endCondition.type === "time_limit"
-        ? config.endCondition.timeLimitSeconds * 1000
-        : null,
-    );
-    questionGeneratorStateRef.current = createQuestionGeneratorState(config);
-    setActiveQuestion(
-      createActiveQuestion(config, 0, playbackIdRef, questionGeneratorStateRef),
-    );
+
     if (isAuthenticatedState) {
-      persistedConfigSessionRef.current = nextStartedAt;
       void persistLastUsedConfigAction(config)
         .then(() => {
           setPersistConfigErrorMessage(null);
@@ -532,221 +237,11 @@ export function DistanceTrainClient({
           setPersistConfigErrorMessage(getTrainingConfigPersistErrorMessage());
         });
     }
-    setPhase("preparing");
-  }
-
-  function handleReplayBase() {
-    if (!activeQuestion) {
-      return;
-    }
-
-    void playQuestionAudio(
-      activeQuestion.question,
-      "base",
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    )
-      .then((didStartPlayback) => {
-        if (!didStartPlayback) {
-          return;
-        }
-
-        setActiveQuestion((current) =>
-          current
-            ? {
-                ...current,
-                replayBaseCount: getNextReplayCount(
-                  current.replayBaseCount,
-                  didStartPlayback,
-                ),
-              }
-            : current,
-        );
-      })
-      .catch(() => {
-        setAudioError("音声の再生に失敗しました。そのまま続行できます。");
-      });
-  }
-
-  function handleReplayTarget() {
-    if (!activeQuestion) {
-      return;
-    }
-
-    void playQuestionAudio(
-      activeQuestion.question,
-      "target",
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    )
-      .then((didStartPlayback) => {
-        if (!didStartPlayback) {
-          return;
-        }
-
-        setActiveQuestion((current) =>
-          current
-            ? {
-                ...current,
-                replayTargetCount: getNextReplayCount(
-                  current.replayTargetCount,
-                  didStartPlayback,
-                ),
-              }
-            : current,
-        );
-      })
-      .catch(() => {
-        setAudioError("音声の再生に失敗しました。そのまま続行できます。");
-      });
-  }
-
-  function handleAnswer(answeredDistanceSemitones: number) {
-    if (!activeQuestion?.answeringStartedAt) {
-      return;
-    }
-
-    const answeredAt = new Date().toISOString();
-    const responseTimeMs = Math.max(
-      0,
-      Date.parse(answeredAt) - Date.parse(activeQuestion.answeringStartedAt),
-    );
-    const result = evaluateDistanceAnswer({
-      question: activeQuestion.question,
-      answeredDistanceSemitones,
-      responseTimeMs,
-      replayBaseCount: activeQuestion.replayBaseCount,
-      replayTargetCount: activeQuestion.replayTargetCount,
-      presentedAt: activeQuestion.presentedAt,
-      answeredAt,
-    });
-
-    const updatedCount = results.length + 1;
-
-    setResults((current) => [...current, result]);
-    setFeedbackResult(result);
-    setLastAnsweredWasFinal(
-      config.endCondition.type === "question_count" &&
-        updatedCount >= config.endCondition.questionCount,
-    );
-    setPhase("feedback");
-    void playFeedbackEffect(
-      audioContextRef,
-      settings.masterVolume,
-      settings.soundEffectsEnabled,
-      result.isCorrect,
-      playbackLockRef,
-    );
-  }
-
-  function handleReplayCorrectTarget() {
-    if (!feedbackResult) {
-      return;
-    }
-
-    void playQuestionAudio(
-      feedbackResult.question,
-      "target",
-      audioContextRef,
-      settings.masterVolume,
-      playbackLockRef,
-    ).catch(() => {
-      setAudioError("音声の再生に失敗しました。そのまま続行できます。");
-    });
-  }
-
-  function handleContinue() {
-    if (!feedbackResult || !activeQuestion) {
-      return;
-    }
-
-    const nextProgress = resolvePostFeedbackProgress({
-      endCondition: config.endCondition,
-      currentQuestionIndex: activeQuestion.question.questionIndex,
-      lastAnsweredWasFinal,
-      answeredAt: feedbackResult.answeredAt,
-    });
-
-    if (nextProgress.phase === "result") {
-      setActiveQuestion(null);
-      setFinishReason(nextProgress.finishReason);
-      setEndedAt(nextProgress.endedAt);
-      setPhase(nextProgress.phase);
-      return;
-    }
-
-    setFeedbackResult(null);
-    setActiveQuestion(
-      createActiveQuestion(
-        config,
-        nextProgress.nextQuestionIndex,
-        playbackIdRef,
-        questionGeneratorStateRef,
-      ),
-    );
-    setPhase(nextProgress.phase);
   }
 
   function handleReset() {
-    setPhase("config");
-    setStartedAt(null);
-    setEndedAt(null);
-    setFinishReason(null);
-    setActiveQuestion(null);
-    setResults([]);
-    setFeedbackResult(null);
-    setLastAnsweredWasFinal(false);
-    setConfigError(null);
-    setAudioError(null);
-    setSaveResult(null);
+    session.resetSession();
     setPersistConfigErrorMessage(null);
-    persistedConfigSessionRef.current = null;
-    autoSaveAttemptedSessionRef.current = null;
-    questionGeneratorStateRef.current = null;
-    sessionDeadlineAtRef.current = null;
-    timeoutHandledRef.current = false;
-    inFlightPlaybackNonceRef.current = null;
-    answeringHandledNonceRef.current = null;
-    if (answeringUnlockTimeoutRef.current !== null) {
-      globalThis.clearTimeout(answeringUnlockTimeoutRef.current);
-      answeringUnlockTimeoutRef.current = null;
-    }
-    setRemainingTimeMs(null);
-  }
-
-  function handleSaveResults() {
-    const retrySaveContext = {
-      isAuthenticated: isAuthenticatedState,
-      startedAt,
-      endedAt,
-      finishReason,
-      resultsCount: results.length,
-      hasSavedResult: Boolean(saveResult?.ok),
-    };
-
-    if (!canRetryTrainingResultSave(retrySaveContext)) {
-      return;
-    }
-
-    startSaveTransition(async () => {
-      let result: SaveTrainingSessionResult;
-
-      try {
-        result = await saveResultsAction({
-          config,
-          startedAt: retrySaveContext.startedAt,
-          endedAt: retrySaveContext.endedAt,
-          finishReason: retrySaveContext.finishReason,
-          results,
-        });
-      } catch {
-        result = createTrainingResultSaveFailureResult();
-      }
-
-      setSaveResult(result);
-    });
   }
 
   return (
@@ -755,40 +250,40 @@ export function DistanceTrainClient({
         modeLabel="距離モード"
         modeTone={getTrainingModeTone("distance")}
         questionLabel={getDistanceHeaderLabel(
-          phase,
-          activeQuestion,
+          session.phase,
+          session.activeQuestion,
           plannedQuestionCount,
         )}
         meta={getDistanceHeaderMeta({
-          phase,
-          remainingTimeMs,
           isAuthenticated: isAuthenticatedState,
-          saveResult,
+          phase: session.phase,
+          remainingTimeMs: session.remainingTimeMs,
+          saveResult: session.saveResult,
         })}
         actions={
           <ButtonLink
             href="/"
-            variant="ghost"
-            size="compact"
             pendingLabel="ホームを開いています..."
+            size="compact"
+            variant="ghost"
           >
             戻る
           </ButtonLink>
         }
         notice={
-          audioError
-            ? audioError
+          session.audioError
+            ? session.audioError
             : isAuthenticatedState
               ? "結果画面では自動保存されます。"
               : "ゲストでは保存されません。"
         }
       />
 
-      {phase !== "config" && persistConfigErrorMessage ? (
+      {session.phase !== "config" && persistConfigErrorMessage ? (
         <Notice tone="error">{persistConfigErrorMessage}</Notice>
       ) : null}
 
-      {phase === "config" ? (
+      {session.phase === "config" ? (
         <Surface tone="accent">
           <SectionHeader
             title="出題設定"
@@ -801,7 +296,6 @@ export function DistanceTrainClient({
                 <Field label="終了方法">
                   <select
                     className="ui-select"
-                    value={config.endCondition.type}
                     onChange={(event) =>
                       updateConfig((current) => ({
                         ...current,
@@ -811,6 +305,7 @@ export function DistanceTrainClient({
                             : createDefaultQuestionCountEndCondition(),
                       }))
                     }
+                    value={config.endCondition.type}
                   >
                     <option value="question_count">問題数</option>
                     <option value="time_limit">制限時間</option>
@@ -820,16 +315,16 @@ export function DistanceTrainClient({
                   <Field label="問題数">
                     <select
                       className="ui-select"
-                      value={plannedQuestionCount}
                       onChange={(event) =>
                         updateConfig((current) => ({
                           ...current,
                           endCondition: {
-                            type: "question_count",
                             questionCount: Number(event.target.value),
+                            type: "question_count",
                           },
                         }))
                       }
+                      value={plannedQuestionCount}
                     >
                       {questionCountOptions.map((option) => (
                         <option key={option} value={option}>
@@ -842,16 +337,16 @@ export function DistanceTrainClient({
                   <Field label="制限時間（秒）">
                     <select
                       className="ui-select"
-                      value={config.endCondition.timeLimitSeconds}
                       onChange={(event) =>
                         updateConfig((current) => ({
                           ...current,
                           endCondition: {
-                            type: "time_limit",
                             timeLimitSeconds: Number(event.target.value),
+                            type: "time_limit",
                           },
                         }))
                       }
+                      value={config.endCondition.timeLimitSeconds}
                     >
                       {timeLimitOptions.map((option) => (
                         <option key={option} value={option}>
@@ -870,10 +365,8 @@ export function DistanceTrainClient({
                 <Field label="最小半音数">
                   <input
                     className="ui-input"
-                    type="number"
-                    min={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.min}
                     max={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.max}
-                    value={config.intervalRange.minSemitone}
+                    min={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.min}
                     onChange={(event) =>
                       updateConfig((current) => {
                         const minSemitone = clampIntervalMinSemitone(
@@ -883,27 +376,27 @@ export function DistanceTrainClient({
                         return {
                           ...current,
                           intervalRange: {
-                            minSemitone,
                             maxSemitone: clampIntervalMaxSemitone(
                               current.intervalRange.maxSemitone,
                               minSemitone,
                             ),
+                            minSemitone,
                           },
                         };
                       })
                     }
+                    type="number"
+                    value={config.intervalRange.minSemitone}
                   />
                 </Field>
                 <Field label="最大半音数">
                   <input
                     className="ui-input"
-                    type="number"
+                    max={TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.max}
                     min={Math.max(
                       TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.min,
                       config.intervalRange.minSemitone,
                     )}
-                    max={TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.max}
-                    value={config.intervalRange.maxSemitone}
                     onChange={(event) =>
                       updateConfig((current) => ({
                         ...current,
@@ -916,12 +409,13 @@ export function DistanceTrainClient({
                         },
                       }))
                     }
+                    type="number"
+                    value={config.intervalRange.maxSemitone}
                   />
                 </Field>
                 <Field label="出題方向">
                   <select
                     className="ui-select"
-                    value={config.directionMode}
                     onChange={(event) =>
                       updateConfig((current) => ({
                         ...current,
@@ -929,6 +423,7 @@ export function DistanceTrainClient({
                           .value as DistanceTrainingConfig["directionMode"],
                       }))
                     }
+                    value={config.directionMode}
                   >
                     <option value="mixed">
                       {formatDirectionModeLabel("mixed")}
@@ -941,7 +436,6 @@ export function DistanceTrainClient({
                 <Field label="基準音モード">
                   <select
                     className="ui-select"
-                    value={config.baseNoteMode}
                     onChange={(event) =>
                       updateConfig((current) => ({
                         ...current,
@@ -953,6 +447,7 @@ export function DistanceTrainClient({
                             : null,
                       }))
                     }
+                    value={config.baseNoteMode}
                   >
                     <option value="random">ランダム</option>
                     <option value="fixed">固定</option>
@@ -964,13 +459,13 @@ export function DistanceTrainClient({
                 <Field label="固定する基準音">
                   <select
                     className="ui-select"
-                    value={config.fixedBaseNote ?? "C"}
                     onChange={(event) =>
                       updateConfig((current) => ({
                         ...current,
                         fixedBaseNote: event.target.value as NoteClass,
                       }))
                     }
+                    value={config.fixedBaseNote ?? "C"}
                   >
                     {NOTE_CLASS_OPTIONS.map((note) => (
                       <option key={note} value={note}>
@@ -986,7 +481,6 @@ export function DistanceTrainClient({
               <h3 className="ui-form-section__title">回答スタイル</h3>
               <label className="ui-checkbox-card">
                 <input
-                  type="checkbox"
                   checked={config.includeUnison}
                   onChange={(event) =>
                     updateConfig((current) => ({
@@ -994,12 +488,12 @@ export function DistanceTrainClient({
                       includeUnison: event.target.checked,
                     }))
                   }
+                  type="checkbox"
                 />
                 <span>同音を含める</span>
               </label>
               <label className="ui-checkbox-card">
                 <input
-                  type="checkbox"
                   checked={config.includeOctave}
                   onChange={(event) =>
                     updateConfig((current) => ({
@@ -1007,13 +501,13 @@ export function DistanceTrainClient({
                       includeOctave: event.target.checked,
                     }))
                   }
+                  type="checkbox"
                 />
                 <span>オクターブを含める</span>
               </label>
               <Field label="音程表記の粒度">
                 <select
                   className="ui-select"
-                  value={config.intervalGranularity}
                   onChange={(event) =>
                     updateConfig((current) => ({
                       ...current,
@@ -1021,6 +515,7 @@ export function DistanceTrainClient({
                         .value as DistanceTrainingConfig["intervalGranularity"],
                     }))
                   }
+                  value={config.intervalGranularity}
                 >
                   <option value="simple">シンプル</option>
                   <option value="aug_dim">増減あり</option>
@@ -1053,106 +548,81 @@ export function DistanceTrainClient({
             <Notice>前回設定を読み込めます。</Notice>
           ) : null}
 
-          {configError ? <Notice tone="error">{configError}</Notice> : null}
+          {session.configError ? (
+            <Notice tone="error">{session.configError}</Notice>
+          ) : null}
 
           <div className="ui-sticky-actions">
-            <Button type="button" onClick={handleStart} variant="primary" block>
+            <Button block onClick={handleStart} type="button" variant="primary">
               開始
             </Button>
           </div>
         </Surface>
       ) : null}
 
-      {phase === "preparing" && activeQuestion ? (
+      {session.phase === "preparing" && session.activeQuestion ? (
         <Surface tone="accent">
           <SectionHeader
             title="準備中"
             description="次の問題を準備して、基準音と問題音の再生に入ります。"
           />
           <Notice>
-            問題 {activeQuestion.question.questionIndex + 1} を準備しています...
+            問題 {session.activeQuestion.question.questionIndex + 1}{" "}
+            を準備しています...
           </Notice>
         </Surface>
       ) : null}
 
-      {(phase === "playing" || phase === "answering") && activeQuestion ? (
+      {(session.phase === "playing" || session.phase === "answering") &&
+      session.activeQuestion ? (
         <DistanceQuestionPanel
-          phase={phase}
-          questionIndex={activeQuestion.question.questionIndex}
-          direction={activeQuestion.question.direction}
-          replayBaseCount={activeQuestion.replayBaseCount}
-          replayTargetCount={activeQuestion.replayTargetCount}
-          playbackKind={activeQuestion.playbackKind}
           answerChoiceValues={answerChoiceValues}
+          direction={session.activeQuestion.question.direction}
           intervalNotationStyle={intervalNotationStyle}
-          onReplayBase={handleReplayBase}
-          onReplayTarget={handleReplayTarget}
-          onAnswer={handleAnswer}
+          onAnswer={session.answerQuestion}
+          onReplayBase={session.replayBase}
+          onReplayTarget={session.replayTarget}
+          phase={session.phase}
+          playbackKind={session.activeQuestion.playbackKind}
+          questionIndex={session.activeQuestion.question.questionIndex}
+          replayBaseCount={session.activeQuestion.replayBaseCount}
+          replayTargetCount={session.activeQuestion.replayTargetCount}
         />
       ) : null}
 
-      {phase === "feedback" && feedbackResult ? (
+      {session.phase === "feedback" && session.feedbackResult ? (
         <DistanceFeedbackPanel
-          feedbackResult={feedbackResult}
-          lastAnsweredWasFinal={lastAnsweredWasFinal}
+          feedbackResult={session.feedbackResult}
           intervalNotationStyle={intervalNotationStyle}
-          onReplayCorrectTarget={handleReplayCorrectTarget}
-          onContinue={handleContinue}
+          lastAnsweredWasFinal={session.lastAnsweredWasFinal}
+          onContinue={session.continueAfterFeedback}
+          onEndSession={session.endSessionManually}
+          onReplayCorrectTarget={session.replayCorrectTarget}
         />
       ) : null}
 
-      {phase === "result" ? (
+      {session.phase === "result" ? (
         <DistanceResultPanel
-          summary={summary}
-          recentResults={recentResults}
-          intervalNotationStyle={intervalNotationStyle}
-          finishReason={finishReason}
-          isAuthenticated={isAuthenticatedState}
-          canSaveResult={canSaveResult}
+          canSaveResult={session.canSaveResult}
           cannotSaveBecauseNoAnswers={cannotSaveBecauseNoAnswers}
-          isSavePending={isSavePending}
-          saveResult={saveResult}
-          onRetrySave={handleSaveResults}
+          finishReason={session.finishReason}
+          intervalNotationStyle={intervalNotationStyle}
+          isAuthenticated={isAuthenticatedState}
+          isSavePending={session.isSavePending}
           onReset={handleReset}
+          onRetrySave={session.retrySaveResults}
+          recentResults={recentResults}
+          saveResult={session.saveResult}
+          summary={summary}
         />
       ) : null}
     </AppShell>
   );
 }
 
-function createActiveQuestion(
-  config: DistanceTrainingConfig,
-  questionIndex: number,
-  playbackIdRef: React.MutableRefObject<number>,
-  questionGeneratorStateRef: React.MutableRefObject<QuestionGeneratorState | null>,
-): ActiveQuestionState {
-  if (!questionGeneratorStateRef.current) {
-    throw new Error(
-      "Question generator state must be initialized before play.",
-    );
-  }
-
-  const nextQuestion = takeNextQuestion(
-    config,
-    questionGeneratorStateRef.current,
-    questionIndex,
-  );
-  questionGeneratorStateRef.current = nextQuestion.state;
-
-  return {
-    question: nextQuestion.question,
-    presentedAt: new Date().toISOString(),
-    answeringStartedAt: null,
-    replayBaseCount: 0,
-    replayTargetCount: 0,
-    playbackKind: "question",
-    playNonce: nextPlaybackNonce(playbackIdRef),
-  };
-}
-
 function getDistanceHeaderLabel(
-  phase: DistanceTrainPhase,
-  activeQuestion: ActiveQuestionState | null,
+  phase: SessionPhase,
+  activeQuestion: { question: { questionIndex: number } } | null,
   plannedQuestionCount: number,
 ): string | undefined {
   if (phase === "result") {
@@ -1167,9 +637,9 @@ function getDistanceHeaderLabel(
 }
 
 function getDistanceHeaderMeta(props: {
-  phase: DistanceTrainPhase;
-  remainingTimeMs: number | null;
   isAuthenticated: boolean;
+  phase: SessionPhase;
+  remainingTimeMs: number | null;
   saveResult: SaveTrainingSessionResult | null;
 }): string | null {
   if (props.phase === "result") {
@@ -1187,15 +657,7 @@ function getDistanceHeaderMeta(props: {
   return null;
 }
 
-function nextPlaybackNonce(
-  playbackIdRef: React.MutableRefObject<number>,
-): number {
-  playbackIdRef.current += 1;
-
-  return playbackIdRef.current;
-}
-
-function formatPhaseLabel(phase: DistanceTrainPhase): string {
+function formatPhaseLabel(phase: SessionPhase): string {
   switch (phase) {
     case "config":
       return "設定";
