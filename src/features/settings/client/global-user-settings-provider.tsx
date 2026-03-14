@@ -103,47 +103,44 @@ export function GlobalUserSettingsProvider({
   }, [isAuthenticated]);
 
   function updateSettings(patch: Partial<GlobalUserSettings>) {
-    setSettings((current) => {
-      const nextSettings = normalizeGlobalUserSettings({
-        ...current,
-        ...patch,
-      });
+    const nextSettings = normalizeGlobalUserSettings({
+      ...settingsRef.current,
+      ...patch,
+    });
 
-      settingsRef.current = nextSettings;
+    settingsRef.current = nextSettings;
+    setSettings(nextSettings);
 
-      if (!isAuthenticatedState) {
-        setIsAuthenticatedState(false);
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem(
-            GLOBAL_USER_SETTINGS_STORAGE_KEY,
-            serializeGlobalUserSettings(nextSettings),
-          );
-        }
-
-        setSaveState({
-          status: "saved",
-          updatedAt: null,
-          message: "このブラウザに保存しました。",
-        });
-        return nextSettings;
+    if (!isAuthenticatedState) {
+      setIsAuthenticatedState(false);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          GLOBAL_USER_SETTINGS_STORAGE_KEY,
+          serializeGlobalUserSettings(nextSettings),
+        );
       }
 
-      pendingSettingsRef.current = nextSettings;
-      retrySettingsRef.current = nextSettings;
-      setSaveState((currentSaveState) => ({
-        status:
-          currentSaveState.status === "saving"
-            ? "saving"
-            : currentSaveState.status === "saved"
-              ? "saved"
-              : "idle",
-        updatedAt: currentSaveState.updatedAt,
-        message: null,
-      }));
-      void syncPendingSettings();
+      setSaveState({
+        status: "saved",
+        updatedAt: null,
+        message: "このブラウザに保存しました。",
+      });
+      return;
+    }
 
-      return nextSettings;
-    });
+    pendingSettingsRef.current = nextSettings;
+    retrySettingsRef.current = nextSettings;
+    setSaveState((currentSaveState) => ({
+      status:
+        currentSaveState.status === "saving"
+          ? "saving"
+          : currentSaveState.status === "saved"
+            ? "saved"
+            : "idle",
+      updatedAt: currentSaveState.updatedAt,
+      message: null,
+    }));
+    void syncPendingSettings();
   }
 
   function retrySave() {
