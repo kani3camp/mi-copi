@@ -68,6 +68,7 @@ export function GlobalUserSettingsProvider({
     normalizeGlobalUserSettings(initialSettings),
   );
   const settingsRef = useRef(settings);
+  const hasLocalEditsRef = useRef(false);
   const syncQueueRef = useRef(createGlobalUserSettingsSyncQueue());
   const [syncRequestVersion, setSyncRequestVersion] = useState(0);
   const [saveState, setSaveState] = useState<GlobalUserSettingsSaveState>(
@@ -133,6 +134,7 @@ export function GlobalUserSettingsProvider({
       ...patch,
     });
 
+    hasLocalEditsRef.current = true;
     settingsRef.current = nextSettings;
     setSettings(nextSettings);
 
@@ -187,11 +189,17 @@ export function GlobalUserSettingsProvider({
       settings: GlobalUserSettings;
       updatedAt: string | null;
     }) => {
+      setIsAuthenticatedState(payload.isAuthenticated);
+
+      if (hasLocalEditsRef.current) {
+        return;
+      }
+
       const normalizedSettings = normalizeGlobalUserSettings(payload.settings);
 
+      hasLocalEditsRef.current = false;
       clearQueuedAuthenticatedGlobalUserSettings(syncQueueRef.current);
       settingsRef.current = normalizedSettings;
-      setIsAuthenticatedState(payload.isAuthenticated);
       setSettings(normalizedSettings);
       applySaveState(
         createInitialGlobalUserSettingsSaveState(payload.updatedAt),

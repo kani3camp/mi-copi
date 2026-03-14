@@ -28,13 +28,16 @@ export const hasSessionTokenCookieCached = cache(async (): Promise<boolean> => {
 export const getCurrentUserOrNullCached = cache(
   async (): Promise<CurrentUser | null> => {
     return withRequestTiming("auth.getCurrentUserOrNullCached", async () => {
-      const [{ getAuth }, { headers }] = await Promise.all([
-        import("./index"),
-        import("next/headers"),
-      ]);
-      const auth = getAuth();
-      const session = await auth.api.getSession({
-        headers: await headers(),
+      const { headers } = await import("next/headers");
+      const requestHeaders = await headers();
+
+      if (!hasSessionTokenCookie(requestHeaders)) {
+        return null;
+      }
+
+      const { getAuth } = await import("./index");
+      const session = await getAuth().api.getSession({
+        headers: requestHeaders,
       });
 
       if (!session?.user) {

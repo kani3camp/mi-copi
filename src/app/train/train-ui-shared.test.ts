@@ -7,6 +7,9 @@ const { buildDistanceFeedbackDiagramAnnotations } = await import(
 const { buildDistanceFeedbackDiagramArrows } = await import(
   new URL("./distance-feedback-arrows.ts", import.meta.url).href
 );
+const { getDistanceFeedbackArrowRenderGeometry } = await import(
+  new URL("./distance-feedback-arrow-render.ts", import.meta.url).href
+);
 const { buildDistanceFeedbackDiagramSteps } = await import(
   new URL("./distance-feedback-diagram.ts", import.meta.url).href
 );
@@ -170,6 +173,19 @@ test("distance feedback diagram arrows have direction for fixed scale (13 steps)
       `each arrow has tone success or teal, got ${arrow.tone}`,
     );
   }
+});
+
+test("distance feedback diagram does not render a negative-length arrow for zero distance", () => {
+  assert.equal(
+    getDistanceFeedbackArrowRenderGeometry({
+      x1: 4.5,
+      x2: 4.5,
+      yLane: 2.3,
+      tone: "teal",
+      direction: "forward",
+    }),
+    null,
+  );
 });
 
 test("distance feedback layout input: base index 0 for up, 12 for down", () => {

@@ -1,4 +1,5 @@
 import type { QuestionDirection } from "../../features/training/model/types";
+import { getDistanceFeedbackArrowRenderGeometry } from "./distance-feedback-arrow-render";
 import {
   buildDistanceFeedbackLayout,
   LAYOUT_VIEWBOX_BOTTOM_PADDING,
@@ -11,7 +12,6 @@ const COLORS = {
   neutral: "var(--text-secondary)",
 } as const;
 
-const ARROW_HEAD_SIZE = 0.25;
 const BASE_MARKER_RADIUS = 0.2;
 
 function columnCenter(columnIndex: number): number {
@@ -50,36 +50,26 @@ export function DistanceFeedbackDiagram(props: {
         aria-hidden="true"
       >
         {layout.arrows.map((arrow) => {
-          const lineStartX =
-            arrow.direction === "forward"
-              ? arrow.x1 + BASE_MARKER_RADIUS
-              : arrow.x1 + ARROW_HEAD_SIZE;
-          const lineEndX =
-            arrow.direction === "forward"
-              ? arrow.x2 - ARROW_HEAD_SIZE
-              : arrow.x2 - BASE_MARKER_RADIUS;
-          const headBaseX =
-            arrow.direction === "forward"
-              ? arrow.x2 - ARROW_HEAD_SIZE
-              : arrow.x1 + ARROW_HEAD_SIZE;
-          const headPoints =
-            arrow.direction === "forward"
-              ? `${arrow.x2} ${arrow.yLane} ${headBaseX} ${arrow.yLane - 0.15} ${headBaseX} ${arrow.yLane + 0.15}`
-              : `${arrow.x1} ${arrow.yLane} ${headBaseX} ${arrow.yLane - 0.15} ${headBaseX} ${arrow.yLane + 0.15}`;
+          const geometry = getDistanceFeedbackArrowRenderGeometry(arrow);
+
+          if (!geometry) {
+            return null;
+          }
+
           return (
             <g
               key={`arrow-${arrow.tone}-${arrow.x1}-${arrow.x2}-${arrow.yLane}`}
             >
               <line
-                x1={lineStartX}
+                x1={geometry.lineStartX}
                 y1={arrow.yLane}
-                x2={lineEndX}
+                x2={geometry.lineEndX}
                 y2={arrow.yLane}
                 stroke={COLORS[arrow.tone]}
                 strokeWidth={0.12}
                 strokeLinecap="butt"
               />
-              <polygon points={headPoints} fill={COLORS[arrow.tone]} />
+              <polygon points={geometry.headPoints} fill={COLORS[arrow.tone]} />
             </g>
           );
         })}

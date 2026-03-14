@@ -96,7 +96,7 @@ test("getResolvedTrainingBootstrapConfigDecision skips stored config after manua
   );
 });
 
-test("getResolvedTrainingBootstrapConfigDecision skips stored config after session start", () => {
+test("getResolvedTrainingBootstrapConfigDecision defers stored config after session start", () => {
   assert.equal(
     getResolvedTrainingBootstrapConfigDecision({
       hasResolvedBootstrap: true,
@@ -106,6 +106,6 @@ test("getResolvedTrainingBootstrapConfigDecision skips stored config after sessi
       startedAt: "2026-03-14T09:30:00.000Z",
       hasEditedConfig: false,
     }),
-    "skip",
+    "none",
   );
 });

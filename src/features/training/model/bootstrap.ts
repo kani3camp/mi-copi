@@ -35,11 +35,15 @@ export function getResolvedTrainingBootstrapConfigDecision(input: {
     return "none";
   }
 
+  if (input.hasEditedConfig) {
+    return "skip";
+  }
+
   return shouldApplyDeferredTrainingBootstrap({
     phase: input.phase,
     startedAt: input.startedAt,
-    hasEditedConfig: input.hasEditedConfig,
+    hasEditedConfig: false,
   })
     ? "apply"
-    : "skip";
+    : "none";
 }
