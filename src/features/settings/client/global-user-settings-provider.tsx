@@ -3,6 +3,7 @@
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -217,24 +218,27 @@ export function GlobalUserSettingsProvider({
     }
   }
 
-  function hydrateFromServer(payload: {
-    isAuthenticated: boolean;
-    settings: GlobalUserSettings;
-    updatedAt: string | null;
-  }) {
-    const normalizedSettings = normalizeGlobalUserSettings(payload.settings);
+  const hydrateFromServer = useCallback(
+    (payload: {
+      isAuthenticated: boolean;
+      settings: GlobalUserSettings;
+      updatedAt: string | null;
+    }) => {
+      const normalizedSettings = normalizeGlobalUserSettings(payload.settings);
 
-    pendingSettingsRef.current = null;
-    retrySettingsRef.current = null;
-    settingsRef.current = normalizedSettings;
-    setIsAuthenticatedState(payload.isAuthenticated);
-    setSettings(normalizedSettings);
-    setSaveState({
-      status: "idle",
-      updatedAt: payload.updatedAt,
-      message: null,
-    });
-  }
+      pendingSettingsRef.current = null;
+      retrySettingsRef.current = null;
+      settingsRef.current = normalizedSettings;
+      setIsAuthenticatedState(payload.isAuthenticated);
+      setSettings(normalizedSettings);
+      setSaveState({
+        status: "idle",
+        updatedAt: payload.updatedAt,
+        message: null,
+      });
+    },
+    [],
+  );
 
   return (
     <GlobalUserSettingsContext.Provider
