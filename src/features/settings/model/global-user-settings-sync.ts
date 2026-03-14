@@ -184,4 +184,14 @@ export async function syncPendingAuthenticatedGlobalUserSettings({
   } finally {
     queue.isSyncing = false;
   }
+
+  if (queue.pendingSettings) {
+    await syncPendingAuthenticatedGlobalUserSettings({
+      isAuthenticated,
+      persistSettingsAction,
+      queue,
+      getCurrentSaveState,
+      setSaveState,
+    });
+  }
 }

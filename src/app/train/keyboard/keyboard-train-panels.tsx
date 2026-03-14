@@ -87,16 +87,19 @@ export const KeyboardQuestionPanel = memo(
         <MiniStatRow
           items={[
             {
+              id: "direction",
               label: "方向",
               value: formatQuestionDirectionLabel(props.direction),
               tone: "teal",
             },
             {
+              id: "reference-note",
               label: "基準",
               value: `${props.referenceNote} / ${props.replayBaseCount}回`,
               tone: "amber",
             },
             {
+              id: "target-replay-count",
               label: "問題",
               value: `${props.replayTargetCount}回`,
               tone: "blue",

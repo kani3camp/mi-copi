@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { GlobalUserSettings } from "./global-user-settings";
-import type { GlobalUserSettingsSaveState } from "./global-user-settings-sync";
+import type {
+  GlobalUserSettingsSaveState,
+  GlobalUserSettingsSyncQueue,
+} from "./global-user-settings-sync";
 
 const {
   createBrowserSavedGlobalUserSettingsSaveState,
@@ -144,6 +147,55 @@ test("rapid authenticated changes collapse to the latest pending snapshot", asyn
   });
 });
 
+test("late authenticated changes queued during unlock are drained by a follow-up sync", async () => {
+  const saveStateStore = createSaveStateStore("2026-03-14T00:00:00.000Z");
+  const initialSettings: GlobalUserSettings = {
+    ...createDefaultGlobalUserSettings(),
+    masterVolume: 52,
+  };
+  const lateSettings: GlobalUserSettings = {
+    ...createDefaultGlobalUserSettings(),
+    masterVolume: 31,
+  };
+  const persistedSettings: GlobalUserSettings[] = [];
+  const queue = createLateEnqueueOnUnlockQueue(lateSettings);
+
+  saveStateStore.setSaveState(
+    queueAuthenticatedGlobalUserSettingsSave({
+      queue,
+      settings: initialSettings,
+      currentSaveState: saveStateStore.getCurrentSaveState(),
+    }),
+  );
+
+  await syncPendingAuthenticatedGlobalUserSettings({
+    isAuthenticated: true,
+    persistSettingsAction: async (settings: GlobalUserSettings) => {
+      persistedSettings.push(settings);
+
+      return {
+        ok: true,
+        updatedAt:
+          persistedSettings.length === 1
+            ? "2026-03-14T01:00:00.000Z"
+            : "2026-03-14T02:00:00.000Z",
+      };
+    },
+    queue,
+    getCurrentSaveState: saveStateStore.getCurrentSaveState,
+    setSaveState: saveStateStore.setSaveState,
+  });
+
+  assert.deepEqual(persistedSettings, [initialSettings, lateSettings]);
+  assert.equal(queue.pendingSettings, null);
+  assert.equal(queue.retrySettings, null);
+  assert.deepEqual(saveStateStore.getCurrentSaveState(), {
+    status: "saved",
+    updatedAt: "2026-03-14T02:00:00.000Z",
+    message: "クラウドに保存しました。",
+  });
+});
+
 test("failed save keeps retry state and retrying reuses the queued snapshot", async () => {
   const queue = createGlobalUserSettingsSyncQueue();
   const saveStateStore = createSaveStateStore("2026-03-14T00:00:00.000Z");
@@ -277,4 +329,30 @@ function createDeferred() {
     promise,
     resolve,
   };
+}
+
+function createLateEnqueueOnUnlockQueue(
+  lateSettings: GlobalUserSettings,
+): GlobalUserSettingsSyncQueue {
+  let isSyncing = false;
+  let queuedLateSettings: GlobalUserSettings | null = lateSettings;
+
+  const queue: GlobalUserSettingsSyncQueue = {
+    pendingSettings: null,
+    retrySettings: null,
+    get isSyncing() {
+      return isSyncing;
+    },
+    set isSyncing(nextValue: boolean) {
+      isSyncing = nextValue;
+
+      if (!nextValue && queue.pendingSettings === null && queuedLateSettings) {
+        queue.pendingSettings = queuedLateSettings;
+        queue.retrySettings = queuedLateSettings;
+        queuedLateSettings = null;
+      }
+    },
+  };
+
+  return queue;
 }

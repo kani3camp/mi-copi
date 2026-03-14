@@ -65,15 +65,18 @@ export function DistanceQuestionPanel(props: {
       <MiniStatRow
         items={[
           {
+            id: "direction",
             label: "方向",
             value: formatQuestionDirectionLabel(props.direction),
             tone: "teal",
           },
           {
+            id: "base-replay-count",
             label: "基準音",
             value: `${props.replayBaseCount}回`,
           },
           {
+            id: "target-replay-count",
             label: "問題音",
             value: `${props.replayTargetCount}回`,
             tone: "blue",

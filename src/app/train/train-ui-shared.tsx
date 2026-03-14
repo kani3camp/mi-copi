@@ -89,6 +89,7 @@ function PlaybackButton(props: {
 
 export function MiniStatRow(props: {
   items: Array<{
+    id: string;
     label: ReactNode;
     value: ReactNode;
     tone?: "neutral" | "teal" | "amber" | "coral" | "blue";
@@ -98,7 +99,7 @@ export function MiniStatRow(props: {
     <div className="ui-mini-stat-row">
       {props.items.map((item) => (
         <div
-          key={`${item.label}-${item.value}`}
+          key={item.id}
           className="ui-mini-stat"
           data-tone={item.tone ?? "neutral"}
         >
