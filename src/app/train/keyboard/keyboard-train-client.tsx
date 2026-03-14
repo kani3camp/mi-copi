@@ -110,6 +110,19 @@ export function KeyboardTrainClient({
     },
     [],
   );
+  const handleBootstrapResolved = useCallback(
+    ({
+      hasStoredConfig,
+      isAuthenticated,
+    }: {
+      hasStoredConfig: boolean;
+      isAuthenticated: boolean;
+    }) => {
+      setHasStoredConfigState(hasStoredConfig);
+      setIsAuthenticatedState(isAuthenticated);
+    },
+    [],
+  );
   const { adapterRef, ensureReadyForStart } = useKeyboardTrainingRuntime();
   const session = useTrainingSessionCore({
     adapterRef,
@@ -122,10 +135,7 @@ export function KeyboardTrainClient({
   const bootstrap = useTrainingRouteBootstrap({
     loadBootstrapAction,
     onApplyConfig: applyBootstrapConfig,
-    onBootstrapResolved: ({ hasStoredConfig, isAuthenticated }) => {
-      setHasStoredConfigState(hasStoredConfig);
-      setIsAuthenticatedState(isAuthenticated);
-    },
+    onBootstrapResolved: handleBootstrapResolved,
     onHydrateSettings: hydrateFromServer,
     phase: session.phase,
     readErrorMessage: getStoredSettingsReadErrorMessage(),

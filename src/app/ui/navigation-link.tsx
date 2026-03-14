@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { ComponentPropsWithoutRef, MouseEvent, ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { cn } from "./cn";
+import {
+  buildNavigationCompletionToken,
+  PENDING_LINK_TIMEOUT_MS,
+  shouldResetPendingLink,
+} from "./navigation-link-state";
 import { type ButtonSize, type ButtonVariant, buttonClassName } from "./styles";
 
 interface BasePendingLinkProps {
@@ -58,14 +63,41 @@ export function ListLinkCard(props: PendingLinkProps) {
 function PendingLink(props: PendingLinkProps) {
   const { children, className, href, onClick, pendingLabel, ...rest } = props;
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isPending, setIsPending] = useState(false);
+  const navigationToken = buildNavigationCompletionToken({
+    pathname,
+    searchParams,
+  });
+  const previousNavigationTokenRef = useRef(navigationToken);
 
   useEffect(() => {
-    if (!pathname) {
+    if (
+      shouldResetPendingLink({
+        isPending,
+        previousToken: previousNavigationTokenRef.current,
+        nextToken: navigationToken,
+      })
+    ) {
+      setIsPending(false);
+    }
+
+    previousNavigationTokenRef.current = navigationToken;
+  }, [isPending, navigationToken]);
+
+  useEffect(() => {
+    if (!isPending) {
       return;
     }
-    setIsPending(false);
-  }, [pathname]);
+
+    const timeoutId = window.setTimeout(() => {
+      setIsPending(false);
+    }, PENDING_LINK_TIMEOUT_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isPending]);
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     onClick?.(event);

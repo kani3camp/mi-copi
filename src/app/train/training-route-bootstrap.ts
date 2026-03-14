@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import type { GlobalUserSettings } from "../../features/settings/model/global-user-settings.ts";
-import { shouldApplyDeferredTrainingBootstrap } from "../../features/training/model/bootstrap.ts";
+import {
+  getResolvedTrainingBootstrapConfigDecision,
+  shouldHydrateResolvedTrainingBootstrap,
+} from "../../features/training/model/bootstrap.ts";
 import type { SessionPhase } from "../../features/training/model/types.ts";
 
 interface TrainingRouteBootstrapPayload<TConfig> {
@@ -51,9 +54,15 @@ export function useTrainingRouteBootstrap<
   const [bootstrapErrorMessage, setBootstrapErrorMessage] = useState<
     string | null
   >(null);
+  const [resolvedBootstrap, setResolvedBootstrap] = useState<TBootstrap | null>(
+    null,
+  );
   const [isBootstrapPending, startBootstrapTransition] = useTransition();
   const bootstrapPromiseRef = useRef<Promise<TBootstrap> | null>(null);
   const hasEditedConfigRef = useRef(false);
+  const hasResolvedBootstrapMetaRef = useRef(false);
+  const hasHydratedSettingsRef = useRef(false);
+  const hasHandledStoredConfigRef = useRef(false);
 
   useEffect(() => {
     if (!loadBootstrapAction) {
@@ -74,39 +83,16 @@ export function useTrainingRouteBootstrap<
 
     startBootstrapTransition(async () => {
       try {
-        const bootstrap = await bootstrapPromise;
+        setBootstrapErrorMessage(null);
+        const nextBootstrap = await bootstrapPromise;
 
         if (cancelled) {
           return;
         }
-
-        onBootstrapResolved({
-          hasStoredConfig: bootstrap.hasStoredConfig,
-          isAuthenticated: bootstrap.isAuthenticated,
-        });
-        setBootstrapErrorMessage(bootstrap.readWarningMessage);
-        onHydrateSettings({
-          isAuthenticated: bootstrap.isAuthenticated,
-          settings: bootstrap.settings,
-          updatedAt: bootstrap.settingsUpdatedAt,
-        });
-
-        if (
-          bootstrap.config &&
-          shouldApplyDeferredTrainingBootstrap({
-            hasEditedConfig: hasEditedConfigRef.current,
-            phase,
-            startedAt,
-          })
-        ) {
-          onApplyConfig(bootstrap.config);
-          setBootstrapNotice("前回設定を読み込み済みです。");
-          return;
-        }
-
-        setBootstrapNotice(null);
+        setResolvedBootstrap(nextBootstrap);
       } catch {
         if (!cancelled) {
+          setResolvedBootstrap(null);
           setBootstrapNotice(null);
           setBootstrapErrorMessage(readErrorMessage);
         }
@@ -116,13 +102,62 @@ export function useTrainingRouteBootstrap<
     return () => {
       cancelled = true;
     };
+  }, [loadBootstrapAction, readErrorMessage]);
+
+  useEffect(() => {
+    if (!resolvedBootstrap) {
+      return;
+    }
+
+    if (!hasResolvedBootstrapMetaRef.current) {
+      hasResolvedBootstrapMetaRef.current = true;
+      onBootstrapResolved({
+        hasStoredConfig: resolvedBootstrap.hasStoredConfig,
+        isAuthenticated: resolvedBootstrap.isAuthenticated,
+      });
+      setBootstrapErrorMessage(resolvedBootstrap.readWarningMessage);
+    }
+
+    if (
+      shouldHydrateResolvedTrainingBootstrap({
+        hasResolvedBootstrap: true,
+        hasHydratedSettings: hasHydratedSettingsRef.current,
+      })
+    ) {
+      hasHydratedSettingsRef.current = true;
+      onHydrateSettings({
+        isAuthenticated: resolvedBootstrap.isAuthenticated,
+        settings: resolvedBootstrap.settings,
+        updatedAt: resolvedBootstrap.settingsUpdatedAt,
+      });
+    }
+
+    const configDecision = getResolvedTrainingBootstrapConfigDecision({
+      hasResolvedBootstrap: true,
+      hasStoredConfig: resolvedBootstrap.config !== null,
+      hasHandledStoredConfig: hasHandledStoredConfigRef.current,
+      hasEditedConfig: hasEditedConfigRef.current,
+      phase,
+      startedAt,
+    });
+
+    if (configDecision === "apply" && resolvedBootstrap.config) {
+      hasHandledStoredConfigRef.current = true;
+      onApplyConfig(resolvedBootstrap.config);
+      setBootstrapNotice("前回設定を読み込み済みです。");
+      return;
+    }
+
+    if (configDecision === "skip") {
+      hasHandledStoredConfigRef.current = true;
+      setBootstrapNotice(null);
+    }
   }, [
-    loadBootstrapAction,
     onApplyConfig,
     onBootstrapResolved,
     onHydrateSettings,
     phase,
-    readErrorMessage,
+    resolvedBootstrap,
     startedAt,
   ]);
 

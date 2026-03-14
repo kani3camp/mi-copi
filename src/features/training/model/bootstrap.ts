@@ -11,3 +11,35 @@ export function shouldApplyDeferredTrainingBootstrap(input: {
     input.hasEditedConfig === false
   );
 }
+
+export function shouldHydrateResolvedTrainingBootstrap(input: {
+  hasResolvedBootstrap: boolean;
+  hasHydratedSettings: boolean;
+}): boolean {
+  return input.hasResolvedBootstrap && input.hasHydratedSettings === false;
+}
+
+export function getResolvedTrainingBootstrapConfigDecision(input: {
+  hasResolvedBootstrap: boolean;
+  hasStoredConfig: boolean;
+  hasHandledStoredConfig: boolean;
+  phase: SessionPhase;
+  startedAt: string | null;
+  hasEditedConfig: boolean;
+}): "none" | "apply" | "skip" {
+  if (
+    !input.hasResolvedBootstrap ||
+    !input.hasStoredConfig ||
+    input.hasHandledStoredConfig
+  ) {
+    return "none";
+  }
+
+  return shouldApplyDeferredTrainingBootstrap({
+    phase: input.phase,
+    startedAt: input.startedAt,
+    hasEditedConfig: input.hasEditedConfig,
+  })
+    ? "apply"
+    : "skip";
+}
