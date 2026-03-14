@@ -9,21 +9,25 @@ import {
   useRef,
   useState,
 } from "react";
-import { getGlobalUserSettingsSaveErrorMessage } from "../../../lib/async-action-errors";
+
 import {
   GLOBAL_USER_SETTINGS_STORAGE_KEY,
   type GlobalUserSettings,
   normalizeGlobalUserSettings,
   parseGlobalUserSettings,
-  serializeGlobalUserSettings,
 } from "../model/global-user-settings";
+import {
+  clearQueuedAuthenticatedGlobalUserSettings,
+  createBrowserSavedGlobalUserSettingsSaveState,
+  createGlobalUserSettingsSyncQueue,
+  createInitialGlobalUserSettingsSaveState,
+  type GlobalUserSettingsSaveState,
+  persistGuestGlobalUserSettings,
+  queueAuthenticatedGlobalUserSettingsRetry,
+  queueAuthenticatedGlobalUserSettingsSave,
+  syncPendingAuthenticatedGlobalUserSettings,
+} from "../model/global-user-settings-sync";
 import type { GlobalUserSettingsSaveResult } from "../server/global-user-settings";
-
-interface GlobalUserSettingsSaveState {
-  status: "idle" | "saving" | "saved" | "error";
-  updatedAt: string | null;
-  message: string | null;
-}
 
 interface GlobalUserSettingsContextValue {
   isAuthenticated: boolean;
@@ -64,14 +68,20 @@ export function GlobalUserSettingsProvider({
     normalizeGlobalUserSettings(initialSettings),
   );
   const settingsRef = useRef(settings);
-  const pendingSettingsRef = useRef<GlobalUserSettings | null>(null);
-  const retrySettingsRef = useRef<GlobalUserSettings | null>(null);
-  const isSyncingRef = useRef(false);
-  const [saveState, setSaveState] = useState<GlobalUserSettingsSaveState>({
-    status: "idle",
-    updatedAt: initialUpdatedAt,
-    message: null,
-  });
+  const syncQueueRef = useRef(createGlobalUserSettingsSyncQueue());
+  const [syncRequestVersion, setSyncRequestVersion] = useState(0);
+  const [saveState, setSaveState] = useState<GlobalUserSettingsSaveState>(
+    createInitialGlobalUserSettingsSaveState(initialUpdatedAt),
+  );
+  const saveStateRef = useRef(saveState);
+
+  const applySaveState = useCallback(
+    (nextState: GlobalUserSettingsSaveState) => {
+      saveStateRef.current = nextState;
+      setSaveState(nextState);
+    },
+    [],
+  );
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -92,16 +102,30 @@ export function GlobalUserSettingsProvider({
 
     settingsRef.current = storedSettings;
     setSettings(storedSettings);
-    setSaveState({
-      status: "saved",
-      updatedAt: null,
-      message: "このブラウザに保存しました。",
-    });
-  }, [isAuthenticatedState]);
+    applySaveState(createBrowserSavedGlobalUserSettingsSaveState());
+  }, [applySaveState, isAuthenticatedState]);
 
   useEffect(() => {
     setIsAuthenticatedState(isAuthenticated);
   }, [isAuthenticated]);
+
+  const syncPendingSettings = useCallback(async (): Promise<void> => {
+    await syncPendingAuthenticatedGlobalUserSettings({
+      isAuthenticated: isAuthenticatedState,
+      persistSettingsAction,
+      queue: syncQueueRef.current,
+      getCurrentSaveState: () => saveStateRef.current,
+      setSaveState: applySaveState,
+    });
+  }, [applySaveState, isAuthenticatedState, persistSettingsAction]);
+
+  useEffect(() => {
+    if (syncRequestVersion === 0) {
+      return;
+    }
+
+    void syncPendingSettings();
+  }, [syncPendingSettings, syncRequestVersion]);
 
   function updateSettings(patch: Partial<GlobalUserSettings>) {
     const nextSettings = normalizeGlobalUserSettings({
@@ -114,34 +138,30 @@ export function GlobalUserSettingsProvider({
 
     if (!isAuthenticatedState) {
       setIsAuthenticatedState(false);
+
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(
-          GLOBAL_USER_SETTINGS_STORAGE_KEY,
-          serializeGlobalUserSettings(nextSettings),
+        applySaveState(
+          persistGuestGlobalUserSettings({
+            storage: window.localStorage,
+            settings: nextSettings,
+          }),
         );
+
+        return;
       }
 
-      setSaveState({
-        status: "saved",
-        updatedAt: null,
-        message: "このブラウザに保存しました。",
-      });
+      applySaveState(createBrowserSavedGlobalUserSettingsSaveState());
       return;
     }
 
-    pendingSettingsRef.current = nextSettings;
-    retrySettingsRef.current = nextSettings;
-    setSaveState((currentSaveState) => ({
-      status:
-        currentSaveState.status === "saving"
-          ? "saving"
-          : currentSaveState.status === "saved"
-            ? "saved"
-            : "idle",
-      updatedAt: currentSaveState.updatedAt,
-      message: null,
-    }));
-    void syncPendingSettings();
+    applySaveState(
+      queueAuthenticatedGlobalUserSettingsSave({
+        queue: syncQueueRef.current,
+        settings: nextSettings,
+        currentSaveState: saveStateRef.current,
+      }),
+    );
+    setSyncRequestVersion((current) => current + 1);
   }
 
   function retrySave() {
@@ -149,73 +169,16 @@ export function GlobalUserSettingsProvider({
       return;
     }
 
-    pendingSettingsRef.current =
-      retrySettingsRef.current ?? settingsRef.current ?? null;
-    void syncPendingSettings();
-  }
-
-  async function syncPendingSettings(): Promise<void> {
     if (
-      !isAuthenticatedState ||
-      !persistSettingsAction ||
-      isSyncingRef.current ||
-      !pendingSettingsRef.current
+      !queueAuthenticatedGlobalUserSettingsRetry({
+        queue: syncQueueRef.current,
+        fallbackSettings: settingsRef.current,
+      })
     ) {
       return;
     }
 
-    isSyncingRef.current = true;
-
-    while (pendingSettingsRef.current) {
-      const snapshot = pendingSettingsRef.current;
-      pendingSettingsRef.current = null;
-
-      setSaveState((current) => ({
-        status: "saving",
-        updatedAt: current.updatedAt,
-        message: null,
-      }));
-
-      let result: GlobalUserSettingsSaveResult;
-
-      try {
-        result = await persistSettingsAction(snapshot);
-      } catch {
-        result = {
-          ok: false,
-          code: "SAVE_FAILED",
-          message: getGlobalUserSettingsSaveErrorMessage(),
-        };
-      }
-
-      if (!result.ok) {
-        retrySettingsRef.current = snapshot;
-        setSaveState((current) => ({
-          status: "error",
-          updatedAt: current.updatedAt,
-          message: getGlobalUserSettingsSaveErrorMessage(result),
-        }));
-
-        if (!pendingSettingsRef.current) {
-          break;
-        }
-
-        continue;
-      }
-
-      retrySettingsRef.current = null;
-      setSaveState({
-        status: "saved",
-        updatedAt: result.updatedAt,
-        message: "クラウドに保存しました。",
-      });
-    }
-
-    isSyncingRef.current = false;
-
-    if (pendingSettingsRef.current) {
-      void syncPendingSettings();
-    }
+    setSyncRequestVersion((current) => current + 1);
   }
 
   const hydrateFromServer = useCallback(
@@ -226,18 +189,15 @@ export function GlobalUserSettingsProvider({
     }) => {
       const normalizedSettings = normalizeGlobalUserSettings(payload.settings);
 
-      pendingSettingsRef.current = null;
-      retrySettingsRef.current = null;
+      clearQueuedAuthenticatedGlobalUserSettings(syncQueueRef.current);
       settingsRef.current = normalizedSettings;
       setIsAuthenticatedState(payload.isAuthenticated);
       setSettings(normalizedSettings);
-      setSaveState({
-        status: "idle",
-        updatedAt: payload.updatedAt,
-        message: null,
-      });
+      applySaveState(
+        createInitialGlobalUserSettingsSaveState(payload.updatedAt),
+      );
     },
-    [],
+    [applySaveState],
   );
 
   return (
