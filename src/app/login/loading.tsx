@@ -1,9 +1,9 @@
-import { AppShell, Notice, PageHero, Surface } from "../ui/primitives";
+import { AppShell, Notice, PageHeader, Surface } from "../ui/primitives";
 
 export default function Loading() {
   return (
     <AppShell narrow>
-      <PageHero
+      <PageHeader
         title="ログイン"
         eyebrow="アカウント"
         subtitle="ログイン導線とアカウント状態を準備しています。"

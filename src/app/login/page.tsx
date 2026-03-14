@@ -1,9 +1,4 @@
-import { Suspense } from "react";
-
-import {
-  getCurrentUserOrNullCached,
-  hasSessionTokenCookieCached,
-} from "../../lib/auth/server";
+import { getCurrentUserOrNullCached } from "../../lib/auth/server";
 import { ButtonLink } from "../ui/navigation-link";
 import {
   AppShell,
@@ -17,7 +12,7 @@ import {
 import { LoginControls } from "./login-controls";
 
 export default async function LoginPage() {
-  const hasSessionToken = await hasSessionTokenCookieCached();
+  const currentUser = await getCurrentUserOrNullCached();
 
   return (
     <AppShell narrow>
@@ -27,7 +22,7 @@ export default async function LoginPage() {
         subtitle="Google でログインするか、ゲストでそのまま始めるかを選びます。"
       />
 
-      {hasSessionToken ? (
+      {currentUser ? (
         <Notice tone="success">
           すでにサインイン済みです。必要ならそのままホームから学習を始められます。
         </Notice>
@@ -35,10 +30,8 @@ export default async function LoginPage() {
 
       <LoginControls />
 
-      {hasSessionToken ? (
-        <Suspense fallback={<LoginAccountLoading />}>
-          <LoginCurrentUserSection />
-        </Suspense>
+      {currentUser ? (
+        <LoginCurrentUserSection currentUser={currentUser} />
       ) : null}
 
       <Surface>
@@ -57,35 +50,23 @@ export default async function LoginPage() {
   );
 }
 
-async function LoginCurrentUserSection() {
-  const currentUser = await getCurrentUserOrNullCached();
-
-  if (!currentUser) {
-    return null;
-  }
-
+function LoginCurrentUserSection(props: {
+  currentUser: Awaited<ReturnType<typeof getCurrentUserOrNullCached>>;
+}) {
   return (
     <Surface>
       <SectionHeader title="サインイン中のアカウント" />
       <SummaryBlock>
         <SummaryStat
           label="名前"
-          value={currentUser.name ?? "不明"}
+          value={props.currentUser?.name ?? "不明"}
           emphasis="primary"
         />
         <SummaryStat
           label="メールアドレス"
-          value={currentUser.email ?? "不明"}
+          value={props.currentUser?.email ?? "不明"}
         />
       </SummaryBlock>
-    </Surface>
-  );
-}
-
-function LoginAccountLoading() {
-  return (
-    <Surface>
-      <SectionHeader title="アカウント状態を確認中" />
     </Surface>
   );
 }

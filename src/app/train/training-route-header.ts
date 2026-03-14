@@ -15,6 +15,8 @@ export function formatTrainingPhaseLabel(phase: SessionPhase): string {
       return "フィードバック";
     case "result":
       return "結果";
+    default:
+      return assertNever(phase);
   }
 }
 
@@ -63,4 +65,8 @@ function formatRemainingTimeLabel(valueMs: number): string {
   const seconds = totalSeconds % 60;
 
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled session phase: ${String(value)}`);
 }

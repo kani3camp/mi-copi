@@ -175,6 +175,18 @@ test("distance feedback diagram arrows have direction for fixed scale (13 steps)
   }
 });
 
+test("distance feedback diagram arrows return no geometry for invalid indices", () => {
+  assert.deepEqual(
+    buildDistanceFeedbackDiagramArrows({
+      stepCount: 13,
+      baseIndex: -1,
+      correctIndex: 5,
+      answeredIndex: 3,
+    }),
+    [],
+  );
+});
+
 test("distance feedback diagram does not render a negative-length arrow for zero distance", () => {
   assert.equal(
     getDistanceFeedbackArrowRenderGeometry({

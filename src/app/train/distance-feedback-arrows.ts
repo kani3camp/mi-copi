@@ -12,6 +12,14 @@ export function buildDistanceFeedbackDiagramArrows(params: {
   answeredIndex: number;
   baseIndex: number;
 }): DistanceFeedbackDiagramArrow[] {
+  if (
+    isInvalidArrowIndex(params.baseIndex, params.stepCount) ||
+    isInvalidArrowIndex(params.correctIndex, params.stepCount) ||
+    isInvalidArrowIndex(params.answeredIndex, params.stepCount)
+  ) {
+    return [];
+  }
+
   return [
     createArrow({
       targetIndex: params.correctIndex,
@@ -41,4 +49,8 @@ function createArrow(params: {
     lane: params.lane,
     tone: params.tone,
   };
+}
+
+function isInvalidArrowIndex(index: number, stepCount: number): boolean {
+  return index < 0 || index >= stepCount;
 }

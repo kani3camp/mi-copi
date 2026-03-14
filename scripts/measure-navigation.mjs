@@ -31,12 +31,12 @@ async function measureSuite(baseURL, signedIn) {
   });
 
   if (signedIn && SESSION_TOKEN) {
+    const cookieURL = new URL(baseURL);
     await context.addCookies([
       {
         name: "better-auth.session_token",
         value: SESSION_TOKEN,
-        domain: "localhost",
-        path: "/",
+        url: `${cookieURL.origin}/`,
       },
     ]);
   }
