@@ -1,5 +1,7 @@
 import type { TrainingMode } from "./types";
 
+export type TrainingModeTone = "teal" | "blue";
+
 export function formatDateTimeLabel(value: string): string {
   const parsedDate = new Date(value);
 
@@ -87,4 +89,12 @@ export function formatTrainingModeLabel(value: TrainingMode): string {
   }
 
   return "鍵盤モード";
+}
+
+export function getTrainingModeTone(value: TrainingMode): TrainingModeTone {
+  if (value === "distance") {
+    return "teal";
+  }
+
+  return "blue";
 }

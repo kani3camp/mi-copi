@@ -4,6 +4,7 @@ import test from "node:test";
 const {
   clampMasterVolume,
   createDefaultGlobalUserSettings,
+  MAX_MASTER_VOLUME,
   normalizeGlobalUserSettings,
   parseGlobalUserSettings,
   serializeGlobalUserSettings,
@@ -58,6 +59,7 @@ test("global settings serialization round-trips through JSON storage", () => {
   });
   assert.equal(parseGlobalUserSettings("{"), null);
   assert.equal(clampMasterVolume(Number.NaN), 80);
+  assert.equal(clampMasterVolume(MAX_MASTER_VOLUME + 20), MAX_MASTER_VOLUME);
 });
 
 test("interval labels switch between Japanese, abbreviation, and mixed styles", () => {

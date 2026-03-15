@@ -1,4 +1,5 @@
 export type IntervalNotationStyle = "ja" | "abbr" | "mixed";
+export const MAX_MASTER_VOLUME = 100;
 
 export interface GlobalUserSettings {
   masterVolume: number;
@@ -67,7 +68,7 @@ export function clampMasterVolume(value: number): number {
     return createDefaultGlobalUserSettings().masterVolume;
   }
 
-  return Math.min(100, Math.max(0, Math.round(value)));
+  return Math.min(MAX_MASTER_VOLUME, Math.max(0, Math.round(value)));
 }
 
 function isIntervalNotationStyle(

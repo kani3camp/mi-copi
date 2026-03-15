@@ -16,6 +16,7 @@
     "lint:repo": "node scripts/lint.mjs",
     "check": "biome check .",
     "test": "node scripts/run-tests.mjs",
+    "smoke:train-routes": "node scripts/training-route-smoke.mjs",
     "verify": "npm run typecheck && npm run check && npm run lint:repo && npm run test && npm run build",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",

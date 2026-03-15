@@ -2,8 +2,12 @@
 
 import { eq } from "drizzle-orm";
 
-import type { CurrentUser } from "../../../lib/auth/server.ts";
+import {
+  type CurrentUserResolverDependencies,
+  resolveCurrentUserOrNull,
+} from "../../../lib/auth/server.ts";
 import { createDefaultGlobalUserSettings } from "../../settings/model/global-user-settings.ts";
+import { getCurrentUserSettingsSnapshot } from "../../settings/server/getCurrentUserSettingsSnapshot.ts";
 import { isRecoverableUserSettingsStorageError } from "../../settings/server/user-settings-storage.ts";
 import {
   createDefaultDistanceTrainingConfig,
@@ -15,6 +19,7 @@ import type {
   KeyboardTrainingConfig,
   TrainingMode,
 } from "../model/types.ts";
+import type { InsertDb, SelectOnlyDb } from "./query-types.ts";
 
 export interface LastUsedTrainingConfigs {
   isAuthenticated: boolean;
@@ -24,73 +29,37 @@ export interface LastUsedTrainingConfigs {
 }
 
 export interface LastUsedTrainingConfigDependencies {
-  db?: {
-    select: (...args: unknown[]) => any;
-    insert: (...args: unknown[]) => any;
-  };
-  getCurrentUser?: () => Promise<CurrentUser | null>;
+  db?: SelectOnlyDb & InsertDb;
+  currentUser?: CurrentUserResolverDependencies["currentUser"];
+  getCurrentUser?: CurrentUserResolverDependencies["getCurrentUser"];
   now?: () => Date;
+}
+
+type AppSchemaModule = typeof import("../../../lib/db/schema/app.ts");
+
+type UserSettingsTables = {
+  userSettings: AppSchemaModule["userSettings"];
+};
+
+interface UserSettingsUpsertExistingRow {
+  masterVolume: number;
+  soundEffectsEnabled: boolean;
+  intervalNotationStyle: "ja" | "abbr" | "mixed";
+  keyboardNoteLabelsVisible: boolean;
+  lastDistanceConfig: unknown;
+  lastKeyboardConfig: unknown;
 }
 
 export async function getLastUsedTrainingConfigsForCurrentUser(
   deps: LastUsedTrainingConfigDependencies = {},
 ): Promise<LastUsedTrainingConfigs> {
-  const currentUser = await (deps.getCurrentUser ?? getCurrentUserOrNull)();
-
-  if (!currentUser) {
-    return {
-      isAuthenticated: false,
-      lastDistanceConfig: null,
-      lastKeyboardConfig: null,
-      updatedAt: null,
-    };
-  }
-
-  const db = deps.db ?? (await getDb());
-  const { userSettings }: any = deps.db
-    ? getPlaceholderUserSettingsTable()
-    : await getUserSettingsTable();
-  let settings: {
-    lastDistanceConfig: DistanceTrainingConfig;
-    lastKeyboardConfig: KeyboardTrainingConfig;
-    updatedAt: Date;
-  } | null = null;
-
-  try {
-    const [existing] = await db
-      .select({
-        lastDistanceConfig: userSettings.lastDistanceConfig,
-        lastKeyboardConfig: userSettings.lastKeyboardConfig,
-        updatedAt: userSettings.updatedAt,
-      })
-      .from(userSettings)
-      .where(eq(userSettings.userId, currentUser.id))
-      .limit(1);
-
-    settings = existing
-      ? {
-          lastDistanceConfig: normalizeTrainingConfigOrDefault(
-            existing.lastDistanceConfig,
-            "distance",
-          ),
-          lastKeyboardConfig: normalizeTrainingConfigOrDefault(
-            existing.lastKeyboardConfig,
-            "keyboard",
-          ),
-          updatedAt: existing.updatedAt,
-        }
-      : null;
-  } catch (error) {
-    if (!isRecoverableUserSettingsStorageError(error)) {
-      throw error;
-    }
-  }
+  const snapshot = await getCurrentUserSettingsSnapshot(deps);
 
   return {
-    isAuthenticated: true,
-    lastDistanceConfig: settings?.lastDistanceConfig ?? null,
-    lastKeyboardConfig: settings?.lastKeyboardConfig ?? null,
-    updatedAt: settings?.updatedAt?.toISOString() ?? null,
+    isAuthenticated: snapshot.isAuthenticated,
+    lastDistanceConfig: snapshot.lastDistanceConfig,
+    lastKeyboardConfig: snapshot.lastKeyboardConfig,
+    updatedAt: snapshot.updatedAt,
   };
 }
 
@@ -148,17 +117,17 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
   config: DistanceTrainingConfig | KeyboardTrainingConfig,
   deps: LastUsedTrainingConfigDependencies = {},
 ): Promise<void> {
-  const currentUser = await (deps.getCurrentUser ?? getCurrentUserOrNull)();
+  const currentUser = await resolveCurrentUserOrNull(deps);
 
   if (!currentUser) {
     return;
   }
 
-  const db = deps.db ?? (await getDb());
-  const { userSettings }: any = deps.db
+  const db = (deps.db ?? (await getDb())) as SelectOnlyDb & InsertDb;
+  const { userSettings } = deps.db
     ? getPlaceholderUserSettingsTable()
     : await getUserSettingsTable();
-  const [existing] = await db
+  const [existing] = (await db
     .select({
       masterVolume: userSettings.masterVolume,
       soundEffectsEnabled: userSettings.soundEffectsEnabled,
@@ -169,7 +138,7 @@ export async function updateLastUsedTrainingConfigForCurrentUser(
     })
     .from(userSettings)
     .where(eq(userSettings.userId, currentUser.id))
-    .limit(1);
+    .limit(1)) as UserSettingsUpsertExistingRow[];
 
   const defaultGlobalSettings = createDefaultGlobalUserSettings();
   const now = deps.now?.() ?? new Date();
@@ -291,14 +260,6 @@ export async function resetLastUsedTrainingConfigForCurrentUser(
   );
 }
 
-async function getCurrentUserOrNull(): Promise<CurrentUser | null> {
-  const { getCurrentUserOrNull: resolveCurrentUserOrNull } = await import(
-    "../../../lib/auth/server.ts"
-  );
-
-  return resolveCurrentUserOrNull();
-}
-
 async function getDb() {
   const { getDb: resolveDb } = await import("../../../lib/db/client.ts");
 
@@ -311,7 +272,7 @@ async function getUserSettingsTable() {
   return { userSettings };
 }
 
-function getPlaceholderUserSettingsTable() {
+function getPlaceholderUserSettingsTable(): UserSettingsTables {
   return {
     userSettings: {
       userId: "user_settings.user_id",
@@ -323,5 +284,5 @@ function getPlaceholderUserSettingsTable() {
       lastKeyboardConfig: "user_settings.last_keyboard_config",
       updatedAt: "user_settings.updated_at",
     },
-  };
+  } as unknown as UserSettingsTables;
 }

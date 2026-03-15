@@ -32,7 +32,14 @@ export function HomeSignOutButton() {
   }
 
   return (
-    <Button type="button" onClick={handleSignOut} disabled={isPending}>
+    <Button
+      type="button"
+      onClick={handleSignOut}
+      disabled={isPending}
+      pending={isPending}
+      variant="ghost"
+      size="compact"
+    >
       {isPending ? "ログアウト中..." : "ログアウト"}
     </Button>
   );

@@ -1,8 +1,11 @@
 import { count, desc, eq } from "drizzle-orm";
 
-import type { CurrentUser } from "../../../lib/auth/server.ts";
+import type { CurrentUserResolverDependencies } from "../../../lib/auth/server.ts";
+import { resolveCurrentUserOrNull } from "../../../lib/auth/server.ts";
+import { withRequestTiming } from "../../../lib/server/request-timing.ts";
 import { summarizeHomeHeadline } from "../model/stats-aggregation.ts";
 import type { TrainingMode } from "../model/types.ts";
+import type { SelectOnlyDb } from "./query-types.ts";
 
 export interface RecentTrainingSessionSummary {
   id: string;
@@ -26,95 +29,110 @@ export interface HomeTrainingSummary {
 }
 
 export interface HomeTrainingSummaryDependencies {
-  db?: {
-    select: (...args: unknown[]) => any;
-  };
-  getCurrentUser?: () => Promise<CurrentUser | null>;
+  db?: SelectOnlyDb;
+  currentUser?: CurrentUserResolverDependencies["currentUser"];
+  getCurrentUser?: CurrentUserResolverDependencies["getCurrentUser"];
+}
+
+type AppSchemaModule = typeof import("../../../lib/db/schema/app.ts");
+
+type HomeTables = {
+  questionResults: AppSchemaModule["questionResults"];
+  trainingSessions: AppSchemaModule["trainingSessions"];
+};
+
+interface CountRow {
+  count: number;
+}
+
+interface RecentSessionRow {
+  id: string;
+  mode: TrainingMode;
+  answeredQuestionCount: number;
+  sessionScore: number | string;
+  accuracyRate: number | string;
+  avgErrorAbs: number | string;
+  avgResponseTimeMs: number | string;
+  endedAt: Date;
 }
 
 export async function getHomeTrainingSummaryForCurrentUser(
   deps: HomeTrainingSummaryDependencies = {},
 ): Promise<HomeTrainingSummary> {
-  const currentUser = await (deps.getCurrentUser ?? getCurrentUserOrNull)();
+  return withRequestTiming("training.getHomeTrainingSummary", async () => {
+    const currentUser = await resolveCurrentUserOrNull(deps);
 
-  if (!currentUser) {
+    if (!currentUser) {
+      return {
+        isAuthenticated: false,
+        totalSessions: 0,
+        totalSavedQuestionResults: 0,
+        lastTrainingTime: null,
+        lastUsedMode: null,
+        latestSessionScore: null,
+        recentAverageError: null,
+        recentAverageResponseTimeMs: null,
+        recentSessions: [],
+      };
+    }
+
+    const db = (deps.db ?? (await getDb())) as SelectOnlyDb;
+    const { questionResults, trainingSessions } = deps.db
+      ? getPlaceholderHomeTables()
+      : await getHomeTables();
+    const [sessionCountRow] = (await db
+      .select({ count: count() })
+      .from(trainingSessions)
+      .where(eq(trainingSessions.userId, currentUser.id))) as CountRow[];
+    const [questionResultCountRow] = (await db
+      .select({ count: count() })
+      .from(questionResults)
+      .where(eq(questionResults.userId, currentUser.id))) as CountRow[];
+    const recentSessions = (await db
+      .select({
+        id: trainingSessions.id,
+        mode: trainingSessions.mode,
+        answeredQuestionCount: trainingSessions.answeredQuestionCount,
+        sessionScore: trainingSessions.sessionScore,
+        accuracyRate: trainingSessions.accuracyRate,
+        avgErrorAbs: trainingSessions.avgErrorAbs,
+        avgResponseTimeMs: trainingSessions.avgResponseTimeMs,
+        endedAt: trainingSessions.endedAt,
+      })
+      .from(trainingSessions)
+      .where(eq(trainingSessions.userId, currentUser.id))
+      .orderBy(desc(trainingSessions.endedAt))
+      .limit(5)) as RecentSessionRow[];
+    const headlineSummary = summarizeHomeHeadline(
+      recentSessions.map((session) => ({
+        mode: session.mode,
+        answeredQuestionCount: session.answeredQuestionCount,
+        sessionScore: Number(session.sessionScore),
+        avgErrorAbs: Number(session.avgErrorAbs),
+        avgResponseTimeMs: Number(session.avgResponseTimeMs),
+        endedAt: session.endedAt.toISOString(),
+      })),
+    );
+
     return {
-      isAuthenticated: false,
-      totalSessions: 0,
-      totalSavedQuestionResults: 0,
-      lastTrainingTime: null,
-      lastUsedMode: null,
-      latestSessionScore: null,
-      recentAverageError: null,
-      recentAverageResponseTimeMs: null,
-      recentSessions: [],
+      isAuthenticated: true,
+      totalSessions: Number(sessionCountRow?.count ?? 0),
+      totalSavedQuestionResults: Number(questionResultCountRow?.count ?? 0),
+      lastTrainingTime: headlineSummary.lastTrainingTime,
+      lastUsedMode: headlineSummary.lastUsedMode,
+      latestSessionScore: headlineSummary.latestSessionScore,
+      recentAverageError: headlineSummary.recentAverageError,
+      recentAverageResponseTimeMs: headlineSummary.recentAverageResponseTimeMs,
+      recentSessions: recentSessions.map((session) => ({
+        id: session.id,
+        mode: session.mode,
+        answeredQuestionCount: session.answeredQuestionCount,
+        sessionScore: Number(session.sessionScore),
+        accuracyRate: Number(session.accuracyRate),
+        endedAt: session.endedAt.toISOString(),
+      })),
     };
-  }
-
-  const db = deps.db ?? (await getDb());
-  const { questionResults, trainingSessions }: any = deps.db
-    ? getPlaceholderHomeTables()
-    : await getHomeTables();
-  const [sessionCountRow] = await db
-    .select({ count: count() })
-    .from(trainingSessions)
-    .where(eq(trainingSessions.userId, currentUser.id));
-  const [questionResultCountRow] = await db
-    .select({ count: count() })
-    .from(questionResults)
-    .where(eq(questionResults.userId, currentUser.id));
-  const recentSessions = await db
-    .select({
-      id: trainingSessions.id,
-      mode: trainingSessions.mode,
-      answeredQuestionCount: trainingSessions.answeredQuestionCount,
-      sessionScore: trainingSessions.sessionScore,
-      accuracyRate: trainingSessions.accuracyRate,
-      avgErrorAbs: trainingSessions.avgErrorAbs,
-      avgResponseTimeMs: trainingSessions.avgResponseTimeMs,
-      endedAt: trainingSessions.endedAt,
-    })
-    .from(trainingSessions)
-    .where(eq(trainingSessions.userId, currentUser.id))
-    .orderBy(desc(trainingSessions.endedAt))
-    .limit(5);
-  const headlineSummary = summarizeHomeHeadline(
-    recentSessions.map((session: any) => ({
-      mode: session.mode,
-      answeredQuestionCount: session.answeredQuestionCount,
-      sessionScore: session.sessionScore,
-      avgErrorAbs: session.avgErrorAbs,
-      avgResponseTimeMs: session.avgResponseTimeMs,
-      endedAt: session.endedAt.toISOString(),
-    })),
-  );
-
-  return {
-    isAuthenticated: true,
-    totalSessions: sessionCountRow?.count ?? 0,
-    totalSavedQuestionResults: questionResultCountRow?.count ?? 0,
-    lastTrainingTime: headlineSummary.lastTrainingTime,
-    lastUsedMode: headlineSummary.lastUsedMode,
-    latestSessionScore: headlineSummary.latestSessionScore,
-    recentAverageError: headlineSummary.recentAverageError,
-    recentAverageResponseTimeMs: headlineSummary.recentAverageResponseTimeMs,
-    recentSessions: recentSessions.map((session: any) => ({
-      id: session.id,
-      mode: session.mode,
-      answeredQuestionCount: session.answeredQuestionCount,
-      sessionScore: Number(session.sessionScore),
-      accuracyRate: Number(session.accuracyRate),
-      endedAt: session.endedAt.toISOString(),
-    })),
-  };
-}
-
-async function getCurrentUserOrNull(): Promise<CurrentUser | null> {
-  const { getCurrentUserOrNull: resolveCurrentUserOrNull } = await import(
-    "../../../lib/auth/server.ts"
-  );
-
-  return resolveCurrentUserOrNull();
+  });
 }
 
 async function getDb() {
@@ -131,7 +149,7 @@ async function getHomeTables() {
   return { questionResults, trainingSessions };
 }
 
-function getPlaceholderHomeTables() {
+function getPlaceholderHomeTables(): HomeTables {
   return {
     questionResults: {
       userId: "question_results.user_id",
@@ -147,5 +165,5 @@ function getPlaceholderHomeTables() {
       avgResponseTimeMs: "training_sessions.avg_response_time_ms",
       endedAt: "training_sessions.ended_at",
     },
-  };
+  } as unknown as HomeTables;
 }

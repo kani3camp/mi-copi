@@ -17,6 +17,7 @@ interface DistancePanelStoryArgs {
   onReplayBase: () => void;
   onReplayTarget: () => void;
   onAnswer: (value: number) => void;
+  onEndSession: () => void;
   onReplayCorrectTarget: () => void;
   onContinue: () => void;
   onRetrySave: () => void;
@@ -63,12 +64,11 @@ type Story = StoryObj<DistancePanelStoryArgs>;
 export const Answering: Story = {
   render: (args) => (
     <DistanceQuestionPanel
-      phase="answering"
+      isPlaybackLocked={false}
       questionIndex={2}
       direction="up"
       replayBaseCount={1}
       replayTargetCount={0}
-      playbackKind="question"
       answerChoiceValues={[0, 3, 5, 7, 12]}
       intervalNotationStyle="ja"
       onReplayBase={args.onReplayBase}
@@ -84,12 +84,8 @@ export const Answering: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
 
-    await userEvent.click(
-      canvas.getByRole("button", { name: "基準音をもう一度聞く" }),
-    );
-    await userEvent.click(
-      canvas.getByRole("button", { name: "問題音をもう一度聞く" }),
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "基準音を再生" }));
+    await userEvent.click(canvas.getByRole("button", { name: "問題音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "完全5度" }));
 
     await expect(args.onReplayBase).toHaveBeenCalledTimes(1);
@@ -109,24 +105,109 @@ export const FeedbackIncorrect: Story = {
       })}
       lastAnsweredWasFinal={false}
       intervalNotationStyle="ja"
+      onEndSession={args.onEndSession}
       onReplayCorrectTarget={args.onReplayCorrectTarget}
       onContinue={args.onContinue}
     />
   ),
   args: {
+    onEndSession: fn(),
     onReplayCorrectTarget: fn(),
     onContinue: fn(),
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
 
+    await expect(canvas.getByText("ずれあり")).toBeVisible();
+    await expect(canvas.getByText("完全5度")).toBeVisible();
+    await expect(canvas.getByText("完全4度")).toBeVisible();
+    await expect(canvas.queryByText("方向が逆")).toBeNull();
+    await expect(canvas.queryByText("方向は正しい")).toBeNull();
     await userEvent.click(
-      canvas.getByRole("button", { name: "正解の音をもう一度聞く" }),
+      canvas.getByRole("button", { name: "正解の音を再生" }),
     );
-    await userEvent.click(canvas.getByRole("button", { name: "次の問題へ" }));
+    await userEvent.click(canvas.getByRole("button", { name: "次へ" }));
 
     await expect(args.onReplayCorrectTarget).toHaveBeenCalledTimes(1);
     await expect(args.onContinue).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const FeedbackIncorrectDownward: Story = {
+  render: (args) => (
+    <DistanceFeedbackPanel
+      feedbackResult={createDistanceResult({
+        question: {
+          direction: "down",
+          distanceSemitones: 5,
+          baseNote: "F",
+          baseMidi: 65,
+          targetNote: "C",
+          targetMidi: 60,
+        },
+        answeredDistanceSemitones: 3,
+        isCorrect: false,
+        errorSemitones: -2,
+        score: 52.4,
+      })}
+      lastAnsweredWasFinal={false}
+      intervalNotationStyle="ja"
+      onEndSession={args.onEndSession}
+      onReplayCorrectTarget={args.onReplayCorrectTarget}
+      onContinue={args.onContinue}
+    />
+  ),
+  args: {
+    onEndSession: fn(),
+    onReplayCorrectTarget: fn(),
+    onContinue: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(
+      canvas.getByLabelText("距離フィードバック: 0 が基準音、下方向"),
+    ).toBeVisible();
+    await expect(canvas.getByText("ずれあり")).toBeVisible();
+    await expect(canvas.getByText("完全4度")).toBeVisible();
+    await expect(canvas.getByText("短3度")).toBeVisible();
+    await expect(canvas.queryByText("方向が逆")).toBeNull();
+    await expect(canvas.getByText("正解")).toBeVisible();
+    await expect(canvas.getByText("回答")).toBeVisible();
+    await expect(canvas.getByText("基準音")).toBeVisible();
+  },
+};
+
+export const FeedbackExactMatch: Story = {
+  render: (args) => (
+    <DistanceFeedbackPanel
+      feedbackResult={createDistanceResult({
+        question: {
+          distanceSemitones: 2,
+        },
+        answeredDistanceSemitones: 2,
+        isCorrect: true,
+        errorSemitones: 0,
+        score: 100,
+      })}
+      lastAnsweredWasFinal={true}
+      intervalNotationStyle="ja"
+      onEndSession={args.onEndSession}
+      onReplayCorrectTarget={args.onReplayCorrectTarget}
+      onContinue={args.onContinue}
+    />
+  ),
+  args: {
+    onEndSession: fn(),
+    onReplayCorrectTarget: fn(),
+    onContinue: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByText("完全一致")).toBeVisible();
+    await expect(canvas.getAllByText("長2度")).toHaveLength(2);
+    await expect(canvas.getAllByText(/正解|回答/)).toHaveLength(2);
   },
 };
 
@@ -161,7 +242,7 @@ export const ResultGuest: Story = {
     ).toBeVisible();
 
     await userEvent.click(
-      canvas.getByRole("button", { name: "最初からやり直す" }),
+      canvas.getByRole("button", { name: "もう一度始める" }),
     );
     await expect(args.onReset).toHaveBeenCalledTimes(1);
   },

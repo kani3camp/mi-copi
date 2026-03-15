@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { AppShell, KeyValueCard } from "../ui/primitives";
-import { TrainingPageHero } from "./training-page-shell";
+import { AppShell } from "../ui/primitives";
+import { TrainingProgressHeader } from "./training-page-shell";
 
 const meta = {
-  title: "Train/TrainingPageHero",
-  component: TrainingPageHero,
+  title: "Train/TrainingProgressHeader",
+  component: TrainingProgressHeader,
   decorators: [
     (Story) => (
       <AppShell narrow className="ui-train-shell">
@@ -15,20 +15,12 @@ const meta = {
   ],
   tags: ["autodocs"],
   args: {
-    title: "距離モード",
-    subtitle:
-      "設定から結果表示まで、距離モードの MVP セッションを 1 画面内で進められます。",
-    phase: "answering",
-    phaseLabel: "回答中",
-    children: (
-      <div className="ui-train-status-grid">
-        <KeyValueCard label="進行状態" value="回答中" />
-        <KeyValueCard label="開始時刻" value="2026/03/12 10:00" />
-        <KeyValueCard label="残り時間" value="0:47" />
-      </div>
-    ),
+    modeLabel: "距離モード",
+    questionLabel: "3 / 10",
+    meta: "0:47",
+    notice: "結果画面では自動保存されます。",
   },
-} satisfies Meta<typeof TrainingPageHero>;
+} satisfies Meta<typeof TrainingProgressHeader>;
 
 export default meta;
 

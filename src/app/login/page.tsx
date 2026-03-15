@@ -1,53 +1,72 @@
-import { getCurrentUserOrNull } from "../../lib/auth/server";
+import { getCurrentUserOrNullCached } from "../../lib/auth/server";
+import { ButtonLink } from "../ui/navigation-link";
 import {
   AppShell,
-  ButtonLink,
-  KeyValueCard,
-  KeyValueGrid,
-  PageHero,
+  Notice,
+  PageHeader,
   SectionHeader,
+  SummaryBlock,
+  SummaryStat,
   Surface,
 } from "../ui/primitives";
 import { LoginControls } from "./login-controls";
 
 export default async function LoginPage() {
-  const currentUser = await getCurrentUserOrNull();
+  const currentUser = await getCurrentUserOrNullCached();
 
   return (
     <AppShell narrow>
-      <PageHero
+      <PageHeader
         title="ログイン"
-        eyebrow="Account Access"
-        subtitle="Google ログインまたはゲスト開始の入口です。相対音感トレーニングをすぐ始めつつ、必要なときだけ保存機能に切り替えられます。"
-        actions={
-          <>
-            <ButtonLink href="/">ホームへ戻る</ButtonLink>
-            <ButtonLink href="/train/distance">距離モードへ</ButtonLink>
-            <ButtonLink href="/train/keyboard">鍵盤モードへ</ButtonLink>
-          </>
-        }
+        eyebrow="アカウント"
+        subtitle="Google でログインするか、ゲストでそのまま始めるかを選びます。"
       />
 
-      <Surface tone="accent">
-        <SectionHeader
-          title="開始方法"
-          description="ミーコピ MVP ではゲストでも練習できます。保存済み履歴や成長確認を使う場合だけログインしてください。"
-        />
-        <LoginControls isAuthenticated={Boolean(currentUser)} />
-      </Surface>
+      {currentUser ? (
+        <Notice tone="success">
+          すでにサインイン済みです。必要ならそのままホームから学習を始められます。
+        </Notice>
+      ) : null}
+
+      <LoginControls />
 
       {currentUser ? (
-        <Surface>
-          <SectionHeader title="サインイン中のアカウント" />
-          <KeyValueGrid>
-            <KeyValueCard label="名前" value={currentUser.name ?? "不明"} />
-            <KeyValueCard
-              label="メールアドレス"
-              value={currentUser.email ?? "不明"}
-            />
-          </KeyValueGrid>
-        </Surface>
+        <LoginCurrentUserSection currentUser={currentUser} />
       ) : null}
+
+      <Surface>
+        <div className="ui-page-aux-actions">
+          <ButtonLink
+            href="/"
+            variant="ghost"
+            size="compact"
+            pendingLabel="ホームを開いています..."
+          >
+            ホーム
+          </ButtonLink>
+        </div>
+      </Surface>
     </AppShell>
+  );
+}
+
+function LoginCurrentUserSection(props: {
+  currentUser: Awaited<ReturnType<typeof getCurrentUserOrNullCached>>;
+}) {
+  return (
+    <Surface>
+      <SectionHeader title="サインイン中のアカウント" />
+      <SummaryBlock>
+        <SummaryStat
+          label="名前"
+          value={props.currentUser?.name ?? "不明"}
+          emphasis="primary"
+        />
+        <SummaryStat
+          label="メールアドレス"
+          value={props.currentUser?.email ?? "不明"}
+        />
+      </SummaryBlock>
+    </Surface>
   );
 }

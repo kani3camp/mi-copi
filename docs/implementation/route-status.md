@@ -91,5 +91,10 @@
 - `docs/product/*` は「どうあるべきか」の正本
 - このファイルは「いま何が実装されているか」の要約
 - 型や persistence contract の精密確認は関連コードを優先する
-- 実ブラウザ QA はこの環境では未完了
-  - headless Chromium が macOS permission error で起動できず、browser automation は未実施
+- 2026-03-12 時点で guest 前提の browser QA を headless Chromium で実施済み
+  - ルート確認: `/`, `/login`, `/settings`, `/stats`, `/train/distance`, `/train/keyboard`, `/sessions/[sessionId]` の invalid-id 404
+  - 幅確認: `375px`, `390px`, `430px`, `1024px`
+  - フロー確認: guest settings の browser-local persistence、distance / keyboard の 5 問完走、distance の `time_limit=60s` で未回答問題が結果集計から除外されること
+  - Storybook browser tests: training shell / distance panels / keyboard panels が Chromium で通過
+- signed-in browser QA は未実施
+  - この bundle では local auth session を作らず、guest 導線と signed-in 以外の route behavior を優先確認した

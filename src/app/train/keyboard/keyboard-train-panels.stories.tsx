@@ -17,6 +17,7 @@ interface KeyboardPanelStoryArgs {
   onReplayBase: () => void;
   onReplayTarget: () => void;
   onAnswer: (note: string) => void;
+  onEndSession: () => void;
   onReplayCorrectTarget: () => void;
   onContinue: () => void;
   onRetrySave: () => void;
@@ -64,12 +65,11 @@ type Story = StoryObj<KeyboardPanelStoryArgs>;
 export const AnsweringWithReferenceKey: Story = {
   render: (args) => (
     <KeyboardQuestionPanel
-      phase="answering"
+      isPlaybackLocked={false}
       questionIndex={1}
       direction="down"
       replayBaseCount={0}
       replayTargetCount={1}
-      playbackKind="question"
       answerChoices={[
         "C",
         "C#",
@@ -99,13 +99,12 @@ export const AnsweringWithReferenceKey: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
 
-    await userEvent.click(
-      canvas.getByRole("button", { name: "基準音をもう一度聞く" }),
-    );
-    await userEvent.click(
-      canvas.getByRole("button", { name: "問題音をもう一度聞く" }),
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "基準音を再生" }));
+    await userEvent.click(canvas.getByRole("button", { name: "問題音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "G" }));
+    await expect(
+      canvasElement.querySelector('[data-note="C"][data-reference="true"]'),
+    ).not.toBeNull();
 
     await expect(args.onReplayBase).toHaveBeenCalledTimes(1);
     await expect(args.onReplayTarget).toHaveBeenCalledTimes(1);
@@ -125,24 +124,76 @@ export const FeedbackIncorrect: Story = {
       })}
       lastAnsweredWasFinal
       showLabels
+      onEndSession={args.onEndSession}
       onReplayCorrectTarget={args.onReplayCorrectTarget}
       onContinue={args.onContinue}
     />
   ),
   args: {
+    onEndSession: fn(),
     onReplayCorrectTarget: fn(),
     onContinue: fn(),
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
 
+    await expect(
+      canvasElement.querySelector('[data-note="C"][data-reference="true"]'),
+    ).not.toBeNull();
+    await expect(
+      canvasElement.querySelector('[data-note="F#"][data-reference="true"]'),
+    ).toBeNull();
     await userEvent.click(
-      canvas.getByRole("button", { name: "正解の音をもう一度聞く" }),
+      canvas.getByRole("button", { name: "正解の音を再生" }),
     );
     await userEvent.click(canvas.getByRole("button", { name: "結果を見る" }));
 
     await expect(args.onReplayCorrectTarget).toHaveBeenCalledTimes(1);
     await expect(args.onContinue).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const AnsweringWithHiddenLabels: Story = {
+  render: (args) => (
+    <KeyboardQuestionPanel
+      isPlaybackLocked={false}
+      questionIndex={2}
+      direction="up"
+      replayBaseCount={1}
+      replayTargetCount={0}
+      answerChoices={[
+        "C",
+        "C#",
+        "D",
+        "D#",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "G#",
+        "A",
+        "A#",
+        "B",
+      ]}
+      referenceNote="F#"
+      showLabels={false}
+      onReplayBase={args.onReplayBase}
+      onReplayTarget={args.onReplayTarget}
+      onAnswer={args.onAnswer}
+    />
+  ),
+  args: {
+    onReplayBase: fn(),
+    onReplayTarget: fn(),
+    onAnswer: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const referenceKey = canvasElement.querySelector(
+      '[data-note="F#"][data-reference="true"]',
+    );
+
+    await expect(referenceKey).not.toBeNull();
+    await expect(referenceKey?.textContent).toBe("");
   },
 };
 
@@ -175,7 +226,7 @@ export const ResultSaveSuccess: Story = {
       canvas.getByRole("link", { name: "セッション詳細を見る" }),
     ).toBeVisible();
     await userEvent.click(
-      canvas.getByRole("button", { name: "最初からやり直す" }),
+      canvas.getByRole("button", { name: "もう一度始める" }),
     );
     await expect(args.onReset).toHaveBeenCalledTimes(1);
   },

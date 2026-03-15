@@ -6,6 +6,7 @@
       "!**/.git",
       "!**/.next",
       "!**/node_modules",
+      "!**/storybook-static",
       "!drizzle/meta",
       "!package-lock.json",
       "!tmp",

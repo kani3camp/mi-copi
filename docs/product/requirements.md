@@ -55,6 +55,7 @@
 - In-browser answer input
 - Per-question feedback
 - Session result summary
+- Saved session detail view for authenticated users
 - User settings load/update
 - Authenticated result persistence
 - Home summary for logged-in users
@@ -107,6 +108,11 @@
 
 ## Training Session Flow
 
+Route strategy:
+
+- Training mode is separated by route segment: `/train/distance` and `/train/keyboard`.
+- Inside each mode route, session phases switch in local route state rather than separate phase URLs.
+
 A training session must support the following internal phases:
 
 - config
@@ -130,6 +136,9 @@ Time-limit rule:
 
 - If the time limit is reached during an unanswered question, that in-progress unanswered question is discarded.
 - Only completed questions are aggregated into the result.
+- While a time-limit session is active, the remaining session time should stay visible.
+- When the remaining time reaches zero, the app should transition to the result phase immediately.
+- If the finished session contains zero answered questions, the result may still be shown, but authenticated save must not run.
 
 ## Question Playback Requirements
 
@@ -145,6 +154,9 @@ Time-limit rule:
 - Tone length should be medium by default.
 - The gap between reference tone and target tone should be medium by default.
 - The MVP handles single-note questions only.
+- If question playback or manual replay fails, the app should show an inline notice.
+- Playback failure must not block answering, feedback, next-question progress, or manual session end.
+- The user may continue the session and attempt later replays without reloading the page.
 
 ## Question Generation Requirements
 
@@ -197,6 +209,8 @@ Time-limit rule:
 - The correct target-key position must not be shown before the user answers.
 - The reference-key visual indication must work even when keyboard note-label visibility is turned off.
 - Reference-key indication and keyboard note-label visibility are separate specifications and must not be coupled.
+- Keyboard note-label visibility applies to the answering keyboard labels only.
+- Feedback must still show the correct note name and answered note name in text even when answering-key labels are hidden.
 
 ## Feedback Requirements
 
@@ -239,6 +253,16 @@ Time-limit rule:
 - Guest result screens must provide a clear login CTA for future saved use.
 - Guest results are not temporarily cached for later post-login save.
 
+### Authenticated Save UX
+- When an authenticated session reaches the `result` phase with at least one answered question and a valid save payload, the app should attempt exactly one automatic save.
+- The result screen must expose save status in-place:
+  - preparing / saving
+  - saved successfully
+  - failed
+- On successful save, the result screen should provide entry points to stats and the saved session detail.
+- On save failure, the result screen must stay visible and allow retry using the same finished-session payload.
+- If the finished session has zero answered questions, the result screen must explain that the session is not saveable.
+
 ## Persistence Requirements
 
 ### Guest Use
@@ -249,6 +273,8 @@ Time-limit rule:
 
 ### Authenticated Use
 - Save the session only once, at the end of the session.
+- The save trigger is arrival at the result screen, never during `playing`, `answering`, or `feedback`.
+- Do not attempt a cloud save for finished sessions with zero answered questions.
 - Save one training session row plus multiple question result rows atomically.
 - Persist user settings to the cloud.
 - Treat authenticated use as online-only for cloud-backed history and stats.
@@ -307,21 +333,29 @@ Additional rules:
 
 ## Stats / Growth Visualization Requirements
 
-### MVP Required
+### Aggregation Requirements
 - overall correct rate
 - average error
 - median error
 - average response time
+- mode-specific summary for `distance` and `keyboard`
 - recent 10 / 30 question summaries for score, error, and response time
 - daily trend views using average-based aggregation
 - cumulative score display
-
-### High Priority Within MVP
+- score trend
 - per-interval performance
 - upward vs downward performance
 - tendency to answer too high vs too low
-- score trend
-- mode-specific comparison between distance mode and keyboard mode
+- recent saved session list for drill-down entry points
+
+### Initial Stats Screen Requirements
+- Show an overview section for cumulative score, accuracy, error, and response time.
+- Show score trend comparisons for overall, distance mode, and keyboard mode.
+- Show mode-comparison cards and recent 10 / 30 question summaries.
+- Show daily trend charts for score, error, response time, accuracy, and question count.
+- Show per-interval performance comparisons for accuracy, error, response time, score, and question count.
+- Show upward/downward comparison plus answer-bias summary.
+- Show recent saved sessions with links to their session detail pages.
 
 ### Acceptable To Defer Beyond Initial MVP Iteration
 - error distribution graph
@@ -331,6 +365,22 @@ Additional rules:
 ### Access Rules
 - Stats are available only to authenticated users.
 - Guest users do not get growth/stat screens.
+
+## Session Detail Requirements
+
+- Session detail is available only for authenticated users.
+- The detail route is `/sessions/[sessionId]`.
+- A user may access only their own saved sessions; missing, malformed, or unauthorized session IDs must not expose another user's data.
+- Session detail should show:
+  - saved session summary
+  - saved config snapshot
+  - per-question results
+- Per-question detail should include mode-appropriate answer data:
+  - distance mode: correct interval, answered interval, signed error, response time
+  - keyboard mode: base note, correct note, answered note, correctness/error, response time
+- Session detail should be reachable from:
+  - successful result-save UI
+  - recent sessions on the stats screen
 
 ## Home Requirements
 
@@ -361,6 +411,7 @@ Stats-related summary blocks should be hidden for guests.
 
 ## Settings Requirements
 
+### Global Settings
 Global settings in the MVP include at least:
 
 - master volume
@@ -381,13 +432,30 @@ Failure handling:
 - Show a small toast or inline failure notice.
 - Keep the latest value retryable.
 
+### Mode-Specific Last-Used Training Config
+- For authenticated users, persist the latest finished or started training config separately for `distance` and `keyboard`.
+- Each mode should load its own last-used config as the next initial config when available.
+- The settings screen should show the saved snapshot for both modes independently.
+- The settings screen should allow resetting the saved config for each mode independently back to the canonical default.
+- Resetting a mode's saved config must not change global settings.
+- Guest use does not have cloud-backed last-used configs; guest mode starts from the canonical default for each mode.
+
 ## MVP TrainingConfig
 
-The MVP `TrainingConfig` consists of the following canonical items. The `UI` column shows whether each item is user-visible or internal-only.
+The MVP `TrainingConfig` consists of the following canonical items. Mode is chosen by route segment, and the remaining fields form the per-mode editable config and persisted snapshot.
+
+Current MVP train-config UI rules:
+
+- `/train/distance` and `/train/keyboard` determine `mode`; there is no separate mode selector inside the form.
+- The train config form exposes the canonical fields below for the active mode.
+- The same canonical snapshot is reused for:
+  - next-visit last-used config
+  - settings-page saved-config display
+  - saved session detail display
 
 | Item | Scope | Type | Range / Allowed Values | Default | UI |
 | --- | --- | --- | --- | --- | --- |
-| `mode` | common | enum | `distance \| keyboard` | `distance` | visible |
+| `mode` | common | enum | `distance \| keyboard` | route-selected | route-selected |
 | `intervalRange.minSemitone` | common | integer | `0..11` | `0` | visible |
 | `intervalRange.maxSemitone` | common | integer | `1..12` and `min <= max` | `12` | visible |
 | `directionMode` | common | enum | `up_only \| mixed` | `mixed` | visible |

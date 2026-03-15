@@ -11,412 +11,328 @@ import {
 } from "../../features/training/model/format";
 import { getIntervalLabel } from "../../features/training/model/interval-notation";
 import { getTrainingStatsForCurrentUser } from "../../features/training/server/getTrainingStats";
+import { getCurrentUserOrNullCached } from "../../lib/auth/server";
+import { ButtonLink, ListLinkCard } from "../ui/navigation-link";
 import {
   AppShell,
-  ButtonLink,
-  List,
-  ListLinkCard,
-  MetricCard,
-  MetricGrid,
+  Chip,
+  GraphCard,
   Notice,
-  PageHero,
+  PageHeader,
   ScreenReaderText,
   SectionHeader,
+  SummaryBlock,
+  SummaryStat,
   Surface,
+  TrainingModeLabel,
 } from "../ui/primitives";
 
 export default async function StatsPage() {
+  const currentUser = await getCurrentUserOrNullCached();
   const [stats, globalSettings] = await Promise.all([
-    getTrainingStatsForCurrentUser(),
-    getGlobalUserSettingsForCurrentUser(),
+    getTrainingStatsForCurrentUser({ currentUser }),
+    getGlobalUserSettingsForCurrentUser({ currentUser }),
   ]);
   const intervalNotationStyle = globalSettings.settings.intervalNotationStyle;
 
   return (
     <AppShell>
-      <PageHero
+      <PageHeader
         title="統計"
-        eyebrow="Progress View"
-        subtitle="保存済みの回答とセッションを、全体・直近・日次・モード別の切り口で見渡せます。"
-        actions={<ButtonLink href="/">ホームへ戻る</ButtonLink>}
+        eyebrow="学習の記録"
+        subtitle="保存済みセッションから、成長の流れと苦手傾向をまとめて確認できます。"
       />
+
+      <Surface>
+        <div className="ui-page-aux-actions">
+          <ButtonLink
+            href="/"
+            variant="ghost"
+            size="compact"
+            pendingLabel="ホームを開いています..."
+          >
+            ホーム
+          </ButtonLink>
+        </div>
+      </Surface>
 
       {stats.isAuthenticated ? (
         <>
           <Surface tone="accent">
             <SectionHeader
               title="全体概要"
-              description="まずは累計スコア、正答率、誤差、回答時間の全体像を確認できます。"
+              description={`累計 ${stats.totalSessions} セッション / 保存済み回答 ${stats.totalSavedQuestionResults} 件の流れです。`}
             />
-            <MetricGrid>
-              <MetricCard
+            <SummaryBlock className="ui-summary-block--insight">
+              <SummaryStat
                 label="累計スコア"
                 value={formatScoreLabel(stats.overview.cumulativeScore)}
-                accent
+                emphasis="primary"
+                className="ui-summary-stat--brand"
               />
-              <MetricCard
-                label="全体正答率"
+              <SummaryStat
+                label="正答率"
                 value={formatAccuracyLabel(stats.overview.correctRate)}
+                detail="回答の安定度"
+                className="ui-summary-stat--teal"
               />
-              <MetricCard
+              <SummaryStat
                 label="平均誤差"
                 value={formatAvgErrorLabel(stats.overview.averageError)}
+                detail="ズレの大きさ"
+                className="ui-summary-stat--coral"
               />
-              <MetricCard
-                label="中央値誤差"
-                value={formatAvgErrorLabel(stats.overview.medianError)}
-              />
-              <MetricCard
+              <SummaryStat
                 label="平均回答時間"
                 value={formatResponseTimeMsLabel(
                   stats.overview.averageResponseTimeMs,
                 )}
-                compactValue
+                detail="反応速度"
+                className="ui-summary-stat--blue"
               />
-            </MetricGrid>
-            <p className="ui-muted ui-stats-summary-meta">
-              累計 {stats.totalSessions} セッション / 保存済み回答{" "}
-              {stats.totalSavedQuestionResults} 件
-            </p>
+            </SummaryBlock>
           </Surface>
 
-          <Surface>
-            <SectionHeader
-              title="スコア推移"
-              description="日次平均スコアを、全体・距離モード・鍵盤モードで並べて比較できます。"
+          <GraphCard
+            title="日次スコア推移"
+            subtitle="主指標として、日ごとの平均スコアを確認します。"
+            className="ui-graph-card--feature"
+            actions={<Chip tone="brand">主グラフ</Chip>}
+          >
+            <MetricLineChart
+              title="日次スコア"
+              tone="brand"
+              valueFormatter={formatScoreLabel}
+              points={stats.dailyTrends.map((trend) => ({
+                key: trend.date,
+                label: formatCompactDateLabel(trend.date),
+                assistiveLabel: `${formatDateLabel(trend.date)} 平均スコア ${formatScoreLabel(trend.averageScore)} / ${trend.questionCount} 問`,
+                value: trend.averageScore,
+              }))}
+              denseLabels
             />
-            <div className="ui-grid-trends">
-              <ScoreTrendColumn
-                label="全体"
-                points={stats.scoreTrends.overall.slice(0, 10)}
-              />
-              <ScoreTrendColumn
-                label="距離モード"
-                points={stats.scoreTrends.distance.slice(0, 10)}
-              />
-              <ScoreTrendColumn
-                label="鍵盤モード"
-                points={stats.scoreTrends.keyboard.slice(0, 10)}
-              />
-            </div>
-          </Surface>
+          </GraphCard>
 
-          <Surface>
-            <SectionHeader
-              title="モード別と直近"
-              description="どちらのモードで伸びているか、直近の回答がどの程度安定しているかをまとめて見られます。"
-            />
-            <div className="ui-stack-lg">
-              <div className="ui-stack-sm">
-                <span className="ui-hero__eyebrow">モード比較</span>
-                <div className="ui-grid-cards">
-                  <ModeSummaryCard
-                    label="距離モード"
-                    sessionCount={stats.byMode.distance.sessionCount}
-                    questionCount={stats.byMode.distance.questionCount}
-                    cumulativeScore={stats.byMode.distance.cumulativeScore}
-                    correctRate={stats.byMode.distance.correctRate}
-                    averageError={stats.byMode.distance.averageError}
-                    medianError={stats.byMode.distance.medianError}
-                    averageResponseTimeMs={
-                      stats.byMode.distance.averageResponseTimeMs
-                    }
-                  />
-                  <ModeSummaryCard
-                    label="鍵盤モード"
-                    sessionCount={stats.byMode.keyboard.sessionCount}
-                    questionCount={stats.byMode.keyboard.questionCount}
-                    cumulativeScore={stats.byMode.keyboard.cumulativeScore}
-                    correctRate={stats.byMode.keyboard.correctRate}
-                    averageError={stats.byMode.keyboard.averageError}
-                    medianError={stats.byMode.keyboard.medianError}
-                    averageResponseTimeMs={
-                      stats.byMode.keyboard.averageResponseTimeMs
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="ui-stack-sm">
-                <span className="ui-hero__eyebrow">直近の安定度</span>
-                <div className="ui-grid-cards">
-                  <RecentQuestionCard
-                    label="直近 10 問"
-                    summary={stats.recentQuestionSummaries.recent10}
-                  />
-                  <RecentQuestionCard
-                    label="直近 30 問"
-                    summary={stats.recentQuestionSummaries.recent30}
-                  />
-                </div>
-              </div>
-            </div>
-          </Surface>
-
-          <Surface>
-            <SectionHeader
-              title="日次推移"
-              description="回答日の単位で平均値をまとめています。日ごとのペースや精度の流れをざっくり追えます。"
-            />
-            {stats.dailyTrends.length > 0 ? (
-              <div className="ui-stack-lg">
-                <div className="ui-grid-chart-panels">
-                  <MetricLineChart
-                    title="平均スコア"
-                    valueFormatter={formatScoreLabel}
-                    points={stats.dailyTrends.map((trend) => ({
-                      key: trend.date,
-                      label: formatCompactDateLabel(trend.date),
-                      assistiveLabel: `${formatDateLabel(trend.date)} 平均スコア ${formatScoreLabel(trend.averageScore)} / ${trend.questionCount} 問`,
-                      value: trend.averageScore,
-                    }))}
-                    denseLabels
-                  />
-                  <MetricLineChart
-                    title="平均誤差"
-                    valueFormatter={formatAvgErrorLabel}
-                    points={stats.dailyTrends.map((trend) => ({
-                      key: `${trend.date}-error`,
-                      label: formatCompactDateLabel(trend.date),
-                      assistiveLabel: `${formatDateLabel(trend.date)} 平均誤差 ${formatAvgErrorLabel(trend.averageError)} / ${trend.questionCount} 問`,
-                      value: trend.averageError,
-                    }))}
-                    denseLabels
-                  />
-                  <MetricLineChart
-                    title="平均回答時間"
-                    valueFormatter={formatResponseTimeMsLabel}
-                    points={stats.dailyTrends.map((trend) => ({
-                      key: `${trend.date}-response`,
-                      label: formatCompactDateLabel(trend.date),
-                      assistiveLabel: `${formatDateLabel(trend.date)} 平均回答時間 ${formatResponseTimeMsLabel(trend.averageResponseTimeMs)} / ${trend.questionCount} 問`,
-                      value: trend.averageResponseTimeMs,
-                    }))}
-                    denseLabels
-                  />
-                  <MetricLineChart
-                    title="正答率"
-                    valueFormatter={formatAccuracyLabel}
-                    points={stats.dailyTrends.map((trend) => ({
-                      key: `${trend.date}-accuracy`,
-                      label: formatCompactDateLabel(trend.date),
-                      assistiveLabel: `${formatDateLabel(trend.date)} 正答率 ${formatAccuracyLabel(trend.correctRate)} / ${trend.questionCount} 問`,
-                      value: trend.correctRate,
-                    }))}
-                    denseLabels
-                  />
-                </div>
-                <MetricLineChart
-                  title="日ごとの問題数"
-                  valueFormatter={formatQuestionCountLabel}
-                  points={stats.dailyTrends.map((trend) => ({
-                    key: `${trend.date}-count`,
-                    label: formatCompactDateLabel(trend.date),
-                    assistiveLabel: `${formatDateLabel(trend.date)} ${trend.questionCount} 問`,
-                    value: trend.questionCount,
-                  }))}
-                  denseLabels
-                />
-              </div>
-            ) : (
-              <p className="ui-subtitle">日次推移データはまだありません。</p>
-            )}
-          </Surface>
-
-          <Surface>
-            <SectionHeader
-              title="音程別パフォーマンス"
-              description="正解の音程距離ごとに、正答率・誤差・回答時間・平均スコアを比較できます。"
-            />
-            {stats.intervalPerformance.length > 0 ? (
-              <div className="ui-stack-lg">
-                <div className="ui-grid-chart-panels">
-                  <MetricBarChart
-                    title="正答率"
-                    valueFormatter={formatAccuracyLabel}
-                    points={stats.intervalPerformance.map((interval) => ({
-                      key: `${interval.intervalSemitones}-accuracy`,
-                      label: getCompactIntervalChartLabel(
-                        interval.intervalSemitones,
-                      ),
-                      assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} 正答率 ${formatAccuracyLabel(interval.correctRate)} / ${interval.questionCount} 問`,
-                      value: interval.correctRate,
-                    }))}
-                  />
-                  <MetricBarChart
-                    title="平均誤差"
-                    valueFormatter={formatAvgErrorLabel}
-                    points={stats.intervalPerformance.map((interval) => ({
-                      key: `${interval.intervalSemitones}-error`,
-                      label: getCompactIntervalChartLabel(
-                        interval.intervalSemitones,
-                      ),
-                      assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} 平均誤差 ${formatAvgErrorLabel(interval.averageError)} / ${interval.questionCount} 問`,
-                      value: interval.averageError,
-                    }))}
-                  />
-                  <MetricBarChart
-                    title="平均回答時間"
-                    valueFormatter={formatResponseTimeMsLabel}
-                    points={stats.intervalPerformance.map((interval) => ({
-                      key: `${interval.intervalSemitones}-response`,
-                      label: getCompactIntervalChartLabel(
-                        interval.intervalSemitones,
-                      ),
-                      assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} 平均回答時間 ${formatResponseTimeMsLabel(interval.averageResponseTimeMs)} / ${interval.questionCount} 問`,
-                      value: interval.averageResponseTimeMs,
-                    }))}
-                  />
-                  <MetricBarChart
-                    title="平均スコア"
-                    valueFormatter={formatScoreLabel}
-                    points={stats.intervalPerformance.map((interval) => ({
-                      key: `${interval.intervalSemitones}-score`,
-                      label: getCompactIntervalChartLabel(
-                        interval.intervalSemitones,
-                      ),
-                      assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} 平均スコア ${formatScoreLabel(interval.averageScore)} / ${interval.questionCount} 問`,
-                      value: interval.averageScore,
-                    }))}
-                  />
-                </div>
-                <MetricBarChart
-                  title="音程ごとの問題数"
-                  valueFormatter={formatQuestionCountLabel}
-                  points={stats.intervalPerformance.map((interval) => ({
-                    key: `${interval.intervalSemitones}-count`,
-                    label: getCompactIntervalChartLabel(
-                      interval.intervalSemitones,
-                    ),
-                    assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} ${interval.questionCount} 問`,
-                    value: interval.questionCount,
-                  }))}
-                />
-              </div>
-            ) : (
-              <p className="ui-subtitle">音程別データはまだありません。</p>
-            )}
-          </Surface>
-
-          <div className="ui-grid-cards">
-            <Surface>
-              <SectionHeader
-                title="上下方向の比較"
-                description="上方向と下方向で、正答率や反応速度に偏りがないかを確認できます。"
+          <div className="ui-grid-chart-panels">
+            <GraphCard
+              title="正答率"
+              subtitle="回答の安定度"
+              actions={<Chip tone="teal">比較</Chip>}
+            >
+              <MetricLineChart
+                title="正答率"
+                tone="teal"
+                valueFormatter={formatAccuracyLabel}
+                points={stats.dailyTrends.map((trend) => ({
+                  key: `${trend.date}-accuracy`,
+                  label: formatCompactDateLabel(trend.date),
+                  assistiveLabel: `${formatDateLabel(trend.date)} 正答率 ${formatAccuracyLabel(trend.correctRate)} / ${trend.questionCount} 問`,
+                  value: trend.correctRate,
+                }))}
+                denseLabels
               />
-              <div className="ui-stack-lg">
-                <div className="ui-grid-chart-panels">
-                  <MetricComparisonChart
-                    title="正答率"
-                    valueFormatter={formatAccuracyLabel}
-                    items={[
-                      {
-                        key: "up-accuracy",
-                        label: "上方向",
-                        value: stats.directionPerformance.up.correctRate,
-                      },
-                      {
-                        key: "down-accuracy",
-                        label: "下方向",
-                        value: stats.directionPerformance.down.correctRate,
-                      },
-                    ]}
-                  />
-                  <MetricComparisonChart
-                    title="平均誤差"
-                    valueFormatter={formatAvgErrorLabel}
-                    items={[
-                      {
-                        key: "up-error",
-                        label: "上方向",
-                        value: stats.directionPerformance.up.averageError,
-                      },
-                      {
-                        key: "down-error",
-                        label: "下方向",
-                        value: stats.directionPerformance.down.averageError,
-                      },
-                    ]}
-                  />
-                  <MetricComparisonChart
-                    title="平均回答時間"
-                    valueFormatter={formatResponseTimeMsLabel}
-                    items={[
-                      {
-                        key: "up-response",
-                        label: "上方向",
-                        value:
-                          stats.directionPerformance.up.averageResponseTimeMs,
-                      },
-                      {
-                        key: "down-response",
-                        label: "下方向",
-                        value:
-                          stats.directionPerformance.down.averageResponseTimeMs,
-                      },
-                    ]}
-                  />
-                  <MetricComparisonChart
-                    title="平均スコア"
-                    valueFormatter={formatScoreLabel}
-                    items={[
-                      {
-                        key: "up-score",
-                        label: "上方向",
-                        value: stats.directionPerformance.up.averageScore,
-                      },
-                      {
-                        key: "down-score",
-                        label: "下方向",
-                        value: stats.directionPerformance.down.averageScore,
-                      },
-                    ]}
-                  />
-                </div>
-                <p className="ui-muted">
-                  対象問題数: 上方向{" "}
-                  {stats.directionPerformance.up.questionCount} 問 / 下方向{" "}
-                  {stats.directionPerformance.down.questionCount} 問
-                </p>
-              </div>
-            </Surface>
-
-            <Surface>
-              <SectionHeader
-                title="回答傾向"
-                description="回答が高めか低めか、または一致しやすいかを全体傾向として見られます。"
+            </GraphCard>
+            <GraphCard
+              title="平均誤差"
+              subtitle="ズレの大きさ"
+              actions={<Chip tone="coral">注意</Chip>}
+            >
+              <MetricLineChart
+                title="平均誤差"
+                tone="coral"
+                valueFormatter={formatAvgErrorLabel}
+                points={stats.dailyTrends.map((trend) => ({
+                  key: `${trend.date}-error`,
+                  label: formatCompactDateLabel(trend.date),
+                  assistiveLabel: `${formatDateLabel(trend.date)} 平均誤差 ${formatAvgErrorLabel(trend.averageError)} / ${trend.questionCount} 問`,
+                  value: trend.averageError,
+                }))}
+                denseLabels
               />
-              <AnswerBiasChart
-                higherCount={stats.answerBias.higherCount}
-                higherRate={stats.answerBias.higherRate}
-                lowerCount={stats.answerBias.lowerCount}
-                lowerRate={stats.answerBias.lowerRate}
-                onTargetCount={stats.answerBias.onTargetCount}
-                onTargetRate={stats.answerBias.onTargetRate}
+            </GraphCard>
+            <GraphCard
+              title="平均回答時間"
+              subtitle="反応速度"
+              actions={<Chip tone="blue">情報</Chip>}
+            >
+              <MetricLineChart
+                title="平均回答時間"
+                tone="blue"
+                valueFormatter={formatResponseTimeMsLabel}
+                points={stats.dailyTrends.map((trend) => ({
+                  key: `${trend.date}-response`,
+                  label: formatCompactDateLabel(trend.date),
+                  assistiveLabel: `${formatDateLabel(trend.date)} 平均回答時間 ${formatResponseTimeMsLabel(trend.averageResponseTimeMs)} / ${trend.questionCount} 問`,
+                  value: trend.averageResponseTimeMs,
+                }))}
+                denseLabels
               />
-            </Surface>
+            </GraphCard>
           </div>
 
           <Surface>
-            <SectionHeader title="最近のセッション" />
+            <SectionHeader
+              title="モード別と直近の傾向"
+              description="モード差と直近の手応えを、同じ読み方で並べて確認できます。"
+            />
+            <div className="ui-flat-panel-list">
+              <ComparisonPanel
+                title="距離モード"
+                tone="teal"
+                stats={[
+                  {
+                    label: "累計スコア",
+                    value: formatScoreLabel(
+                      stats.byMode.distance.cumulativeScore,
+                    ),
+                  },
+                  {
+                    label: "正答率",
+                    value: formatAccuracyLabel(
+                      stats.byMode.distance.correctRate,
+                    ),
+                  },
+                  {
+                    label: "平均誤差",
+                    value: formatAvgErrorLabel(
+                      stats.byMode.distance.averageError,
+                    ),
+                  },
+                  {
+                    label: "平均回答時間",
+                    value: formatResponseTimeMsLabel(
+                      stats.byMode.distance.averageResponseTimeMs,
+                    ),
+                  },
+                ]}
+              />
+              <ComparisonPanel
+                title="鍵盤モード"
+                tone="blue"
+                stats={[
+                  {
+                    label: "累計スコア",
+                    value: formatScoreLabel(
+                      stats.byMode.keyboard.cumulativeScore,
+                    ),
+                  },
+                  {
+                    label: "正答率",
+                    value: formatAccuracyLabel(
+                      stats.byMode.keyboard.correctRate,
+                    ),
+                  },
+                  {
+                    label: "平均誤差",
+                    value: formatAvgErrorLabel(
+                      stats.byMode.keyboard.averageError,
+                    ),
+                  },
+                  {
+                    label: "平均回答時間",
+                    value: formatResponseTimeMsLabel(
+                      stats.byMode.keyboard.averageResponseTimeMs,
+                    ),
+                  },
+                ]}
+              />
+              <ComparisonPanel
+                title="直近 10 問"
+                tone="amber"
+                stats={[
+                  {
+                    label: "平均スコア",
+                    value: formatScoreLabel(
+                      stats.recentQuestionSummaries.recent10.averageScore,
+                    ),
+                  },
+                  {
+                    label: "正答率",
+                    value: formatAccuracyLabel(
+                      stats.recentQuestionSummaries.recent10.correctRate,
+                    ),
+                  },
+                  {
+                    label: "平均誤差",
+                    value: formatAvgErrorLabel(
+                      stats.recentQuestionSummaries.recent10.averageError,
+                    ),
+                  },
+                ]}
+              />
+              <ComparisonPanel
+                title="直近 30 問"
+                tone="brand"
+                stats={[
+                  {
+                    label: "平均スコア",
+                    value: formatScoreLabel(
+                      stats.recentQuestionSummaries.recent30.averageScore,
+                    ),
+                  },
+                  {
+                    label: "正答率",
+                    value: formatAccuracyLabel(
+                      stats.recentQuestionSummaries.recent30.correctRate,
+                    ),
+                  },
+                  {
+                    label: "平均誤差",
+                    value: formatAvgErrorLabel(
+                      stats.recentQuestionSummaries.recent30.averageError,
+                    ),
+                  },
+                ]}
+              />
+            </div>
+          </Surface>
+
+          <GraphCard
+            title="苦手分析"
+            subtitle="平均誤差が大きい音程を、強いズレの順に見ます。"
+            actions={<Chip tone="coral">誤差分析</Chip>}
+          >
+            <MetricBarChart
+              title="音程別の平均誤差"
+              tone="coral"
+              valueFormatter={formatAvgErrorLabel}
+              points={stats.intervalPerformance.map((interval) => ({
+                key: `${interval.intervalSemitones}-error`,
+                label: getCompactIntervalChartLabel(interval.intervalSemitones),
+                assistiveLabel: `${getIntervalLabel(interval.intervalSemitones, intervalNotationStyle)} 平均誤差 ${formatAvgErrorLabel(interval.averageError)} / ${interval.questionCount} 問`,
+                value: interval.averageError,
+              }))}
+            />
+          </GraphCard>
+
+          <Surface>
+            <SectionHeader
+              title="最近のセッション"
+              description="ホームと同じ圧縮リストで、直近の保存結果を振り返れます。"
+            />
             {stats.recentSessions.length > 0 ? (
-              <List>
+              <div className="ui-list">
                 {stats.recentSessions.map((session) => (
-                  <li key={session.id}>
-                    <ListLinkCard href={`/sessions/${session.id}`}>
-                      <strong>{formatSecondaryModeLabel(session.mode)}</strong>
-                      <span className="ui-muted">
-                        スコア {formatScoreLabel(session.sessionScore)} / 問題数{" "}
-                        {session.answeredQuestionCount} / 正答率{" "}
-                        {formatAccuracyLabel(session.accuracyRate)}
-                      </span>
-                      <span className="ui-muted">
-                        完了日時 {formatDateTimeLabel(session.endedAt)}
-                      </span>
-                    </ListLinkCard>
-                  </li>
+                  <ListLinkCard
+                    key={session.id}
+                    href={`/sessions/${session.id}`}
+                    pendingLabel="セッション詳細を開いています..."
+                    className="ui-list-link--compact ui-list-link--session"
+                  >
+                    <div className="ui-list-link__split">
+                      <TrainingModeLabel mode={session.mode} />
+                    </div>
+                    <span className="ui-muted">
+                      スコア {formatScoreLabel(session.sessionScore)} / 問題数{" "}
+                      {session.answeredQuestionCount} / 正答率{" "}
+                      {formatAccuracyLabel(session.accuracyRate)}
+                    </span>
+                    <span className="ui-muted">
+                      完了日時 {formatDateTimeLabel(session.endedAt)}
+                    </span>
+                  </ListLinkCard>
                 ))}
-              </List>
+              </div>
             ) : (
               <p className="ui-subtitle">
                 保存済みセッションはまだありません。
@@ -425,7 +341,7 @@ export default async function StatsPage() {
           </Surface>
         </>
       ) : (
-        <Notice>
+        <Notice tone="warning">
           保存済みの学習統計を見るにはログインしてください。ゲストのセッションは保存されません。
         </Notice>
       )}
@@ -433,131 +349,45 @@ export default async function StatsPage() {
   );
 }
 
-function formatSecondaryModeLabel(value: "distance" | "keyboard"): string {
-  return value === "distance" ? "距離モード" : "鍵盤モード";
-}
-
-function ModeSummaryCard(props: {
-  label: string;
-  sessionCount: number;
-  questionCount: number;
-  cumulativeScore: number;
-  correctRate: number;
-  averageError: number;
-  medianError: number;
-  averageResponseTimeMs: number;
+function ComparisonPanel(props: {
+  title: string;
+  tone: "brand" | "teal" | "amber" | "blue";
+  stats: Array<{ label: string; value: string }>;
 }) {
   return (
-    <div className="ui-panel-card">
-      <span className="ui-hero__eyebrow">{props.label}</span>
-      <div className="ui-stack-sm">
-        <strong>累計スコア {formatScoreLabel(props.cumulativeScore)}</strong>
-        <span className="ui-muted">
-          {props.sessionCount} セッション / {props.questionCount} 問
-        </span>
-        <span className="ui-muted">
-          正答率 {formatAccuracyLabel(props.correctRate)}
-          {" / "}平均誤差 {formatAvgErrorLabel(props.averageError)}
-        </span>
-        <span className="ui-muted">
-          中央値誤差 {formatAvgErrorLabel(props.medianError)}
-          {" / "}平均回答時間{" "}
-          {formatResponseTimeMsLabel(props.averageResponseTimeMs)}
-        </span>
+    <section className="ui-flat-panel" data-tone={props.tone}>
+      <div className="ui-flat-panel__header">
+        <strong>{props.title}</strong>
+        <Chip tone={props.tone}>{getComparisonChipLabel(props.tone)}</Chip>
       </div>
-    </div>
-  );
-}
-
-function RecentQuestionCard(props: {
-  label: string;
-  summary: {
-    questionCount: number;
-    averageScore: number;
-    correctRate: number;
-    averageError: number;
-    averageResponseTimeMs: number;
-  };
-}) {
-  return (
-    <div className="ui-panel-card">
-      <span className="ui-hero__eyebrow">{props.label}</span>
-      <strong>平均スコア {formatScoreLabel(props.summary.averageScore)}</strong>
-      <span className="ui-muted">
-        {props.summary.questionCount} 問 / 正答率{" "}
-        {formatAccuracyLabel(props.summary.correctRate)}
-      </span>
-      <span className="ui-muted">
-        平均誤差 {formatAvgErrorLabel(props.summary.averageError)}
-        {" / "}平均回答時間{" "}
-        {formatResponseTimeMsLabel(props.summary.averageResponseTimeMs)}
-      </span>
-    </div>
-  );
-}
-
-function ScoreTrendColumn(props: {
-  label: string;
-  points: Array<{
-    date: string;
-    questionCount: number;
-    averageScore: number;
-  }>;
-}) {
-  const maxScore = Math.max(
-    ...props.points.map((point) => point.averageScore),
-    1,
-  );
-
-  return (
-    <div className="ui-panel-card ui-trend-card">
-      <div className="ui-stack-sm">
-        <span className="ui-hero__eyebrow">{props.label}</span>
-        <strong>直近 {props.points.length} 日</strong>
-      </div>
-      {props.points.length > 0 ? (
-        <>
-          <div className="ui-trend-bars" aria-hidden="true">
-            {props.points.map((point) => {
-              const height = Math.max(
-                16,
-                Math.round((point.averageScore / maxScore) * 96),
-              );
-
-              return (
-                <div
-                  key={`${props.label}-${point.date}`}
-                  className="ui-trend-bar"
-                >
-                  <div
-                    className="ui-trend-bar__value"
-                    style={
-                      {
-                        "--trend-height": `${height}px`,
-                      } as CSSProperties
-                    }
-                  />
-                  <span className="ui-trend-bar__label">
-                    {formatDateLabel(point.date)}
-                  </span>
-                </div>
-              );
-            })}
+      <dl className="ui-flat-panel__list">
+        {props.stats.map((stat) => (
+          <div
+            key={`${props.title}-${stat.label}`}
+            className="ui-flat-panel__row"
+          >
+            <dt>{stat.label}</dt>
+            <dd>{stat.value}</dd>
           </div>
-          <ScreenReaderText as="p">
-            {props.points
-              .map(
-                (point) =>
-                  `${formatDateLabel(point.date)} 平均スコア ${formatScoreLabel(point.averageScore)} / ${point.questionCount} 問`,
-              )
-              .join("、")}
-          </ScreenReaderText>
-        </>
-      ) : (
-        <span className="ui-subtitle">データはまだありません。</span>
-      )}
-    </div>
+        ))}
+      </dl>
+    </section>
   );
+}
+
+function getComparisonChipLabel(
+  tone: "brand" | "teal" | "amber" | "blue",
+): string {
+  switch (tone) {
+    case "teal":
+      return "モード比較";
+    case "amber":
+      return "短期";
+    case "blue":
+      return "入力差";
+    default:
+      return "基準";
+  }
 }
 
 type ChartPoint = {
@@ -569,6 +399,7 @@ type ChartPoint = {
 
 function MetricLineChart(props: {
   title: string;
+  tone: "brand" | "teal" | "coral" | "blue";
   valueFormatter: (value: number) => string;
   points: ChartPoint[];
   denseLabels?: boolean;
@@ -592,7 +423,7 @@ function MetricLineChart(props: {
     .join(" ");
 
   return (
-    <div className="ui-panel-card ui-chart-card">
+    <div className="ui-chart-card" data-tone={props.tone}>
       <strong>{props.title}</strong>
       <div className="ui-line-chart">
         <div className="ui-line-chart__axis">
@@ -688,6 +519,7 @@ function MetricLineChart(props: {
 
 function MetricBarChart(props: {
   title: string;
+  tone: "brand" | "teal" | "coral" | "blue";
   valueFormatter: (value: number) => string;
   points: ChartPoint[];
   denseLabels?: boolean;
@@ -695,7 +527,7 @@ function MetricBarChart(props: {
   const maxValue = Math.max(...props.points.map((point) => point.value), 1);
 
   return (
-    <div className="ui-panel-card ui-chart-card">
+    <div className="ui-chart-card" data-tone={props.tone}>
       <strong>{props.title}</strong>
       <div className="ui-bar-chart">
         <div className="ui-bar-chart__axis">
@@ -762,128 +594,6 @@ function MetricBarChart(props: {
   );
 }
 
-function MetricComparisonChart(props: {
-  title: string;
-  valueFormatter: (value: number) => string;
-  items: Array<{
-    key: string;
-    label: string;
-    value: number;
-  }>;
-}) {
-  const maxValue = Math.max(...props.items.map((item) => item.value), 1);
-
-  return (
-    <div className="ui-panel-card ui-chart-card">
-      <div className="ui-inline-split">
-        <strong>{props.title}</strong>
-        <span className="ui-muted">上方向 / 下方向</span>
-      </div>
-      <div className="ui-comparison-bars" aria-hidden="true">
-        {props.items.map((item, index) => {
-          const height = Math.max(16, Math.round((item.value / maxValue) * 96));
-
-          return (
-            <div key={item.key} className="ui-comparison-bar">
-              <span className="ui-comparison-bar__value">
-                {props.valueFormatter(item.value)}
-              </span>
-              <div
-                className="ui-comparison-bar__column"
-                data-tone={index === 0 ? "primary" : "secondary"}
-                style={
-                  {
-                    "--comparison-height": `${height}px`,
-                  } as CSSProperties
-                }
-              />
-              <span className="ui-comparison-bar__label">{item.label}</span>
-            </div>
-          );
-        })}
-      </div>
-      <ScreenReaderText as="p">
-        {props.items
-          .map((item) => `${item.label} ${props.valueFormatter(item.value)}`)
-          .join("、")}
-      </ScreenReaderText>
-    </div>
-  );
-}
-
-function AnswerBiasChart(props: {
-  higherCount: number;
-  higherRate: number;
-  lowerCount: number;
-  lowerRate: number;
-  onTargetCount: number;
-  onTargetRate: number;
-}) {
-  const segments = [
-    {
-      key: "higher",
-      label: "高め",
-      count: props.higherCount,
-      rate: props.higherRate,
-    },
-    {
-      key: "lower",
-      label: "低め",
-      count: props.lowerCount,
-      rate: props.lowerRate,
-    },
-    {
-      key: "on-target",
-      label: "一致",
-      count: props.onTargetCount,
-      rate: props.onTargetRate,
-    },
-  ];
-
-  return (
-    <div className="ui-stack-md">
-      <div
-        className="ui-bias-bar"
-        role="img"
-        aria-label={segments
-          .map(
-            (segment) =>
-              `${segment.label} ${formatAccuracyLabel(segment.rate)} ${segment.count} 問`,
-          )
-          .join("、")}
-      >
-        {segments.map((segment) => (
-          <div
-            key={segment.key}
-            className="ui-bias-bar__segment"
-            data-tone={segment.key}
-            style={{
-              flexBasis: `${segment.rate * 100}%`,
-              flexGrow: segment.rate,
-              minWidth: segment.rate > 0 ? "10px" : "0",
-            }}
-          />
-        ))}
-      </div>
-      <div className="ui-bias-legend" aria-hidden="true">
-        {segments.map((segment) => (
-          <div key={segment.key} className="ui-bias-legend__item">
-            <span className="ui-bias-legend__label">
-              <span
-                className="ui-bias-legend__swatch"
-                data-tone={segment.key}
-              />
-              {segment.label}
-            </span>
-            <strong>{formatAccuracyLabel(segment.rate)}</strong>
-            <span className="ui-muted">{segment.count} 問</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function formatCompactDateLabel(value: string): string {
   const [year, month, day] = value.split("-");
 
@@ -928,10 +638,6 @@ function createChartColumnsStyle(columnCount: number): CSSProperties {
   return {
     gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
   };
-}
-
-function formatQuestionCountLabel(value: number): string {
-  return `${value}問`;
 }
 
 function getLineChartCoordinates(
