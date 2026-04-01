@@ -71,6 +71,11 @@ route ごとの詳細な実装見取り図は `docs/implementation/route-status.
 2. `.env.example` を参照して環境変数を設定する
 3. DB と Better Auth の前提が揃っていれば `npm run dev`
 
+補足:
+
+- `next-env.d.ts` は commit 対象ではなく、`npm run dev` / `npm run build` / `npm run typecheck` / `npm run typegen` により生成されます
+- fresh clone 直後に editor の型解決を先に揃えたい場合は `npm run typegen` を実行してください
+
 環境変数の概略:
 
 - `DATABASE_URL`
@@ -94,8 +99,10 @@ route ごとの詳細な実装見取り図は `docs/implementation/route-status.
   - repo 固有の静的チェック
 - `npm run check`
   - Biome の read-only check
+- `npm run typegen`
+  - `next-env.d.ts` と route types の生成
 - `npm run typecheck`
-  - TypeScript 型検証
+  - `next typegen` 実行後の TypeScript 型検証
 - `npm run test`
   - pure model / server logic のテスト
 - `npm run build`
