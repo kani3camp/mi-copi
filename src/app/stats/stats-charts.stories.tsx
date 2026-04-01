@@ -134,6 +134,10 @@ export const LineChartMobileDense: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const featureCard = requireElement<HTMLElement>(
+      canvasElement,
+      ".ui-graph-card--feature",
+    );
     const plot = requireElement<HTMLElement>(
       canvasElement,
       ".ui-line-chart__plot",
@@ -146,6 +150,9 @@ export const LineChartMobileDense: Story = {
 
     await expect(canvas.getByText("日次スコア推移")).toBeVisible();
     await expect(canvasElement.querySelector(".ui-chip")).toBeNull();
+    await expect(getComputedStyle(featureCard).backgroundColor).toBe(
+      "rgb(255, 255, 255)",
+    );
     expectTrackToMatchPlot(plot, labelTrack);
     expectLabelsToStayWithinPlot(visibleLabels, plot);
     await expect(

@@ -1020,7 +1020,8 @@ a {
 
 .ui-graph-card--feature {
   padding-top: 0;
-  border-top: 0;
+  border-top: 1px solid rgba(95, 130, 180, 0.14);
+  background: var(--surface-elevated);
 }
 
 .ui-flat-panel-list {
