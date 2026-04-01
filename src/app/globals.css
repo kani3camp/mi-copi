@@ -1195,6 +1195,7 @@ a {
 
 .ui-trend-bar__label,
 .ui-chart-label-track__item,
+.ui-chart-label-grid__item,
 .ui-chart-count-row__item span,
 .ui-line-chart__axis,
 .ui-bar-chart__axis,
@@ -1374,6 +1375,22 @@ a {
   line-height: 1.25;
   text-align: center;
   white-space: nowrap;
+}
+
+.ui-chart-label-row[data-label-orientation="vertical"] .ui-chart-label-grid {
+  align-items: start;
+}
+
+.ui-chart-label-row[data-label-orientation="vertical"]
+  .ui-chart-label-grid__item {
+  display: inline-block;
+  justify-self: center;
+  min-height: 36px;
+  padding-top: 0;
+  line-height: 1.1;
+  white-space: normal;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
 }
 
 .ui-bar-chart__bars {

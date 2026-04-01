@@ -279,6 +279,7 @@ export default async function StatsPage() {
               title="音程別の平均誤差"
               tone="coral"
               valueFormatter={formatAvgErrorLabel}
+              labelOrientation="vertical"
               points={stats.intervalPerformance.map((interval) => ({
                 key: `${interval.intervalSemitones}-error`,
                 label: getCompactIntervalChartLabel(interval.intervalSemitones),
@@ -375,7 +376,7 @@ function getCompactIntervalChartLabel(semitones: number): string {
     3: "短3",
     4: "長3",
     5: "完4",
-    6: "増4/減5",
+    6: "増4",
     7: "完5",
     8: "短6",
     9: "長6",

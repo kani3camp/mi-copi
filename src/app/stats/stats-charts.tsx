@@ -10,6 +10,7 @@ export type ChartPoint = {
 };
 
 type ChartTone = "brand" | "teal" | "coral" | "blue";
+type BarChartLabelOrientation = "horizontal" | "vertical";
 
 type ChartLabel = {
   key: string | number;
@@ -127,8 +128,10 @@ export function MetricBarChart(props: {
   valueFormatter: (value: number) => string;
   points: ChartPoint[];
   denseLabels?: boolean;
+  labelOrientation?: BarChartLabelOrientation;
 }) {
   const maxValue = Math.max(...props.points.map((point) => point.value), 1);
+  const labelOrientation = props.labelOrientation ?? "horizontal";
   const labels = props.points.map((point, index) => ({
     ...point,
     visible: shouldShowChartLabel(
@@ -176,7 +179,11 @@ export function MetricBarChart(props: {
           </div>
         </div>
       </div>
-      <BarChartLabelRow labels={labels} style={columnsStyle} />
+      <BarChartLabelRow
+        labels={labels}
+        style={columnsStyle}
+        orientation={labelOrientation}
+      />
       <ScreenReaderText as="p">
         {props.points.map((point) => point.assistiveLabel).join("、")}
       </ScreenReaderText>
@@ -212,9 +219,14 @@ function ChartLabelRow(props: { labels: ChartLabel[] }) {
 function BarChartLabelRow(props: {
   labels: Array<ChartPoint & { visible: boolean }>;
   style: CSSProperties | undefined;
+  orientation: BarChartLabelOrientation;
 }) {
   return (
-    <div className="ui-chart-label-row" aria-hidden="true">
+    <div
+      className="ui-chart-label-row"
+      data-label-orientation={props.orientation}
+      aria-hidden="true"
+    >
       <div className="ui-chart-label-row__axis-spacer" />
       <div className="ui-chart-label-grid" style={props.style}>
         {props.labels.map((label) => (

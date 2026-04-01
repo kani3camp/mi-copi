@@ -30,10 +30,22 @@ const intervalPoints = [
     value: 0.7,
   },
   {
+    key: "M2",
+    label: "長2",
+    assistiveLabel: "長2度 平均誤差 1.0 半音",
+    value: 1.0,
+  },
+  {
     key: "m3",
     label: "短3",
     assistiveLabel: "短3度 平均誤差 0.5 半音",
     value: 0.5,
+  },
+  {
+    key: "M3",
+    label: "長3",
+    assistiveLabel: "長3度 平均誤差 0.6 半音",
+    value: 0.6,
   },
   {
     key: "p4",
@@ -43,8 +55,8 @@ const intervalPoints = [
   },
   {
     key: "tritone",
-    label: "増4/減5",
-    assistiveLabel: "増4度減5度 平均誤差 1.1 半音",
+    label: "増4",
+    assistiveLabel: "増4度 / 減5度 平均誤差 1.1 半音",
     value: 1.1,
   },
   {
@@ -52,6 +64,36 @@ const intervalPoints = [
     label: "完5",
     assistiveLabel: "完全5度 平均誤差 0.4 半音",
     value: 0.4,
+  },
+  {
+    key: "m6",
+    label: "短6",
+    assistiveLabel: "短6度 平均誤差 0.75 半音",
+    value: 0.75,
+  },
+  {
+    key: "M6",
+    label: "長6",
+    assistiveLabel: "長6度 平均誤差 0.95 半音",
+    value: 0.95,
+  },
+  {
+    key: "m7",
+    label: "短7",
+    assistiveLabel: "短7度 平均誤差 1.35 半音",
+    value: 1.35,
+  },
+  {
+    key: "M7",
+    label: "長7",
+    assistiveLabel: "長7度 平均誤差 1.6 半音",
+    value: 1.6,
+  },
+  {
+    key: "p8",
+    label: "完8",
+    assistiveLabel: "完全8度 平均誤差 1.8 半音",
+    value: 1.8,
   },
 ];
 
@@ -158,6 +200,7 @@ export const BarChartIntervals: Story = {
         tone="coral"
         valueFormatter={(value) => `${value.toFixed(1)} 半音`}
         points={intervalPoints}
+        labelOrientation="vertical"
       />
     </GraphCard>
   ),
@@ -170,16 +213,29 @@ export const BarChartIntervals: Story = {
       canvasElement,
       ".ui-chart-label-grid",
     );
+    const firstVisibleLabel = requireElement<HTMLElement>(
+      canvasElement,
+      '.ui-chart-label-grid__item[data-visible="true"]',
+    );
     const bars = Array.from(
       canvasElement.querySelectorAll<HTMLElement>(".ui-bar-chart__bar"),
     );
     const visibleLabels = Array.from(
-      canvasElement.querySelectorAll<HTMLElement>(".ui-chart-label-grid__item"),
+      canvasElement.querySelectorAll<HTMLElement>(
+        '.ui-chart-label-grid__item[data-visible="true"]',
+      ),
     );
 
     expectTrackToMatchPlot(plot, labelGrid);
     expectLabelsToStayWithinPlot(visibleLabels, plot);
+    expectBarLabelsNotToOverlap(visibleLabels);
     expectBarLabelCentersToMatch(bars, visibleLabels);
+    await expect(getComputedStyle(firstVisibleLabel).writingMode).toBe(
+      "vertical-rl",
+    );
+    await expect(getComputedStyle(firstVisibleLabel).textOrientation).toBe(
+      "upright",
+    );
     await expect(canvasElement.querySelector(".ui-chip")).toBeNull();
   },
 };
@@ -245,5 +301,20 @@ function expectBarLabelCentersToMatch(
     const labelCenter = labelRect.left + labelRect.width / 2;
 
     expect(Math.abs(barCenter - labelCenter)).toBeLessThanOrEqual(1);
+  }
+}
+
+function expectBarLabelsNotToOverlap(labels: HTMLElement[]) {
+  for (const [index, label] of labels.entries()) {
+    const nextLabel = labels[index + 1];
+
+    if (!nextLabel) {
+      continue;
+    }
+
+    const currentRect = label.getBoundingClientRect();
+    const nextRect = nextLabel.getBoundingClientRect();
+
+    expect(currentRect.right).toBeLessThanOrEqual(nextRect.left + 1);
   }
 }
