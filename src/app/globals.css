@@ -1334,6 +1334,11 @@ a {
   min-height: 20px;
 }
 
+.ui-chart-label-grid {
+  display: grid;
+  gap: 6px;
+}
+
 .ui-chart-label-track__item {
   position: absolute;
   top: 0;
@@ -1361,6 +1366,14 @@ a {
 
 .ui-chart-label-track__item[data-visible="false"] {
   display: none;
+}
+
+.ui-chart-label-grid__item {
+  min-width: 0;
+  padding-top: var(--space-1);
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .ui-bar-chart__bars {

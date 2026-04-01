@@ -166,14 +166,20 @@ export const BarChartIntervals: Story = {
       canvasElement,
       ".ui-bar-chart__plot",
     );
-    const labelTrack = requireElement<HTMLElement>(
+    const labelGrid = requireElement<HTMLElement>(
       canvasElement,
-      ".ui-chart-label-track",
+      ".ui-chart-label-grid",
     );
-    const visibleLabels = getVisibleLabels(canvasElement);
+    const bars = Array.from(
+      canvasElement.querySelectorAll<HTMLElement>(".ui-bar-chart__bar"),
+    );
+    const visibleLabels = Array.from(
+      canvasElement.querySelectorAll<HTMLElement>(".ui-chart-label-grid__item"),
+    );
 
-    expectTrackToMatchPlot(plot, labelTrack);
+    expectTrackToMatchPlot(plot, labelGrid);
     expectLabelsToStayWithinPlot(visibleLabels, plot);
+    expectBarLabelCentersToMatch(bars, visibleLabels);
     await expect(canvasElement.querySelector(".ui-chip")).toBeNull();
   },
 };
@@ -218,5 +224,26 @@ function expectLabelsToStayWithinPlot(
 
     expect(labelRect.left).toBeGreaterThanOrEqual(plotRect.left - 1);
     expect(labelRect.right).toBeLessThanOrEqual(plotRect.right + 1);
+  }
+}
+
+function expectBarLabelCentersToMatch(
+  bars: HTMLElement[],
+  labels: HTMLElement[],
+) {
+  expect(bars).toHaveLength(labels.length);
+
+  for (const [index, bar] of bars.entries()) {
+    const barRect = bar.getBoundingClientRect();
+    const labelRect = labels[index]?.getBoundingClientRect();
+
+    if (!labelRect) {
+      throw new Error(`Missing label for bar index ${index}`);
+    }
+
+    const barCenter = barRect.left + barRect.width / 2;
+    const labelCenter = labelRect.left + labelRect.width / 2;
+
+    expect(Math.abs(barCenter - labelCenter)).toBeLessThanOrEqual(1);
   }
 }

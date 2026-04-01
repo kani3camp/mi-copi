@@ -129,16 +129,15 @@ export function MetricBarChart(props: {
   denseLabels?: boolean;
 }) {
   const maxValue = Math.max(...props.points.map((point) => point.value), 1);
-  const positions = props.points.map((point, index) => ({
+  const labels = props.points.map((point, index) => ({
     ...point,
-    left: getBarChartCenter(index, props.points.length),
     visible: shouldShowChartLabel(
       index,
       props.points.length,
       props.denseLabels,
     ),
-    align: getChartLabelAlignment(index, props.points.length),
   }));
+  const columnsStyle = createChartColumnsStyle(props.points.length);
 
   return (
     <div className="ui-chart-card" data-tone={props.tone}>
@@ -154,10 +153,7 @@ export function MetricBarChart(props: {
             <span />
             <span />
           </div>
-          <div
-            className="ui-bar-chart__bars"
-            style={createChartColumnsStyle(props.points.length)}
-          >
+          <div className="ui-bar-chart__bars" style={columnsStyle}>
             {props.points.map((point) => {
               const height = Math.max(
                 12,
@@ -180,7 +176,7 @@ export function MetricBarChart(props: {
           </div>
         </div>
       </div>
-      <ChartLabelRow labels={positions} />
+      <BarChartLabelRow labels={labels} style={columnsStyle} />
       <ScreenReaderText as="p">
         {props.points.map((point) => point.assistiveLabel).join("、")}
       </ScreenReaderText>
@@ -204,6 +200,28 @@ function ChartLabelRow(props: { labels: ChartLabel[] }) {
                 left: `${label.left}%`,
               } as CSSProperties
             }
+          >
+            {label.visible ? label.label : ""}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BarChartLabelRow(props: {
+  labels: Array<ChartPoint & { visible: boolean }>;
+  style: CSSProperties | undefined;
+}) {
+  return (
+    <div className="ui-chart-label-row" aria-hidden="true">
+      <div className="ui-chart-label-row__axis-spacer" />
+      <div className="ui-chart-label-grid" style={props.style}>
+        {props.labels.map((label) => (
+          <span
+            key={label.key}
+            className="ui-chart-label-grid__item"
+            data-visible={label.visible}
           >
             {label.visible ? label.label : ""}
           </span>
@@ -262,14 +280,6 @@ function getLineChartCoordinates(
   const y = bottom - ((value - minValue) / range) * usableHeight;
 
   return { x, y };
-}
-
-function getBarChartCenter(index: number, total: number): number {
-  if (total <= 0) {
-    return 50;
-  }
-
-  return ((index + 0.5) / total) * 100;
 }
 
 function getChartLabelAlignment(
