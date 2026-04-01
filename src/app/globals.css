@@ -1331,7 +1331,7 @@ a {
 
 .ui-chart-label-track {
   position: relative;
-  min-height: 18px;
+  min-height: 20px;
 }
 
 .ui-chart-label-track__item {
@@ -1339,6 +1339,7 @@ a {
   top: 0;
   display: block;
   min-width: 0;
+  line-height: 1.25;
   white-space: nowrap;
   padding-top: var(--space-1);
 }
