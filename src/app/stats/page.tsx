@@ -93,7 +93,6 @@ export default async function StatsPage() {
           <GraphCard
             title="日次スコア推移"
             subtitle="主指標として、日ごとの平均スコアを確認します。"
-            className="ui-graph-card--feature"
           >
             <MetricLineChart
               title="日次スコア"

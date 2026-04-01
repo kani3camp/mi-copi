@@ -120,7 +120,6 @@ export const LineChartMobileDense: Story = {
     <GraphCard
       title="日次スコア推移"
       subtitle="主指標として、日ごとの平均スコアを確認します。"
-      className="ui-graph-card--feature"
     >
       <MetricLineChart
         title="日次スコア"
@@ -134,9 +133,9 @@ export const LineChartMobileDense: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const featureCard = requireElement<HTMLElement>(
+    const graphCard = requireElement<HTMLElement>(
       canvasElement,
-      ".ui-graph-card--feature",
+      ".ui-graph-card",
     );
     const plot = requireElement<HTMLElement>(
       canvasElement,
@@ -150,9 +149,10 @@ export const LineChartMobileDense: Story = {
 
     await expect(canvas.getByText("日次スコア推移")).toBeVisible();
     await expect(canvasElement.querySelector(".ui-chip")).toBeNull();
-    await expect(getComputedStyle(featureCard).backgroundColor).toBe(
-      "rgb(255, 255, 255)",
+    await expect(getComputedStyle(graphCard).backgroundColor).toBe(
+      "rgba(0, 0, 0, 0)",
     );
+    await expect(getComputedStyle(graphCard).paddingTop).toBe("16px");
     expectTrackToMatchPlot(plot, labelTrack);
     expectLabelsToStayWithinPlot(visibleLabels, plot);
     await expect(
