@@ -1194,7 +1194,7 @@ a {
 }
 
 .ui-trend-bar__label,
-.ui-chart-label-row__item,
+.ui-chart-label-track__item,
 .ui-chart-count-row__item span,
 .ui-line-chart__axis,
 .ui-bar-chart__axis,
@@ -1204,10 +1204,15 @@ a {
 }
 
 .ui-line-chart,
-.ui-bar-chart {
+.ui-bar-chart,
+.ui-chart-label-row {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
   gap: var(--space-3);
+}
+
+.ui-line-chart,
+.ui-bar-chart {
   padding-top: var(--space-2);
 }
 
@@ -1311,10 +1316,50 @@ a {
 }
 
 .ui-bar-chart__bars,
-.ui-chart-label-row,
 .ui-chart-count-row {
   display: grid;
   gap: 6px;
+}
+
+.ui-chart-label-row {
+  margin-top: var(--space-1);
+}
+
+.ui-chart-label-row__axis-spacer {
+  min-width: 0;
+}
+
+.ui-chart-label-track {
+  position: relative;
+  min-height: 18px;
+}
+
+.ui-chart-label-track__item {
+  position: absolute;
+  top: 0;
+  display: block;
+  min-width: 0;
+  white-space: nowrap;
+  padding-top: var(--space-1);
+}
+
+.ui-chart-label-track__item[data-align="start"] {
+  transform: translateX(0);
+  text-align: left;
+}
+
+.ui-chart-label-track__item[data-align="center"] {
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.ui-chart-label-track__item[data-align="end"] {
+  transform: translateX(-100%);
+  text-align: right;
+}
+
+.ui-chart-label-track__item[data-visible="false"] {
+  display: none;
 }
 
 .ui-bar-chart__bars {
@@ -1350,15 +1395,9 @@ a {
   background: var(--accent-blue);
 }
 
-.ui-chart-label-row__item,
 .ui-chart-count-row__item {
   min-width: 0;
   text-align: center;
-}
-
-.ui-chart-label-row__item {
-  white-space: nowrap;
-  padding-top: var(--space-1);
 }
 
 .ui-chart-count-card {
