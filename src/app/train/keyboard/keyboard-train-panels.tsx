@@ -193,19 +193,19 @@ export const KeyboardFeedbackPanel = memo(
           </Button>
           <Button
             type="button"
-            onClick={props.onEndSession}
-            block
-            variant="ghost"
-          >
-            ここで終了
-          </Button>
-          <Button
-            type="button"
             onClick={props.onContinue}
             variant="primary"
             block
           >
             {props.lastAnsweredWasFinal ? "結果を見る" : "次へ"}
+          </Button>
+          <Button
+            type="button"
+            onClick={props.onEndSession}
+            block
+            variant="ghost"
+          >
+            ここで終了
           </Button>
         </div>
       </Surface>

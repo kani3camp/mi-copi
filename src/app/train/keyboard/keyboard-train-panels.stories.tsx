@@ -136,6 +136,11 @@ export const FeedbackIncorrect: Story = {
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
+    const stickyActions = canvasElement.querySelector(".ui-sticky-actions");
+    const actionLabels = Array.from(
+      stickyActions?.querySelectorAll("button") ?? [],
+      (button) => button.textContent?.trim() ?? "",
+    );
 
     await expect(
       canvasElement.querySelector('[data-note="C"][data-reference="true"]'),
@@ -143,6 +148,11 @@ export const FeedbackIncorrect: Story = {
     await expect(
       canvasElement.querySelector('[data-note="F#"][data-reference="true"]'),
     ).toBeNull();
+    await expect(actionLabels).toEqual([
+      "正解の音を再生",
+      "結果を見る",
+      "ここで終了",
+    ]);
     await userEvent.click(
       canvas.getByRole("button", { name: "正解の音を再生" }),
     );
