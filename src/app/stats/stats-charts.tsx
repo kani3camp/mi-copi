@@ -11,6 +11,7 @@ export type ChartPoint = {
 
 type ChartTone = "brand" | "teal" | "coral" | "blue";
 type BarChartLabelOrientation = "horizontal" | "vertical";
+type ChartTitleVisibility = "visible" | "sr-only";
 
 type ChartLabel = {
   key: string | number;
@@ -26,6 +27,7 @@ export function MetricLineChart(props: {
   valueFormatter: (value: number) => string;
   points: ChartPoint[];
   denseLabels?: boolean;
+  titleVisibility?: ChartTitleVisibility;
 }) {
   const values = props.points.map((point) => point.value);
   const maxValue = Math.max(...values, 0);
@@ -59,7 +61,10 @@ export function MetricLineChart(props: {
 
   return (
     <div className="ui-chart-card" data-tone={props.tone}>
-      <strong>{props.title}</strong>
+      <ChartTitle
+        title={props.title}
+        visibility={props.titleVisibility ?? "visible"}
+      />
       <div className="ui-line-chart">
         <div className="ui-line-chart__axis">
           <span>{props.valueFormatter(maxValue)}</span>
@@ -129,6 +134,7 @@ export function MetricBarChart(props: {
   points: ChartPoint[];
   denseLabels?: boolean;
   labelOrientation?: BarChartLabelOrientation;
+  titleVisibility?: ChartTitleVisibility;
 }) {
   const maxValue = Math.max(...props.points.map((point) => point.value), 1);
   const labelOrientation = props.labelOrientation ?? "horizontal";
@@ -144,7 +150,10 @@ export function MetricBarChart(props: {
 
   return (
     <div className="ui-chart-card" data-tone={props.tone}>
-      <strong>{props.title}</strong>
+      <ChartTitle
+        title={props.title}
+        visibility={props.titleVisibility ?? "visible"}
+      />
       <div className="ui-bar-chart">
         <div className="ui-bar-chart__axis">
           <span>{props.valueFormatter(maxValue)}</span>
@@ -189,6 +198,17 @@ export function MetricBarChart(props: {
       </ScreenReaderText>
     </div>
   );
+}
+
+function ChartTitle(props: {
+  title: string;
+  visibility: ChartTitleVisibility;
+}) {
+  if (props.visibility === "sr-only") {
+    return <ScreenReaderText as="span">{props.title}</ScreenReaderText>;
+  }
+
+  return <strong>{props.title}</strong>;
 }
 
 function ChartLabelRow(props: { labels: ChartLabel[] }) {

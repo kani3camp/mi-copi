@@ -97,6 +97,7 @@ export default async function StatsPage() {
           >
             <MetricLineChart
               title="日次スコア"
+              titleVisibility="sr-only"
               tone="brand"
               valueFormatter={formatScoreLabel}
               points={stats.dailyTrends.map((trend) => ({
@@ -113,6 +114,7 @@ export default async function StatsPage() {
             <GraphCard title="正答率" subtitle="回答の安定度">
               <MetricLineChart
                 title="正答率"
+                titleVisibility="sr-only"
                 tone="teal"
                 valueFormatter={formatAccuracyLabel}
                 points={stats.dailyTrends.map((trend) => ({
@@ -127,6 +129,7 @@ export default async function StatsPage() {
             <GraphCard title="平均誤差" subtitle="ズレの大きさ">
               <MetricLineChart
                 title="平均誤差"
+                titleVisibility="sr-only"
                 tone="coral"
                 valueFormatter={formatAvgErrorLabel}
                 points={stats.dailyTrends.map((trend) => ({
@@ -141,6 +144,7 @@ export default async function StatsPage() {
             <GraphCard title="平均回答時間" subtitle="反応速度">
               <MetricLineChart
                 title="平均回答時間"
+                titleVisibility="sr-only"
                 tone="blue"
                 valueFormatter={formatResponseTimeMsLabel}
                 points={stats.dailyTrends.map((trend) => ({
@@ -277,6 +281,7 @@ export default async function StatsPage() {
           >
             <MetricBarChart
               title="音程別の平均誤差"
+              titleVisibility="sr-only"
               tone="coral"
               valueFormatter={formatAvgErrorLabel}
               labelOrientation="vertical"

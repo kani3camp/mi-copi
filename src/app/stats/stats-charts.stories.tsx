@@ -124,6 +124,7 @@ export const LineChartMobileDense: Story = {
     >
       <MetricLineChart
         title="日次スコア"
+        titleVisibility="sr-only"
         tone="brand"
         valueFormatter={(value) => `${value.toFixed(1)} pt`}
         points={denseLinePoints}
@@ -158,6 +159,7 @@ export const LineChartSinglePoint: Story = {
     <GraphCard title="単一点の確認" subtitle="1件だけでも中央に揃います。">
       <MetricLineChart
         title="日次スコア"
+        titleVisibility="sr-only"
         tone="teal"
         valueFormatter={(value) => `${value.toFixed(1)} pt`}
         points={[
@@ -197,6 +199,7 @@ export const BarChartIntervals: Story = {
     >
       <MetricBarChart
         title="音程別の平均誤差"
+        titleVisibility="sr-only"
         tone="coral"
         valueFormatter={(value) => `${value.toFixed(1)} 半音`}
         points={intervalPoints}
@@ -237,6 +240,51 @@ export const BarChartIntervals: Story = {
       "upright",
     );
     await expect(canvasElement.querySelector(".ui-chip")).toBeNull();
+  },
+};
+
+export const LineChartCardHeaderOwnsTitle: Story = {
+  render: () => (
+    <GraphCard title="正答率" subtitle="回答の安定度">
+      <MetricLineChart
+        title="正答率"
+        titleVisibility="sr-only"
+        tone="teal"
+        valueFormatter={(value) => `${value.toFixed(0)}%`}
+        points={[
+          {
+            key: "2026-03-01",
+            label: "3/01",
+            assistiveLabel: "2026-03-01 正答率 40%",
+            value: 40,
+          },
+          {
+            key: "2026-03-02",
+            label: "3/02",
+            assistiveLabel: "2026-03-02 正答率 52%",
+            value: 52,
+          },
+        ]}
+      />
+    </GraphCard>
+  ),
+  play: async ({ canvasElement }) => {
+    const headerTitle = requireElement<HTMLElement>(
+      canvasElement,
+      ".ui-graph-card__title",
+    );
+    const chartVisibleTitle = canvasElement.querySelector(
+      ".ui-chart-card > strong",
+    );
+    const chartHiddenTitle = requireElement<HTMLElement>(
+      canvasElement,
+      ".ui-chart-card .sr-only",
+    );
+
+    await expect(headerTitle).toBeVisible();
+    await expect(headerTitle.textContent).toBe("正答率");
+    await expect(chartVisibleTitle).toBeNull();
+    await expect(chartHiddenTitle.textContent).toContain("正答率");
   },
 };
 
