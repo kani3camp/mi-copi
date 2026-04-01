@@ -496,6 +496,7 @@ export function KeyboardTrainClient({
           lastAnsweredWasFinal={session.lastAnsweredWasFinal}
           onContinue={session.continueAfterFeedback}
           onEndSession={handleEndSession}
+          onReplayBase={session.replayBase}
           onReplayCorrectTarget={session.replayCorrectTarget}
           showLabels={settings.keyboardNoteLabelsVisible}
         />

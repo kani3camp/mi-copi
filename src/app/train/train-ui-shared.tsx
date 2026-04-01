@@ -39,6 +39,7 @@ export function PlaybackButtonPair(props: {
   isPlaybackLocked: boolean;
   onReplayBase: () => void;
   onReplayTarget: () => void;
+  targetLabel?: string;
 }) {
   return (
     <div className="ui-playback-pair">
@@ -48,7 +49,7 @@ export function PlaybackButtonPair(props: {
         onClick={props.onReplayBase}
       />
       <PlaybackButton
-        label="問題音"
+        label={props.targetLabel ?? "問題音"}
         disabled={props.isPlaybackLocked}
         onClick={props.onReplayTarget}
       />

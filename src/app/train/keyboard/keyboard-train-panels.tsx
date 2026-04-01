@@ -124,6 +124,7 @@ export const KeyboardFeedbackPanel = memo(
     lastAnsweredWasFinal: boolean;
     showLabels: boolean;
     onEndSession: () => void;
+    onReplayBase: () => void;
     onReplayCorrectTarget: () => void;
     onContinue: () => void;
   }) {
@@ -188,9 +189,12 @@ export const KeyboardFeedbackPanel = memo(
           />
         </SummaryBlock>
         <div className="ui-sticky-actions">
-          <Button type="button" onClick={props.onReplayCorrectTarget} block>
-            正解の音を再生
-          </Button>
+          <PlaybackButtonPair
+            isPlaybackLocked={false}
+            onReplayBase={props.onReplayBase}
+            onReplayTarget={props.onReplayCorrectTarget}
+            targetLabel="正解音"
+          />
           <Button
             type="button"
             onClick={props.onContinue}

@@ -125,11 +125,13 @@ export const FeedbackIncorrect: Story = {
       lastAnsweredWasFinal
       showLabels
       onEndSession={args.onEndSession}
+      onReplayBase={args.onReplayBase}
       onReplayCorrectTarget={args.onReplayCorrectTarget}
       onContinue={args.onContinue}
     />
   ),
   args: {
+    onReplayBase: fn(),
     onEndSession: fn(),
     onReplayCorrectTarget: fn(),
     onContinue: fn(),
@@ -139,7 +141,8 @@ export const FeedbackIncorrect: Story = {
     const stickyActions = canvasElement.querySelector(".ui-sticky-actions");
     const actionLabels = Array.from(
       stickyActions?.querySelectorAll("button") ?? [],
-      (button) => button.textContent?.trim() ?? "",
+      (button) =>
+        button.getAttribute("aria-label") ?? button.textContent?.trim() ?? "",
     );
 
     await expect(
@@ -149,15 +152,16 @@ export const FeedbackIncorrect: Story = {
       canvasElement.querySelector('[data-note="F#"][data-reference="true"]'),
     ).toBeNull();
     await expect(actionLabels).toEqual([
-      "正解の音を再生",
+      "基準音を再生",
+      "正解音を再生",
       "結果を見る",
       "ここで終了",
     ]);
-    await userEvent.click(
-      canvas.getByRole("button", { name: "正解の音を再生" }),
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "基準音を再生" }));
+    await userEvent.click(canvas.getByRole("button", { name: "正解音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "結果を見る" }));
 
+    await expect(args.onReplayBase).toHaveBeenCalledTimes(1);
     await expect(args.onReplayCorrectTarget).toHaveBeenCalledTimes(1);
     await expect(args.onContinue).toHaveBeenCalledTimes(1);
   },

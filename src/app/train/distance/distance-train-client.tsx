@@ -499,6 +499,7 @@ export function DistanceTrainClient({
           lastAnsweredWasFinal={session.lastAnsweredWasFinal}
           onContinue={session.continueAfterFeedback}
           onEndSession={handleEndSession}
+          onReplayBase={session.replayBase}
           onReplayCorrectTarget={session.replayCorrectTarget}
         />
       ) : null}

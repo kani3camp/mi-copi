@@ -106,6 +106,7 @@ export function DistanceFeedbackPanel(props: {
   lastAnsweredWasFinal: boolean;
   intervalNotationStyle: IntervalNotationStyle;
   onEndSession: () => void;
+  onReplayBase: () => void;
   onReplayCorrectTarget: () => void;
   onContinue: () => void;
 }) {
@@ -170,9 +171,12 @@ export function DistanceFeedbackPanel(props: {
       </SummaryBlock>
 
       <div className="ui-sticky-actions">
-        <Button type="button" onClick={props.onReplayCorrectTarget} block>
-          正解の音を再生
-        </Button>
+        <PlaybackButtonPair
+          isPlaybackLocked={false}
+          onReplayBase={props.onReplayBase}
+          onReplayTarget={props.onReplayCorrectTarget}
+          targetLabel="正解音"
+        />
         <Button
           type="button"
           onClick={props.onContinue}
