@@ -30,6 +30,7 @@ import {
   SectionHeader,
   Surface,
 } from "../../ui/primitives";
+import { confirmManualSessionEnd } from "../train-ui-shared";
 import {
   type DistanceTrainingConfigAction,
   reduceDistanceTrainingConfig,
@@ -176,6 +177,14 @@ export function DistanceTrainClient({
   function handleReset() {
     session.resetSession();
     setPersistConfigErrorMessage(null);
+  }
+
+  function handleEndSession() {
+    if (!confirmManualSessionEnd()) {
+      return;
+    }
+
+    session.endSessionManually();
   }
 
   return (
@@ -489,7 +498,7 @@ export function DistanceTrainClient({
           intervalNotationStyle={settings.intervalNotationStyle}
           lastAnsweredWasFinal={session.lastAnsweredWasFinal}
           onContinue={session.continueAfterFeedback}
-          onEndSession={session.endSessionManually}
+          onEndSession={handleEndSession}
           onReplayCorrectTarget={session.replayCorrectTarget}
         />
       ) : null}

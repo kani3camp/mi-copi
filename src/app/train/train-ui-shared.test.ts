@@ -7,6 +7,8 @@ const { buildDistanceFeedbackDiagramAnnotations } = await import(
 const { buildDistanceFeedbackDiagramArrows } = await import(
   new URL("./distance-feedback-arrows.ts", import.meta.url).href
 );
+const { confirmManualSessionEnd, MANUAL_SESSION_END_CONFIRM_MESSAGE } =
+  await import(new URL("./manual-end-confirm.ts", import.meta.url).href);
 const { getDistanceFeedbackArrowRenderGeometry } = await import(
   new URL("./distance-feedback-arrow-render.ts", import.meta.url).href
 );
@@ -55,6 +57,30 @@ test("distance feedback diagram preserves marker roles after reversing direction
   assert.equal(byLabel["-1"], "teal");
   assert.equal(byLabel["0"], "neutral");
   assert.equal(byLabel["-12"], "idle");
+});
+
+test("manual end confirm helper forwards the fixed message and true result", () => {
+  let receivedMessage: string | null = null;
+
+  const result = confirmManualSessionEnd((message: string) => {
+    receivedMessage = message;
+    return true;
+  });
+
+  assert.equal(result, true);
+  assert.equal(receivedMessage, MANUAL_SESSION_END_CONFIRM_MESSAGE);
+});
+
+test("manual end confirm helper returns false when confirm is cancelled", () => {
+  let receivedMessage: string | null = null;
+
+  const result = confirmManualSessionEnd((message: string) => {
+    receivedMessage = message;
+    return false;
+  });
+
+  assert.equal(result, false);
+  assert.equal(receivedMessage, MANUAL_SESSION_END_CONFIRM_MESSAGE);
 });
 
 test("distance feedback diagram exposes separate correct and answered annotations", () => {

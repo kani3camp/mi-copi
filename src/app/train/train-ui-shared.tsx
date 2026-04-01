@@ -7,6 +7,11 @@ import { ButtonLink } from "../ui/navigation-link";
 import { Button, Chip, Notice } from "../ui/primitives";
 import { getDistanceFeedbackStatus } from "./distance-feedback-status";
 
+export {
+  confirmManualSessionEnd,
+  MANUAL_SESSION_END_CONFIRM_MESSAGE,
+} from "./manual-end-confirm";
+
 export function formatRemainingTimeLabel(valueMs: number): string {
   const totalSeconds = Math.max(0, Math.ceil(valueMs / 1000));
   const minutes = Math.floor(totalSeconds / 60);
