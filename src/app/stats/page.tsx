@@ -20,7 +20,7 @@ import {
   SummaryBlock,
   SummaryStat,
   Surface,
-  TrainingModeLabel,
+  TrainingModeChip,
 } from "../ui/primitives";
 import { MetricBarChart, MetricLineChart } from "./stats-charts";
 
@@ -308,7 +308,7 @@ export default async function StatsPage() {
                     className="ui-list-link--compact ui-list-link--session"
                   >
                     <div className="ui-list-link__split">
-                      <TrainingModeLabel mode={session.mode} />
+                      <TrainingModeChip mode={session.mode} />
                     </div>
                     <span className="ui-muted">
                       スコア {formatScoreLabel(session.sessionScore)} / 問題数{" "}
