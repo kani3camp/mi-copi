@@ -104,6 +104,12 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+button,
+.ui-button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 :focus-visible {
   outline: 3px solid rgba(95, 143, 102, 0.3);
   outline-offset: 2px;
