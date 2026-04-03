@@ -7,6 +7,7 @@ export interface TrainingSessionEvaluatedResultBase<
   TQuestion extends Question,
 > {
   answeredAt: string;
+  errorSemitones: number;
   isCorrect: boolean;
   question: TQuestion;
 }

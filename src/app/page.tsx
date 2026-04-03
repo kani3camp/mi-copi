@@ -10,8 +10,8 @@ import {
 } from "../features/training/model/format";
 import { getHomeTrainingSummaryForCurrentUser } from "../features/training/server/getHomeTrainingSummary";
 import {
-  getCurrentUserOrNullCached,
   type CurrentUser,
+  getCurrentUserOrNullCached,
 } from "../lib/auth/server";
 import { HomeSignOutButton } from "./home-sign-out-button";
 import { ButtonLink, ListLinkCard } from "./ui/navigation-link";

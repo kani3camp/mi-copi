@@ -30,6 +30,7 @@ import {
   SummaryStat,
   Surface,
 } from "../../ui/primitives";
+import { getDistanceFeedbackStatus } from "../distance-feedback-status";
 import {
   formatFinishReasonLabel,
   MiniStatRow,
@@ -128,16 +129,15 @@ export const KeyboardFeedbackPanel = memo(
     onReplayCorrectTarget: () => void;
     onContinue: () => void;
   }) {
-    const feedbackTone = props.feedbackResult.isCorrect
-      ? "brand"
-      : Math.abs(props.feedbackResult.errorSemitones) === 1
-        ? "amber"
-        : "coral";
-    const feedbackLabel = props.feedbackResult.isCorrect
-      ? "正解"
-      : Math.abs(props.feedbackResult.errorSemitones) === 1
-        ? "惜しい"
-        : "大きくズレ";
+    const feedbackStatus = getDistanceFeedbackStatus(
+      props.feedbackResult.errorSemitones,
+    );
+    const feedbackLabel =
+      feedbackStatus.label === "完全一致"
+        ? "正解"
+        : feedbackStatus.label === "ずれあり"
+          ? "大きくズレ"
+          : feedbackStatus.label;
     const answerMidi = getTargetMidi(
       props.feedbackResult.question.baseMidi,
       props.feedbackResult.question.direction,
@@ -148,7 +148,7 @@ export const KeyboardFeedbackPanel = memo(
       <Surface tone="elevated">
         <SectionHeader
           title="フィードバック"
-          actions={<Chip tone={feedbackTone}>{feedbackLabel}</Chip>}
+          actions={<Chip tone={feedbackStatus.tone}>{feedbackLabel}</Chip>}
         />
         <SummaryBlock>
           <SummaryStat

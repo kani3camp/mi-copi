@@ -117,14 +117,8 @@ export function MiniStatRow(props: {
   );
 }
 
-export function FeedbackStatusChip(props: {
-  errorSemitones: number;
-  isCorrect: boolean;
-}) {
-  const status = getDistanceFeedbackStatus({
-    isCorrect: props.isCorrect,
-    errorSemitones: props.errorSemitones,
-  });
+export function FeedbackStatusChip(props: { errorSemitones: number }) {
+  const status = getDistanceFeedbackStatus(props.errorSemitones);
 
   return (
     <div className="ui-feedback-status">

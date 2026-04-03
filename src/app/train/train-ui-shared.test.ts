@@ -296,40 +296,22 @@ test("distance feedback layout input: 13 steps and valid indices at range edge",
 });
 
 test("distance feedback status does not infer reverse direction for distance mode", () => {
-  assert.deepEqual(
-    getDistanceFeedbackStatus({
-      isCorrect: true,
-      errorSemitones: 0,
-    }),
-    {
-      label: "完全一致",
-      tone: "brand",
-    },
-  );
+  assert.deepEqual(getDistanceFeedbackStatus(0), {
+    label: "完全一致",
+    tone: "brand",
+  });
 });
 
 test("distance feedback status marks one semitone error as close", () => {
-  assert.deepEqual(
-    getDistanceFeedbackStatus({
-      isCorrect: false,
-      errorSemitones: -1,
-    }),
-    {
-      label: "惜しい",
-      tone: "amber",
-    },
-  );
+  assert.deepEqual(getDistanceFeedbackStatus(-1), {
+    label: "惜しい",
+    tone: "amber",
+  });
 });
 
 test("distance feedback status marks larger errors without direction language", () => {
-  assert.deepEqual(
-    getDistanceFeedbackStatus({
-      isCorrect: false,
-      errorSemitones: 2,
-    }),
-    {
-      label: "ずれあり",
-      tone: "coral",
-    },
-  );
+  assert.deepEqual(getDistanceFeedbackStatus(2), {
+    label: "ずれあり",
+    tone: "coral",
+  });
 });

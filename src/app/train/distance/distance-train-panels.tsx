@@ -131,7 +131,6 @@ export function DistanceFeedbackPanel(props: {
         actions={
           <FeedbackStatusChip
             errorSemitones={props.feedbackResult.errorSemitones}
-            isCorrect={props.feedbackResult.isCorrect}
           />
         }
       />

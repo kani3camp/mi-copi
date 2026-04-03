@@ -7,7 +7,7 @@ const {
   AUDIO_TRANSPOSE_SEMITONES,
   clampPlaybackMasterVolume,
   getBoostedPlaybackMasterVolume,
-  getFeedbackEffectFrequency,
+  getFeedbackEffectPattern,
   getQuestionPlaybackDurationMs,
   getPlaybackFrequencyFromMidi,
   transposeFrequency,
@@ -25,9 +25,25 @@ test("playback note frequencies are transposed by one octave", () => {
   assert.equal(Number((transposed / original).toFixed(6)), 2);
 });
 
-test("feedback effect frequencies are also transposed by one octave", () => {
-  assert.equal(getFeedbackEffectFrequency(true), 1760);
-  assert.equal(getFeedbackEffectFrequency(false), 440);
+test("feedback effect patterns expose the intended three feedback sounds", () => {
+  assert.deepEqual(
+    getFeedbackEffectPattern("correct").map((step: { frequency: number }) =>
+      Number(step.frequency.toFixed(3)),
+    ),
+    [1760, 2640],
+  );
+  assert.deepEqual(
+    getFeedbackEffectPattern("close").map((step: { frequency: number }) =>
+      Number(step.frequency.toFixed(3)),
+    ),
+    [1320, 1244.508],
+  );
+  assert.deepEqual(
+    getFeedbackEffectPattern("incorrect").map((step: { frequency: number }) =>
+      Number(step.frequency.toFixed(3)),
+    ),
+    [440],
+  );
 });
 
 test("question playback durations match the intended note sequence timing", () => {

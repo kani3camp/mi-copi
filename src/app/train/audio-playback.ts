@@ -1,6 +1,7 @@
 import type { MutableRefObject } from "react";
 
 import { MAX_MASTER_VOLUME } from "../../features/settings/model/global-user-settings.ts";
+import type { TrainingAnswerFeedbackKind } from "../../features/training/model/feedback.ts";
 import { getFrequencyFromMidi } from "../../features/training/model/pitch.ts";
 import type { Question } from "../../features/training/model/types.ts";
 
@@ -20,7 +21,57 @@ const CORRECT_EFFECT_GAP_MS = 40;
 const CORRECT_EFFECT_SECOND_DURATION_SECONDS = 0.07;
 /** 正解時2音目の周波数（1音目1760Hzの完全5度上 = 2640Hz） */
 const CORRECT_EFFECT_SECOND_FREQUENCY = 2640;
+/** 惜しい時: 1音目の長さ（秒） */
+const CLOSE_EFFECT_FIRST_DURATION_SECONDS = 0.05;
+/** 惜しい時: 1音目と2音目の間隔（ミリ秒） */
+const CLOSE_EFFECT_GAP_MS = 30;
+/** 惜しい時: 2音目の長さ（秒） */
+const CLOSE_EFFECT_SECOND_DURATION_SECONDS = 0.06;
+/** 惜しい時: 1音目の周波数（中高域） */
+const CLOSE_EFFECT_FIRST_FREQUENCY = 1320;
+/** 惜しい時: 2音目の周波数（1音目の半音下） */
+const CLOSE_EFFECT_SECOND_FREQUENCY = 1244.5079348883237;
 const QUESTION_NOTE_GAP_MS = 140;
+
+interface FeedbackEffectStep {
+  durationSeconds: number;
+  frequency: number;
+  gapAfterMs?: number;
+}
+
+const FEEDBACK_EFFECT_PATTERNS: Record<
+  TrainingAnswerFeedbackKind,
+  readonly FeedbackEffectStep[]
+> = {
+  correct: [
+    {
+      durationSeconds: CORRECT_EFFECT_FIRST_DURATION_SECONDS,
+      frequency: 1760,
+      gapAfterMs: CORRECT_EFFECT_GAP_MS,
+    },
+    {
+      durationSeconds: CORRECT_EFFECT_SECOND_DURATION_SECONDS,
+      frequency: CORRECT_EFFECT_SECOND_FREQUENCY,
+    },
+  ],
+  close: [
+    {
+      durationSeconds: CLOSE_EFFECT_FIRST_DURATION_SECONDS,
+      frequency: CLOSE_EFFECT_FIRST_FREQUENCY,
+      gapAfterMs: CLOSE_EFFECT_GAP_MS,
+    },
+    {
+      durationSeconds: CLOSE_EFFECT_SECOND_DURATION_SECONDS,
+      frequency: CLOSE_EFFECT_SECOND_FREQUENCY,
+    },
+  ],
+  incorrect: [
+    {
+      durationSeconds: FEEDBACK_EFFECT_DURATION_SECONDS,
+      frequency: 440,
+    },
+  ],
+};
 
 export function getQuestionPlaybackDurationMs(
   playbackKind: PlaybackKind,
@@ -64,7 +115,7 @@ export async function playFeedbackEffect(
   audioContextRef: MutableRefObject<AudioContext | null>,
   masterVolume: number,
   soundEffectsEnabled: boolean,
-  isCorrect: boolean,
+  feedbackKind: TrainingAnswerFeedbackKind,
   playbackLockRef: MutableRefObject<boolean>,
 ): Promise<void> {
   if (!soundEffectsEnabled || typeof window === "undefined") {
@@ -78,27 +129,17 @@ export async function playFeedbackEffect(
       Math.round(getBoostedPlaybackMasterVolume(masterVolume) * 0.5),
     );
 
-    if (isCorrect) {
+    for (const step of getFeedbackEffectPattern(feedbackKind)) {
       await playTone(
         audioContext,
-        getFeedbackEffectFrequency(true),
-        CORRECT_EFFECT_FIRST_DURATION_SECONDS,
+        step.frequency,
+        step.durationSeconds,
         effectVolume,
       );
-      await wait(CORRECT_EFFECT_GAP_MS);
-      await playTone(
-        audioContext,
-        CORRECT_EFFECT_SECOND_FREQUENCY,
-        CORRECT_EFFECT_SECOND_DURATION_SECONDS,
-        effectVolume,
-      );
-    } else {
-      await playTone(
-        audioContext,
-        getFeedbackEffectFrequency(false),
-        FEEDBACK_EFFECT_DURATION_SECONDS,
-        effectVolume,
-      );
+
+      if (step.gapAfterMs) {
+        await wait(step.gapAfterMs);
+      }
     }
   });
 }
@@ -107,8 +148,10 @@ export function getPlaybackFrequencyFromMidi(midi: number): number {
   return transposeFrequency(getFrequencyFromMidi(midi));
 }
 
-export function getFeedbackEffectFrequency(isCorrect: boolean): number {
-  return transposeFrequency(isCorrect ? 880 : 220);
+export function getFeedbackEffectPattern(
+  feedbackKind: TrainingAnswerFeedbackKind,
+): readonly FeedbackEffectStep[] {
+  return FEEDBACK_EFFECT_PATTERNS[feedbackKind];
 }
 
 export function clampPlaybackMasterVolume(masterVolume: number): number {
