@@ -69,7 +69,10 @@ export const Answering: Story = {
       direction="up"
       replayBaseCount={1}
       replayTargetCount={0}
-      answerChoiceValues={[0, 3, 5, 7, 12]}
+      answerChoiceRows={[
+        [0, 3, 5],
+        [7, 12],
+      ]}
       intervalNotationStyle="ja"
       onReplayBase={args.onReplayBase}
       onReplayTarget={args.onReplayTarget}
@@ -83,11 +86,16 @@ export const Answering: Story = {
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
+    const answerRows = canvasElement.querySelectorAll(
+      ".ui-train-answer-grid__row",
+    );
 
+    await expect(canvas.getByText("上方向")).toBeVisible();
     await userEvent.click(canvas.getByRole("button", { name: "基準音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "問題音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "完全5度" }));
 
+    await expect(answerRows).toHaveLength(2);
     await expect(args.onReplayBase).toHaveBeenCalledTimes(1);
     await expect(args.onReplayTarget).toHaveBeenCalledTimes(1);
     await expect(args.onAnswer).toHaveBeenCalledWith(7);

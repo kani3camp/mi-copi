@@ -14,29 +14,31 @@ export function TrainingProgressHeader(props: {
 }) {
   return (
     <header className={props.className ?? "ui-training-progress-header"}>
-      <div className="ui-training-progress-header__row">
+      <div className="ui-training-progress-header__utility">
         <div className="ui-training-progress-header__actions">
           {props.actions}
         </div>
+        <Chip
+          tone={props.modeTone ?? "brand"}
+          className={props.modeTone ? "ui-chip--mode" : undefined}
+        >
+          {props.modeLabel}
+        </Chip>
+      </div>
+      {props.questionLabel || props.meta ? (
         <div className="ui-training-progress-header__status">
           {props.questionLabel ? (
-            <span className="ui-training-progress-header__question">
+            <strong className="ui-training-progress-header__question">
               {props.questionLabel}
-            </span>
+            </strong>
           ) : null}
-          <Chip
-            tone={props.modeTone ?? "brand"}
-            className={props.modeTone ? "ui-chip--mode" : undefined}
-          >
-            {props.modeLabel}
-          </Chip>
           {props.meta ? (
-            <span className="ui-training-progress-header__meta">
+            <div className="ui-training-progress-header__meta">
               {props.meta}
-            </span>
+            </div>
           ) : null}
         </div>
-      </div>
+      ) : null}
       {props.notice ? (
         <div className="ui-training-progress-header__notice">
           {props.notice}

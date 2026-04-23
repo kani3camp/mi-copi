@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useReducer, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
 import { useTrainingSessionCore } from "../../../features/training/client/use-training-session-core";
@@ -12,6 +18,7 @@ import type {
   DistanceTrainingConfig,
   NoteClass,
   SaveTrainingSessionInput,
+  SessionPhase,
 } from "../../../features/training/model/types";
 import type { DistanceTrainingPageBootstrap } from "../../../features/training/server/getTrainingPageBootstrap";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
@@ -28,6 +35,7 @@ import {
   FieldGrid,
   Notice,
   SectionHeader,
+  SegmentedControl,
   Surface,
 } from "../../ui/primitives";
 import { confirmManualSessionEnd } from "../train-ui-shared";
@@ -193,7 +201,13 @@ export function DistanceTrainClient({
         modeLabel="距離モード"
         modeTone={getTrainingModeTone("distance")}
         questionLabel={viewModel.questionLabel}
-        meta={viewModel.headerMeta}
+        meta={
+          <DistanceTrainingHeaderMeta
+            phase={session.phase}
+            runningScoreLabel={viewModel.runningScoreLabel}
+            statusLabel={viewModel.headerMeta}
+          />
+        }
         actions={
           <ButtonLink
             href="/"
@@ -218,26 +232,44 @@ export function DistanceTrainClient({
             description="必要な設定だけを整えて、そのまま開始します。"
           />
           <div className="ui-form-layout">
-            <div className="ui-form-section">
-              <h3 className="ui-form-section__title">終了条件</h3>
+            <TrainingConfigGroup
+              title="終了条件"
+              description="回数で区切るか、時間で区切るかだけ決めて始めます。"
+            >
+              <Field
+                label="終了方法"
+                hint="よく使う 2 つの進め方をすぐ切り替えられます。"
+              >
+                <SegmentedControl
+                  ariaLabel="終了方法"
+                  value={config.endCondition.type}
+                  items={[
+                    { value: "question_count", label: "問題数" },
+                    { value: "time_limit", label: "制限時間" },
+                  ]}
+                  onChange={(value) =>
+                    dispatchConfigAction({
+                      type: "set_end_condition_type",
+                      value,
+                    })
+                  }
+                  stretch
+                />
+              </Field>
+              <p className="ui-form-inline-note">
+                {config.endCondition.type === "question_count"
+                  ? "指定した問題数で終了します。"
+                  : "時間になった時点で終了します。"}
+              </p>
               <FieldGrid>
-                <Field label="終了方法">
-                  <select
-                    className="ui-select"
-                    onChange={(event) =>
-                      dispatchConfigAction({
-                        type: "set_end_condition_type",
-                        value: event.target.value,
-                      })
-                    }
-                    value={config.endCondition.type}
-                  >
-                    <option value="question_count">問題数</option>
-                    <option value="time_limit">制限時間</option>
-                  </select>
-                </Field>
-                {config.endCondition.type === "question_count" ? (
-                  <Field label="問題数">
+                <Field
+                  label={
+                    config.endCondition.type === "question_count"
+                      ? "問題数"
+                      : "制限時間（秒）"
+                  }
+                >
+                  {config.endCondition.type === "question_count" ? (
                     <select
                       className="ui-select"
                       onChange={(event) =>
@@ -254,9 +286,7 @@ export function DistanceTrainClient({
                         </option>
                       ))}
                     </select>
-                  </Field>
-                ) : (
-                  <Field label="制限時間（秒）">
+                  ) : (
                     <select
                       className="ui-select"
                       onChange={(event) =>
@@ -273,13 +303,15 @@ export function DistanceTrainClient({
                         </option>
                       ))}
                     </select>
-                  </Field>
-                )}
+                  )}
+                </Field>
               </FieldGrid>
-            </div>
+            </TrainingConfigGroup>
 
-            <div className="ui-form-section">
-              <h3 className="ui-form-section__title">出題範囲</h3>
+            <TrainingConfigGroup
+              title="出題範囲"
+              description="上下の出題方向と、基準音の決め方をまとめて調整します。"
+            >
               <FieldGrid>
                 <Field label="最小半音数">
                   <input
@@ -315,38 +347,44 @@ export function DistanceTrainClient({
                   />
                 </Field>
                 <Field label="出題方向">
-                  <select
-                    className="ui-select"
-                    onChange={(event) =>
+                  <SegmentedControl
+                    ariaLabel="出題方向"
+                    value={config.directionMode}
+                    items={[
+                      {
+                        value: "mixed",
+                        label: formatDirectionModeLabel("mixed"),
+                      },
+                      {
+                        value: "up_only",
+                        label: formatDirectionModeLabel("up_only"),
+                      },
+                    ]}
+                    onChange={(value) =>
                       dispatchConfigAction({
                         type: "set_direction_mode",
-                        value: event.target.value,
+                        value,
                       })
                     }
-                    value={config.directionMode}
-                  >
-                    <option value="mixed">
-                      {formatDirectionModeLabel("mixed")}
-                    </option>
-                    <option value="up_only">
-                      {formatDirectionModeLabel("up_only")}
-                    </option>
-                  </select>
+                    stretch
+                  />
                 </Field>
                 <Field label="基準音モード">
-                  <select
-                    className="ui-select"
-                    onChange={(event) =>
+                  <SegmentedControl
+                    ariaLabel="基準音モード"
+                    value={config.baseNoteMode}
+                    items={[
+                      { value: "random", label: "ランダム" },
+                      { value: "fixed", label: "固定" },
+                    ]}
+                    onChange={(value) =>
                       dispatchConfigAction({
                         type: "set_base_note_mode",
-                        value: event.target.value,
+                        value,
                       })
                     }
-                    value={config.baseNoteMode}
-                  >
-                    <option value="random">ランダム</option>
-                    <option value="fixed">固定</option>
-                  </select>
+                    stretch
+                  />
                 </Field>
               </FieldGrid>
 
@@ -370,60 +408,71 @@ export function DistanceTrainClient({
                   </select>
                 </Field>
               ) : null}
-            </div>
+            </TrainingConfigGroup>
 
-            <div className="ui-form-section">
-              <h3 className="ui-form-section__title">回答スタイル</h3>
-              <label className="ui-checkbox-card">
-                <input
-                  checked={config.includeUnison}
-                  onChange={(event) =>
-                    dispatchConfigAction({
-                      type: "toggle_include_unison",
-                      checked: event.target.checked,
-                    })
-                  }
-                  type="checkbox"
-                />
-                <span>同音を含める</span>
-              </label>
-              <label className="ui-checkbox-card">
-                <input
-                  checked={config.includeOctave}
-                  onChange={(event) =>
-                    dispatchConfigAction({
-                      type: "toggle_include_octave",
-                      checked: event.target.checked,
-                    })
-                  }
-                  type="checkbox"
-                />
-                <span>オクターブを含める</span>
-              </label>
-              <Field label="音程表記の粒度">
-                <select
-                  className="ui-select"
-                  onChange={(event) =>
+            <TrainingConfigGroup
+              title="回答スタイル"
+              description="候補の出し方を整えて、すぐに答えやすい形へ寄せます。"
+            >
+              <div className="ui-train-config-toggle-grid">
+                <label className="ui-checkbox-card">
+                  <input
+                    checked={config.includeUnison}
+                    onChange={(event) =>
+                      dispatchConfigAction({
+                        type: "toggle_include_unison",
+                        checked: event.target.checked,
+                      })
+                    }
+                    type="checkbox"
+                  />
+                  <span>同音を含める</span>
+                </label>
+                <label className="ui-checkbox-card">
+                  <input
+                    checked={config.includeOctave}
+                    onChange={(event) =>
+                      dispatchConfigAction({
+                        type: "toggle_include_octave",
+                        checked: event.target.checked,
+                      })
+                    }
+                    type="checkbox"
+                  />
+                  <span>オクターブを含める</span>
+                </label>
+              </div>
+              <Field
+                label="音程表記の粒度"
+                hint="候補ボタンの表記だけを切り替えます。"
+              >
+                <SegmentedControl
+                  ariaLabel="音程表記の粒度"
+                  value={config.intervalGranularity}
+                  items={[
+                    { value: "simple", label: "シンプル" },
+                    { value: "aug_dim", label: "増減あり" },
+                  ]}
+                  onChange={(value) =>
                     dispatchConfigAction({
                       type: "set_interval_granularity",
-                      value:
-                        event.target.value === "aug_dim" ? "aug_dim" : "simple",
+                      value,
                     })
                   }
-                  value={config.intervalGranularity}
-                >
-                  <option value="simple">シンプル</option>
-                  <option value="aug_dim">増減あり</option>
-                </select>
+                  stretch
+                />
               </Field>
-              <div className="ui-form-chip-list">
-                {viewModel.answerChoiceChips.map((choice) => (
-                  <Chip key={choice.value} tone="teal">
-                    {choice.label}
-                  </Chip>
-                ))}
+              <div className="ui-form-section__preview">
+                <span className="ui-form-inline-note">現在の候補</span>
+                <div className="ui-form-chip-list">
+                  {viewModel.answerChoiceChips.map((choice) => (
+                    <Chip key={choice.value} tone="brand">
+                      {choice.label}
+                    </Chip>
+                  ))}
+                </div>
               </div>
-            </div>
+            </TrainingConfigGroup>
           </div>
 
           {bootstrap.isBootstrapPending ? (
@@ -479,7 +528,7 @@ export function DistanceTrainClient({
       {(session.phase === "playing" || session.phase === "answering") &&
       session.activeQuestion ? (
         <DistanceQuestionPanel
-          answerChoiceValues={viewModel.answerChoiceValues}
+          answerChoiceRows={viewModel.answerChoiceRows}
           direction={session.activeQuestion.question.direction}
           intervalNotationStyle={settings.intervalNotationStyle}
           isPlaybackLocked={session.phase === "playing"}
@@ -520,5 +569,58 @@ export function DistanceTrainClient({
         />
       ) : null}
     </AppShell>
+  );
+}
+
+function TrainingConfigGroup(props: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="ui-form-section ui-train-config-group">
+      <div className="ui-train-config-group__header">
+        <h3 className="ui-form-section__title">{props.title}</h3>
+        <p className="ui-train-config-group__description">
+          {props.description}
+        </p>
+      </div>
+      {props.children}
+    </section>
+  );
+}
+
+function DistanceTrainingHeaderMeta(props: {
+  phase: SessionPhase;
+  statusLabel: string | null;
+  runningScoreLabel: string | null;
+}) {
+  if (props.phase === "result") {
+    return props.statusLabel;
+  }
+
+  if (!props.statusLabel && !props.runningScoreLabel) {
+    return null;
+  }
+
+  return (
+    <div className="ui-training-progress-meta">
+      {props.statusLabel ? (
+        <div className="ui-training-progress-meta__item" data-tone="info">
+          <span className="ui-training-progress-meta__label">残り</span>
+          <strong className="ui-training-progress-meta__value">
+            {props.statusLabel}
+          </strong>
+        </div>
+      ) : null}
+      {props.runningScoreLabel ? (
+        <div className="ui-training-progress-meta__item" data-tone="brand">
+          <span className="ui-training-progress-meta__label">スコア</span>
+          <strong className="ui-training-progress-meta__value">
+            {props.runningScoreLabel}
+          </strong>
+        </div>
+      ) : null}
+    </div>
   );
 }

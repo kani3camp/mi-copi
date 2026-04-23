@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import type {
   DistanceGuestResult,
   DistanceGuestSummary,
@@ -44,7 +46,7 @@ export function DistanceQuestionPanel(props: {
   direction: QuestionDirection;
   replayBaseCount: number;
   replayTargetCount: number;
-  answerChoiceValues: number[];
+  answerChoiceRows: number[][];
   intervalNotationStyle: IntervalNotationStyle;
   onReplayBase: () => void;
   onReplayTarget: () => void;
@@ -55,7 +57,12 @@ export function DistanceQuestionPanel(props: {
       <SectionHeader
         title="音を聴いて答える"
         description="再生ボタンで聞き直しながら、音程名をひとつ選びます。"
-        actions={<Chip tone="teal">回答中</Chip>}
+        eyebrow={`問題 ${props.questionIndex + 1}`}
+        actions={
+          <Chip tone="brand">
+            {formatQuestionDirectionLabel(props.direction)}
+          </Chip>
+        }
       />
       <PlaybackButtonPair
         isPlaybackLocked={props.isPlaybackLocked}
@@ -68,7 +75,7 @@ export function DistanceQuestionPanel(props: {
             id: "direction",
             label: "方向",
             value: formatQuestionDirectionLabel(props.direction),
-            tone: "teal",
+            tone: "brand",
           },
           {
             id: "base-replay-count",
@@ -84,17 +91,28 @@ export function DistanceQuestionPanel(props: {
         ]}
       />
       <div className="ui-train-answer-grid">
-        {props.answerChoiceValues.map((choice) => (
-          <Button
-            key={choice}
-            type="button"
-            onClick={() => props.onAnswer(choice)}
-            block
-            disabled={props.isPlaybackLocked}
-            variant="secondary"
+        {props.answerChoiceRows.map((row) => (
+          <div
+            key={row.join("-")}
+            className="ui-train-answer-grid__row"
+            style={{ "--answer-columns": row.length } as CSSProperties}
           >
-            {getIntervalLabel(choice, props.intervalNotationStyle)}
-          </Button>
+            {row.map((choice) => (
+              <Button
+                key={choice}
+                type="button"
+                onClick={() => props.onAnswer(choice)}
+                block
+                disabled={props.isPlaybackLocked}
+                variant="secondary"
+                className="ui-train-answer-button"
+              >
+                <span className="ui-train-answer-button__label">
+                  {getIntervalLabel(choice, props.intervalNotationStyle)}
+                </span>
+              </Button>
+            ))}
+          </div>
         ))}
       </div>
     </Surface>

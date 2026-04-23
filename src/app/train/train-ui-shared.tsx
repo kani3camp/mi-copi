@@ -42,13 +42,18 @@ export function PlaybackButtonPair(props: {
   targetLabel?: string;
 }) {
   return (
-    <div className="ui-playback-pair">
+    <div
+      className="ui-playback-pair"
+      data-active={props.isPlaybackLocked ? "true" : "false"}
+    >
       <PlaybackButton
         label="基準音"
+        active={props.isPlaybackLocked}
         disabled={props.isPlaybackLocked}
         onClick={props.onReplayBase}
       />
       <PlaybackButton
+        active={props.isPlaybackLocked}
         label={props.targetLabel ?? "問題音"}
         disabled={props.isPlaybackLocked}
         onClick={props.onReplayTarget}
@@ -58,6 +63,7 @@ export function PlaybackButtonPair(props: {
 }
 
 function PlaybackButton(props: {
+  active: boolean;
   label: string;
   disabled: boolean;
   onClick: () => void;
@@ -68,6 +74,7 @@ function PlaybackButton(props: {
       onClick={props.onClick}
       disabled={props.disabled}
       className="ui-playback-button"
+      data-active={props.active ? "true" : "false"}
       aria-label={`${props.label}を再生`}
     >
       <span className="ui-playback-button__icon" aria-hidden="true">
@@ -82,7 +89,7 @@ function PlaybackButton(props: {
       <span className="ui-playback-button__label">{props.label}</span>
       <span
         className="ui-playback-button__state"
-        data-active="false"
+        data-active={props.active ? "true" : "false"}
         aria-hidden="true"
       >
         <span />
@@ -98,7 +105,7 @@ export function MiniStatRow(props: {
     id: string;
     label: ReactNode;
     value: ReactNode;
-    tone?: "neutral" | "teal" | "amber" | "coral" | "blue";
+    tone?: "neutral" | "brand" | "teal" | "amber" | "coral" | "blue";
   }>;
 }) {
   return (
