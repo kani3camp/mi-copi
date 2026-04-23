@@ -11,7 +11,7 @@ export function ResetConfigSubmitButton(props: { children: ReactNode }) {
   return (
     <Button
       type="submit"
-      variant="ghost"
+      variant="secondary"
       size="compact"
       disabled={pending}
       pending={pending}

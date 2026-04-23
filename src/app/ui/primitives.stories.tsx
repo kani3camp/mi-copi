@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { useState } from "react";
 
 import { ButtonLink } from "./navigation-link";
 import {
@@ -6,6 +7,7 @@ import {
   AppShell,
   Button,
   Chip,
+  SegmentedControl,
   TrainingModeChip,
 } from "./primitives";
 
@@ -24,6 +26,27 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+function SegmentedStory() {
+  const [value, setValue] = useState<"ja" | "abbr" | "mixed">("ja");
+
+  return (
+    <div className="ui-stack-md">
+      <SegmentedControl
+        ariaLabel="音程表記スタイル"
+        value={value}
+        onChange={setValue}
+        stretch
+        items={[
+          { value: "ja", label: "日本語" },
+          { value: "abbr", label: "略称" },
+          { value: "mixed", label: "混在" },
+        ]}
+      />
+      <Chip tone="brand">選択中: {value}</Chip>
+    </div>
+  );
+}
 
 export const ButtonsAndChips: Story = {
   render: () => (
@@ -54,14 +77,14 @@ export const ButtonsAndChips: Story = {
 export const ActionCardWithCta: Story = {
   render: () => (
     <ActionCard
-      tone="teal"
-      eyebrow={<TrainingModeChip mode="distance" />}
+      tone="brand"
+      eyebrow={<Chip tone="brand">距離モード</Chip>}
       title="音程名で答える"
       description="半音距離と反応速度を短く繰り返し鍛えます。"
       footer={
         <ButtonLink
           href="/train/distance"
-          variant="secondary"
+          variant="primary"
           block
           pendingLabel="距離モードを開いています..."
         >
@@ -70,4 +93,8 @@ export const ActionCardWithCta: Story = {
       }
     />
   ),
+};
+
+export const SegmentedControlExample: Story = {
+  render: () => <SegmentedStory />,
 };

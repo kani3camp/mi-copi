@@ -19,7 +19,7 @@ import {
   ActionCard,
   AppShell,
   Chip,
-  PageHeader,
+  PageHero,
   SectionHeader,
   SummaryBlock,
   SummaryStat,
@@ -33,35 +33,42 @@ export default async function HomePage() {
 
   return (
     <AppShell>
-      <PageHeader
+      <PageHero
         title="ミーコピ"
         eyebrow="相対音感トレーニング"
-        subtitle="基準音ありの相対音感トレーニングを、短く反復するためのホームです。"
-      />
+        subtitle="基準音からの差を、短いループで耳コピ向けに整えていくホームです。"
+        actions={<HomeHeaderActions isAuthenticated={isAuthenticated} />}
+      >
+        <div className="ui-cluster">
+          <Chip tone="brand">スマホ縦向き優先</Chip>
+          <Chip tone="neutral">基準音あり</Chip>
+          <Chip tone="success">短い反復</Chip>
+        </div>
+      </PageHero>
 
-      {isAuthenticated ? null : <HomeGuestLoginCta />}
-
-      <div className="ui-stack-md">
-        <SectionHeader title="すぐ始める" />
-        <div className="ui-grid-cards">
+      <Surface tone="accent" className="ui-home-start-surface">
+        <SectionHeader
+          title="すぐ始める"
+          description="練習開始の導線を上に集めています。モードを選んで、そのまま短く回せます。"
+        />
+        <div className="ui-grid-cards ui-home-mode-grid">
           <ModeEntry
             href="/train/distance"
-            label="距離モード"
+            mode="distance"
             title="音程名で答える"
             description="半音距離と反応速度を短く繰り返し鍛えます。"
             pendingLabel="距離モードを開いています..."
-            tone="teal"
           />
           <ModeEntry
             href="/train/keyboard"
-            label="鍵盤モード"
+            mode="keyboard"
             title="鍵盤で答える"
             description="基準音の位置を見ながら耳コピ寄りに答えます。"
             pendingLabel="鍵盤モードを開いています..."
-            tone="blue"
           />
         </div>
-      </div>
+        {isAuthenticated ? null : <HomeGuestLoginCta />}
+      </Surface>
 
       {isAuthenticated ? (
         <Suspense fallback={<HomeSummaryLoading />}>
@@ -70,78 +77,83 @@ export default async function HomePage() {
       ) : (
         <GuestHomeContent />
       )}
-
-      <Surface>
-        <SectionHeader title="メニュー" />
-        <div className="ui-page-aux-actions">
-          <ButtonLink
-            href="/settings"
-            variant="ghost"
-            size="compact"
-            pendingLabel="設定を開いています..."
-          >
-            設定
-          </ButtonLink>
-          <ButtonLink
-            href="/login"
-            variant="ghost"
-            size="compact"
-            pendingLabel="ログイン画面を開いています..."
-          >
-            {isAuthenticated ? "アカウント" : "ログイン"}
-          </ButtonLink>
-          {isAuthenticated ? <HomeSignOutButton /> : null}
-        </div>
-      </Surface>
     </AppShell>
   );
 }
 
 function ModeEntry(props: {
   href: string;
-  label: string;
+  mode: "distance" | "keyboard";
   title: string;
   description: string;
   pendingLabel: string;
-  tone: "teal" | "blue";
 }) {
   return (
     <ActionCard
-      tone={props.tone}
-      eyebrow={
-        <TrainingModeChip
-          mode={props.tone === "teal" ? "distance" : "keyboard"}
-          label={props.label}
-        />
+      tone="brand"
+      className={
+        props.mode === "keyboard" ? "ui-home-mode-card--secondary" : undefined
       }
+      eyebrow={<Chip tone="brand">{formatTrainingModeLabel(props.mode)}</Chip>}
       title={props.title}
       description={props.description}
       footer={
-        <ButtonLink
-          href={props.href}
-          pendingLabel={props.pendingLabel}
-          variant="primary"
-          block
-        >
-          練習を始める
-        </ButtonLink>
+        <div className="ui-stack-sm">
+          <p className="ui-mini-note">
+            {props.mode === "distance"
+              ? "音程名で即答するテンポ重視の練習です。"
+              : "基準音の位置を見ながら答える耳コピ寄りの練習です。"}
+          </p>
+          <ButtonLink
+            href={props.href}
+            pendingLabel={props.pendingLabel}
+            variant="primary"
+            block
+          >
+            練習を始める
+          </ButtonLink>
+        </div>
       }
     />
+  );
+}
+
+function HomeHeaderActions(props: { isAuthenticated: boolean }) {
+  return (
+    <div className="ui-page-aux-actions">
+      <ButtonLink
+        href="/settings"
+        variant="ghost"
+        size="compact"
+        pendingLabel="設定を開いています..."
+      >
+        設定
+      </ButtonLink>
+      <ButtonLink
+        href="/login"
+        variant="ghost"
+        size="compact"
+        pendingLabel="ログイン画面を開いています..."
+      >
+        {props.isAuthenticated ? "アカウント" : "ログイン"}
+      </ButtonLink>
+      {props.isAuthenticated ? <HomeSignOutButton /> : null}
+    </div>
   );
 }
 
 function HomeGuestLoginCta() {
   return (
     <ActionCard
-      tone="brand"
-      eyebrow={<Chip tone="warning">未ログイン</Chip>}
-      title="現在ログインしていません"
-      description="このまま練習を始めると結果は保存されず、統計にも残りません。"
+      className="ui-home-login-card"
+      eyebrow={<Chip tone="warning">保存なし</Chip>}
+      title="ログインすると結果を残せます"
+      description="ゲストでも練習は始められます。保存や統計を使うときだけログインすれば十分です。"
       footer={
         <ButtonLink
           href="/login"
           pendingLabel="ログイン画面を開いています..."
-          variant="primary"
+          variant="secondary"
           block
         >
           ログインして結果を保存
@@ -158,9 +170,53 @@ async function AuthenticatedHomeContent(props: { currentUser: CurrentUser }) {
 
   return (
     <>
-      <Surface>
-        <SectionHeader title="学習サマリー" />
-        <SummaryBlock className="ui-summary-block--insight">
+      <Surface tone="elevated">
+        <SectionHeader
+          title="学習サマリー"
+          description="スコアを主指標にしつつ、ズレと反応速度も同じ視線で追えます。"
+          actions={
+            <ButtonLink
+              href="/stats"
+              variant="ghost"
+              size="compact"
+              pendingLabel="統計を開いています..."
+            >
+              統計を見る
+            </ButtonLink>
+          }
+        />
+        <SummaryBlock className="ui-summary-block--insight ui-home-summary-grid">
+          <SummaryStat
+            label="最近のセッションスコア"
+            value={
+              summary.latestSessionScore === null
+                ? "-"
+                : formatScoreLabel(summary.latestSessionScore)
+            }
+            detail="直近の手応え"
+            emphasis="primary"
+            className="ui-summary-stat--brand"
+          />
+          <SummaryStat
+            label="最近の平均誤差"
+            value={
+              summary.recentAverageError === null
+                ? "-"
+                : formatAvgErrorLabel(summary.recentAverageError)
+            }
+            detail="ズレの平均"
+            className="ui-summary-stat--warning"
+          />
+          <SummaryStat
+            label="最近の平均回答時間"
+            value={
+              summary.recentAverageResponseTimeMs === null
+                ? "-"
+                : formatResponseTimeMsLabel(summary.recentAverageResponseTimeMs)
+            }
+            detail="反応速度"
+            className="ui-summary-stat--info"
+          />
           <SummaryStat
             label="最終学習日時"
             value={
@@ -173,56 +229,12 @@ async function AuthenticatedHomeContent(props: { currentUser: CurrentUser }) {
                 ? formatTrainingModeLabel(summary.lastUsedMode)
                 : "モード未記録"
             }
-            emphasis="primary"
-            className="ui-summary-stat--brand"
-          />
-          <SummaryStat
-            label="最近の平均誤差"
-            value={
-              summary.recentAverageError === null
-                ? "-"
-                : formatAvgErrorLabel(summary.recentAverageError)
-            }
-            detail="ズレの平均"
-            className="ui-summary-stat--coral"
-          />
-          <SummaryStat
-            label="最近の平均回答時間"
-            value={
-              summary.recentAverageResponseTimeMs === null
-                ? "-"
-                : formatResponseTimeMsLabel(summary.recentAverageResponseTimeMs)
-            }
-            detail="反応速度"
-            className="ui-summary-stat--blue"
-          />
-          <SummaryStat
-            label="最近のセッションスコア"
-            value={
-              summary.latestSessionScore === null
-                ? "-"
-                : formatScoreLabel(summary.latestSessionScore)
-            }
-            detail="直近の手応え"
-            className="ui-summary-stat--teal"
           />
         </SummaryBlock>
       </Surface>
 
-      <Surface>
-        <SectionHeader
-          title="最近の保存済みセッション"
-          actions={
-            <ButtonLink
-              href="/stats"
-              variant="ghost"
-              size="compact"
-              pendingLabel="統計を開いています..."
-            >
-              統計を見る
-            </ButtonLink>
-          }
-        />
+      <Surface tone="elevated">
+        <SectionHeader title="最近の保存済みセッション" />
         {summary.recentSessions.length > 0 ? (
           <div className="ui-list">
             {summary.recentSessions.map((session) => (
@@ -256,24 +268,24 @@ async function AuthenticatedHomeContent(props: { currentUser: CurrentUser }) {
 
 function GuestHomeContent() {
   return (
-    <Surface>
+    <Surface tone="elevated">
       <SectionHeader
         title="ゲスト利用"
         description="練習はすぐ始められます。保存や統計はログイン後に有効になります。"
       />
-      <SummaryBlock>
+      <SummaryBlock className="ui-home-summary-grid">
         <SummaryStat
           label="今できること"
           value="距離モード / 鍵盤モード"
           detail="結果はその場で確認できます。"
           emphasis="primary"
-          className="ui-summary-stat--teal"
+          className="ui-summary-stat--brand"
         />
         <SummaryStat
           label="ログイン後に増えること"
           value="保存 / 統計 / 同期"
           detail="過去の成長を見返せます。"
-          className="ui-summary-stat--blue"
+          className="ui-summary-stat--info"
         />
       </SummaryBlock>
     </Surface>
@@ -282,7 +294,7 @@ function GuestHomeContent() {
 
 function HomeSummaryLoading() {
   return (
-    <Surface>
+    <Surface tone="elevated">
       <SectionHeader title="学習サマリーを読み込み中" />
       <p className="ui-subtitle">保存済みの学習情報を取得しています。</p>
     </Surface>

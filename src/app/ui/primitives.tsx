@@ -3,6 +3,7 @@ import type {
   PropsWithChildren,
   ReactNode,
 } from "react";
+import { useId } from "react";
 
 import {
   formatTrainingModeLabel,
@@ -184,9 +185,25 @@ export function Notice(
       role={role}
       aria-live={ariaLive}
     >
-      {props.children}
+      <span className="ui-notice__icon" aria-hidden="true">
+        {getNoticeIconLabel(tone)}
+      </span>
+      <div className="ui-notice__content">{props.children}</div>
     </div>
   );
+}
+
+function getNoticeIconLabel(tone: "info" | "warning" | "success" | "error") {
+  switch (tone) {
+    case "success":
+      return "OK";
+    case "warning":
+      return "!";
+    case "error":
+      return "x";
+    default:
+      return "i";
+  }
 }
 
 export function Chip(
@@ -402,6 +419,62 @@ export function FieldGrid(props: PropsWithChildren<{ className?: string }>) {
   return (
     <div className={cn("ui-grid-fields", props.className)}>
       {props.children}
+    </div>
+  );
+}
+
+export function SegmentedControl<T extends string>(props: {
+  ariaLabel: string;
+  value: T;
+  items: Array<{
+    value: T;
+    label: ReactNode;
+    disabled?: boolean;
+  }>;
+  onChange: (value: T) => void;
+  stretch?: boolean;
+  className?: string;
+}) {
+  const groupName = useId();
+
+  return (
+    <div
+      className={cn(
+        "ui-segmented",
+        props.stretch && "ui-segmented--block",
+        props.className,
+      )}
+      role="radiogroup"
+      aria-label={props.ariaLabel}
+    >
+      {props.items.map((item) => {
+        const isActive = item.value === props.value;
+
+        return (
+          <label key={item.value} className="ui-segmented__label">
+            <input
+              className="ui-segmented__control"
+              type="radio"
+              name={groupName}
+              checked={isActive}
+              disabled={item.disabled}
+              onChange={() => {
+                if (item.disabled || isActive) {
+                  return;
+                }
+
+                props.onChange(item.value);
+              }}
+            />
+            <span
+              className="ui-segmented__item"
+              data-active={isActive ? "true" : "false"}
+            >
+              {item.label}
+            </span>
+          </label>
+        );
+      })}
     </div>
   );
 }

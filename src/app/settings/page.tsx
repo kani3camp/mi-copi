@@ -5,7 +5,10 @@ import { GlobalUserSettingsProvider } from "../../features/settings/client/globa
 import type { GlobalUserSettings } from "../../features/settings/model/global-user-settings";
 import { getCurrentUserSettingsSnapshot } from "../../features/settings/server/getCurrentUserSettingsSnapshot";
 import { updateGlobalUserSettingsForCurrentUser } from "../../features/settings/server/global-user-settings";
-import { formatDateTimeLabel } from "../../features/training/model/format";
+import {
+  formatDateTimeLabel,
+  formatTrainingModeLabel,
+} from "../../features/training/model/format";
 import { formatDirectionModeLabel } from "../../features/training/model/interval-notation";
 import type { TrainingConfigSnapshot } from "../../features/training/model/types";
 import { getSettingsPageDataForCurrentUser } from "../../features/training/server/getSettingsPageData";
@@ -21,7 +24,6 @@ import {
   SummaryBlock,
   SummaryStat,
   Surface,
-  TrainingModeLabel,
 } from "../ui/primitives";
 import { GlobalSettingsSection } from "./global-settings-section";
 import { ResetConfigSubmitButton } from "./reset-config-submit-button";
@@ -89,63 +91,64 @@ export default async function SettingsPage({
       <AppShell narrow>
         <PageHeader
           title="設定"
-          eyebrow="設定"
-          subtitle="音量、表記、鍵盤ラベル表示と保存済み設定をここで整えます。"
+          eyebrow="学習環境"
+          subtitle="再生、表記、保存済み設定をスマホで短く調整できるようにまとめています。"
+          actions={
+            <div className="ui-page-aux-actions">
+              <ButtonLink
+                href="/"
+                variant="ghost"
+                size="compact"
+                pendingLabel="ホームを開いています..."
+              >
+                ホーム
+              </ButtonLink>
+              <ButtonLink
+                href="/train/distance"
+                variant="ghost"
+                size="compact"
+                pendingLabel="距離モードを開いています..."
+              >
+                距離モード
+              </ButtonLink>
+              <ButtonLink
+                href="/train/keyboard"
+                variant="ghost"
+                size="compact"
+                pendingLabel="鍵盤モードを開いています..."
+              >
+                鍵盤モード
+              </ButtonLink>
+            </div>
+          }
         />
 
-        <Surface>
-          <div className="ui-page-aux-actions">
-            <ButtonLink
-              href="/"
-              variant="ghost"
-              size="compact"
-              pendingLabel="ホームを開いています..."
-            >
-              ホーム
-            </ButtonLink>
-            <ButtonLink
-              href="/train/distance"
-              variant="ghost"
-              size="compact"
-              pendingLabel="距離モードを開いています..."
-            >
-              距離モード
-            </ButtonLink>
-            <ButtonLink
-              href="/train/keyboard"
-              variant="ghost"
-              size="compact"
-              pendingLabel="鍵盤モードを開いています..."
-            >
-              鍵盤モード
-            </ButtonLink>
-          </div>
-        </Surface>
+        <div className="ui-stack-sm">
+          {resetTarget ? (
+            <Notice tone="success">
+              {resetTarget === "distance"
+                ? "距離モードの設定を初期値に戻しました。"
+                : "鍵盤モードの設定を初期値に戻しました。"}
+            </Notice>
+          ) : null}
 
-        {resetTarget ? (
-          <Notice tone="success">
-            {resetTarget === "distance"
-              ? "距離モードの設定を初期値に戻しました。"
-              : "鍵盤モードの設定を初期値に戻しました。"}
-          </Notice>
-        ) : null}
-
-        {resetError ? (
-          <Notice tone="error">
-            {resetError === "distance"
-              ? "距離モードの設定をリセットできませんでした。もう一度お試しください。"
-              : "鍵盤モードの設定をリセットできませんでした。もう一度お試しください。"}
-          </Notice>
-        ) : null}
+          {resetError ? (
+            <Notice tone="error">
+              {resetError === "distance"
+                ? "距離モードの設定をリセットできませんでした。もう一度お試しください。"
+                : "鍵盤モードの設定をリセットできませんでした。もう一度お試しください。"}
+            </Notice>
+          ) : null}
+        </div>
 
         <GlobalSettingsSection />
 
         {data.isAuthenticated ? (
           <>
-            <Surface>
+            <Surface tone="elevated">
               <SectionHeader
                 title="保存済みの前回設定"
-                description="mode ごとの前回設定を、フラットな行で確認できます。"
+                description="mode ごとの最後に使った条件を、練習前にここで見直せます。"
               />
               <div className="ui-settings-snapshot">
                 <ConfigSnapshotGroup
@@ -161,10 +164,10 @@ export default async function SettingsPage({
               </div>
             </Surface>
 
-            <Surface>
+            <Surface tone="elevated">
               <SectionHeader
                 title="アカウント概要"
-                description="クラウド保存に使うアカウント状態です。"
+                description="設定と結果のクラウド保存に使っている状態です。"
               />
               <SummaryBlock className="ui-summary-block--insight ui-settings-account-summary">
                 <SummaryStat
@@ -176,13 +179,12 @@ export default async function SettingsPage({
                 <SummaryStat
                   label="メールアドレス"
                   value={data.user?.email ?? "不明"}
-                  className="ui-summary-stat--blue"
                 />
                 <SummaryStat
                   label="ログイン状態"
                   value="サインイン中"
                   detail="設定と結果をクラウド保存します。"
-                  className="ui-summary-stat--teal"
+                  className="ui-summary-stat--success"
                 />
                 <SummaryStat
                   label="最終更新"
@@ -192,13 +194,13 @@ export default async function SettingsPage({
                       : "まだ保存されていません"
                   }
                   detail="設定のクラウド反映時刻"
-                  className="ui-summary-stat--blue"
+                  className="ui-summary-stat--info"
                 />
               </SummaryBlock>
             </Surface>
           </>
         ) : (
-          <Surface>
+          <Surface tone="elevated">
             <SectionHeader title="保存済み設定" />
             <Notice tone="warning">
               ゲスト利用中です。保存済み設定はログイン後に利用できるようになります。
@@ -215,12 +217,22 @@ function ConfigSnapshotGroup(props: {
   config: TrainingConfigSnapshot | null;
   resetAction: () => Promise<void>;
 }) {
+  const modeLabel = formatTrainingModeLabel(props.mode);
+  const stateLabel = props.config ? "保存済み" : "未保存";
+
   return (
     <div className="ui-settings-snapshot__group">
       <div className="ui-settings-snapshot__title">
-        <div className="ui-compact-actions">
-          <TrainingModeLabel mode={props.mode} />
-          <Chip tone="amber">保存済み</Chip>
+        <div className="ui-stack-sm">
+          <div className="ui-compact-actions">
+            <Chip tone="brand">{modeLabel}</Chip>
+            <Chip tone={props.config ? "success" : "neutral"}>
+              {stateLabel}
+            </Chip>
+          </div>
+          <span className="ui-mini-note">
+            前回その mode で使った条件をここに保持します。
+          </span>
         </div>
         <form action={props.resetAction}>
           <ResetConfigSubmitButton>初期値に戻す</ResetConfigSubmitButton>
@@ -241,8 +253,7 @@ function ConfigSnapshotGroup(props: {
         </div>
       ) : (
         <p className="ui-subtitle">
-          <TrainingModeLabel mode={props.mode} className="ui-mode-label" />
-          の保存済み設定はまだありません。
+          {modeLabel} の保存済み設定はまだありません。
         </p>
       )}
     </div>
