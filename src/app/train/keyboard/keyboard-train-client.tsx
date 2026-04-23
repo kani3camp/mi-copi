@@ -29,6 +29,7 @@ import {
   SectionHeader,
   Surface,
 } from "../../ui/primitives";
+import { confirmManualSessionEnd } from "../train-ui-shared";
 import {
   type KeyboardTrainingConfigAction,
   reduceKeyboardTrainingConfig,
@@ -190,6 +191,14 @@ export function KeyboardTrainClient({
   function handleReset() {
     session.resetSession();
     setPersistConfigErrorMessage(null);
+  }
+
+  function handleEndSession() {
+    if (!confirmManualSessionEnd()) {
+      return;
+    }
+
+    session.endSessionManually();
   }
 
   return (
@@ -486,7 +495,8 @@ export function KeyboardTrainClient({
           feedbackResult={session.feedbackResult}
           lastAnsweredWasFinal={session.lastAnsweredWasFinal}
           onContinue={session.continueAfterFeedback}
-          onEndSession={session.endSessionManually}
+          onEndSession={handleEndSession}
+          onReplayBase={session.replayBase}
           onReplayCorrectTarget={session.replayCorrectTarget}
           showLabels={settings.keyboardNoteLabelsVisible}
         />

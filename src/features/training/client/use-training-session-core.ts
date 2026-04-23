@@ -16,6 +16,7 @@ import {
   playQuestionAudio,
 } from "../../../app/train/audio-playback";
 import { createTrainingResultSaveFailureResult } from "../../../lib/async-action-errors";
+import { getTrainingAnswerFeedbackKind } from "../model/feedback";
 import type { TrainingSessionAdapter } from "../model/training-session-adapter";
 import {
   createActiveQuestion,
@@ -44,6 +45,7 @@ export interface UseTrainingSessionCoreOptions<
   TUserAnswer,
   TResult extends {
     answeredAt: string;
+    errorSemitones: number;
     isCorrect: boolean;
     question: Question;
   },
@@ -75,6 +77,7 @@ export function useTrainingSessionCore<
   TUserAnswer,
   TResult extends {
     answeredAt: string;
+    errorSemitones: number;
     isCorrect: boolean;
     question: Question;
   },
@@ -434,7 +437,7 @@ export function useTrainingSessionCore<
       audioContextRef,
       masterVolume,
       soundEffectsEnabled,
-      result.isCorrect,
+      getTrainingAnswerFeedbackKind(result.errorSemitones),
       playbackLockRef,
     );
   }

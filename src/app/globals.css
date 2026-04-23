@@ -104,6 +104,12 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+button,
+.ui-button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 :focus-visible {
   outline: 3px solid rgba(95, 143, 102, 0.3);
   outline-offset: 2px;
@@ -1018,11 +1024,6 @@ a {
   line-height: 1.35;
 }
 
-.ui-graph-card--feature {
-  padding-top: 0;
-  border-top: 0;
-}
-
 .ui-flat-panel-list {
   display: grid;
   gap: 0;
@@ -1194,7 +1195,8 @@ a {
 }
 
 .ui-trend-bar__label,
-.ui-chart-label-row__item,
+.ui-chart-label-track__item,
+.ui-chart-label-grid__item,
 .ui-chart-count-row__item span,
 .ui-line-chart__axis,
 .ui-bar-chart__axis,
@@ -1204,10 +1206,15 @@ a {
 }
 
 .ui-line-chart,
-.ui-bar-chart {
+.ui-bar-chart,
+.ui-chart-label-row {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
   gap: var(--space-3);
+}
+
+.ui-line-chart,
+.ui-bar-chart {
   padding-top: var(--space-2);
 }
 
@@ -1311,10 +1318,80 @@ a {
 }
 
 .ui-bar-chart__bars,
-.ui-chart-label-row,
 .ui-chart-count-row {
   display: grid;
   gap: 6px;
+}
+
+.ui-chart-label-row {
+  margin-top: var(--space-1);
+}
+
+.ui-chart-label-row__axis-spacer {
+  min-width: 0;
+}
+
+.ui-chart-label-track {
+  position: relative;
+  min-height: 20px;
+}
+
+.ui-chart-label-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.ui-chart-label-track__item {
+  position: absolute;
+  top: 0;
+  display: block;
+  min-width: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  padding-top: var(--space-1);
+}
+
+.ui-chart-label-track__item[data-align="start"] {
+  transform: translateX(0);
+  text-align: left;
+}
+
+.ui-chart-label-track__item[data-align="center"] {
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.ui-chart-label-track__item[data-align="end"] {
+  transform: translateX(-100%);
+  text-align: right;
+}
+
+.ui-chart-label-track__item[data-visible="false"] {
+  display: none;
+}
+
+.ui-chart-label-grid__item {
+  min-width: 0;
+  padding-top: var(--space-1);
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ui-chart-label-row[data-label-orientation="vertical"] .ui-chart-label-grid {
+  align-items: start;
+}
+
+.ui-chart-label-row[data-label-orientation="vertical"]
+  .ui-chart-label-grid__item {
+  display: inline-block;
+  justify-self: center;
+  min-height: 36px;
+  padding-top: 0;
+  line-height: 1.1;
+  white-space: normal;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
 }
 
 .ui-bar-chart__bars {
@@ -1350,15 +1427,9 @@ a {
   background: var(--accent-blue);
 }
 
-.ui-chart-label-row__item,
 .ui-chart-count-row__item {
   min-width: 0;
   text-align: center;
-}
-
-.ui-chart-label-row__item {
-  white-space: nowrap;
-  padding-top: var(--space-1);
 }
 
 .ui-chart-count-card {

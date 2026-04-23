@@ -7,6 +7,11 @@ import { ButtonLink } from "../ui/navigation-link";
 import { Button, Chip, Notice } from "../ui/primitives";
 import { getDistanceFeedbackStatus } from "./distance-feedback-status";
 
+export {
+  confirmManualSessionEnd,
+  MANUAL_SESSION_END_CONFIRM_MESSAGE,
+} from "./manual-end-confirm";
+
 export function formatRemainingTimeLabel(valueMs: number): string {
   const totalSeconds = Math.max(0, Math.ceil(valueMs / 1000));
   const minutes = Math.floor(totalSeconds / 60);
@@ -34,6 +39,7 @@ export function PlaybackButtonPair(props: {
   isPlaybackLocked: boolean;
   onReplayBase: () => void;
   onReplayTarget: () => void;
+  targetLabel?: string;
 }) {
   return (
     <div className="ui-playback-pair">
@@ -43,7 +49,7 @@ export function PlaybackButtonPair(props: {
         onClick={props.onReplayBase}
       />
       <PlaybackButton
-        label="問題音"
+        label={props.targetLabel ?? "問題音"}
         disabled={props.isPlaybackLocked}
         onClick={props.onReplayTarget}
       />
@@ -111,14 +117,8 @@ export function MiniStatRow(props: {
   );
 }
 
-export function FeedbackStatusChip(props: {
-  errorSemitones: number;
-  isCorrect: boolean;
-}) {
-  const status = getDistanceFeedbackStatus({
-    isCorrect: props.isCorrect,
-    errorSemitones: props.errorSemitones,
-  });
+export function FeedbackStatusChip(props: { errorSemitones: number }) {
+  const status = getDistanceFeedbackStatus(props.errorSemitones);
 
   return (
     <div className="ui-feedback-status">

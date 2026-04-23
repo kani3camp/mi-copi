@@ -10,14 +10,15 @@ import {
 } from "../features/training/model/format";
 import { getHomeTrainingSummaryForCurrentUser } from "../features/training/server/getHomeTrainingSummary";
 import {
+  type CurrentUser,
   getCurrentUserOrNullCached,
-  hasSessionTokenCookieCached,
 } from "../lib/auth/server";
 import { HomeSignOutButton } from "./home-sign-out-button";
 import { ButtonLink, ListLinkCard } from "./ui/navigation-link";
 import {
   ActionCard,
   AppShell,
+  Chip,
   PageHeader,
   SectionHeader,
   SummaryBlock,
@@ -27,7 +28,8 @@ import {
 } from "./ui/primitives";
 
 export default async function HomePage() {
-  const hasSessionToken = await hasSessionTokenCookieCached();
+  const currentUser = await getCurrentUserOrNullCached();
+  const isAuthenticated = currentUser !== null;
 
   return (
     <AppShell>
@@ -36,6 +38,8 @@ export default async function HomePage() {
         eyebrow="相対音感トレーニング"
         subtitle="基準音ありの相対音感トレーニングを、短く反復するためのホームです。"
       />
+
+      {isAuthenticated ? null : <HomeGuestLoginCta />}
 
       <div className="ui-stack-md">
         <SectionHeader title="すぐ始める" />
@@ -59,9 +63,9 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {hasSessionToken ? (
+      {isAuthenticated ? (
         <Suspense fallback={<HomeSummaryLoading />}>
-          <AuthenticatedHomeContent />
+          <AuthenticatedHomeContent currentUser={currentUser} />
         </Suspense>
       ) : (
         <GuestHomeContent />
@@ -84,13 +88,9 @@ export default async function HomePage() {
             size="compact"
             pendingLabel="ログイン画面を開いています..."
           >
-            {hasSessionToken ? "アカウント" : "ログイン"}
+            {isAuthenticated ? "アカウント" : "ログイン"}
           </ButtonLink>
-          {hasSessionToken ? (
-            <Suspense fallback={null}>
-              <HomeAccountActions />
-            </Suspense>
-          ) : null}
+          {isAuthenticated ? <HomeSignOutButton /> : null}
         </div>
       </Surface>
     </AppShell>
@@ -130,24 +130,31 @@ function ModeEntry(props: {
   );
 }
 
-async function HomeAccountActions() {
-  const currentUser = await getCurrentUserOrNullCached();
-
-  if (!currentUser) {
-    return null;
-  }
-
-  return <HomeSignOutButton />;
+function HomeGuestLoginCta() {
+  return (
+    <ActionCard
+      tone="brand"
+      eyebrow={<Chip tone="warning">未ログイン</Chip>}
+      title="現在ログインしていません"
+      description="このまま練習を始めると結果は保存されず、統計にも残りません。"
+      footer={
+        <ButtonLink
+          href="/login"
+          pendingLabel="ログイン画面を開いています..."
+          variant="primary"
+          block
+        >
+          ログインして結果を保存
+        </ButtonLink>
+      }
+    />
+  );
 }
 
-async function AuthenticatedHomeContent() {
-  const currentUser = await getCurrentUserOrNullCached();
-
-  if (!currentUser) {
-    return <GuestHomeContent />;
-  }
-
-  const summary = await getHomeTrainingSummaryForCurrentUser({ currentUser });
+async function AuthenticatedHomeContent(props: { currentUser: CurrentUser }) {
+  const summary = await getHomeTrainingSummaryForCurrentUser({
+    currentUser: props.currentUser,
+  });
 
   return (
     <>

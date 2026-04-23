@@ -16,7 +16,7 @@ The core milestones are implemented and the largest remaining risk is unverified
 
 ## In Scope
 
-- preflight cleanup for generated `next-env.d.ts` noise
+- preflight cleanup for generated-artifact noise, including `next-env.d.ts`
 - route-by-route QA of home, login, settings, stats, session detail, distance training, and keyboard training
 - localized UI and state fixes found during verification
 - targeted tests only when bug fixes touch logic
@@ -47,6 +47,7 @@ The core milestones are implemented and the largest remaining risk is unverified
 ## Execution Notes
 
 - 2026-03-12: repo hygiene fix として `biome.json` から `storybook-static` を除外し、標準 verify が生成物で汚れない状態に更新
+- 2026-04-01: `next-env.d.ts` を generated / ignored 扱いへ変更し、`npm run typegen` と `npm run typecheck` で型生成を自己完結させる運用へ更新
 - 2026-03-12: training server read paths の `noExplicitAny` を除去し、mock DB と Drizzle 実行の両方を扱う細い query 型へ置換
 - 2026-03-12: numeric DB rows を string でも正規化できるよう read-path tests を更新
 - 2026-03-12: headless Chromium で guest browser QA を実施

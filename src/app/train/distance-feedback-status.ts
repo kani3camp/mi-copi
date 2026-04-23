@@ -1,28 +1,28 @@
+import { getTrainingAnswerFeedbackKind } from "../../features/training/model/feedback.ts";
+
 export interface DistanceFeedbackStatus {
   label: "完全一致" | "惜しい" | "ずれあり";
   tone: "brand" | "amber" | "coral";
 }
 
-export function getDistanceFeedbackStatus(params: {
-  isCorrect: boolean;
-  errorSemitones: number;
-}): DistanceFeedbackStatus {
-  if (params.isCorrect) {
-    return {
-      label: "完全一致",
-      tone: "brand",
-    };
+export function getDistanceFeedbackStatus(
+  errorSemitones: number,
+): DistanceFeedbackStatus {
+  switch (getTrainingAnswerFeedbackKind(errorSemitones)) {
+    case "correct":
+      return {
+        label: "完全一致",
+        tone: "brand",
+      };
+    case "close":
+      return {
+        label: "惜しい",
+        tone: "amber",
+      };
+    default:
+      return {
+        label: "ずれあり",
+        tone: "coral",
+      };
   }
-
-  if (Math.abs(params.errorSemitones) === 1) {
-    return {
-      label: "惜しい",
-      tone: "amber",
-    };
-  }
-
-  return {
-    label: "ずれあり",
-    tone: "coral",
-  };
 }

@@ -30,6 +30,7 @@ import {
   SummaryStat,
   Surface,
 } from "../../ui/primitives";
+import { getDistanceFeedbackStatus } from "../distance-feedback-status";
 import {
   formatFinishReasonLabel,
   MiniStatRow,
@@ -124,19 +125,19 @@ export const KeyboardFeedbackPanel = memo(
     lastAnsweredWasFinal: boolean;
     showLabels: boolean;
     onEndSession: () => void;
+    onReplayBase: () => void;
     onReplayCorrectTarget: () => void;
     onContinue: () => void;
   }) {
-    const feedbackTone = props.feedbackResult.isCorrect
-      ? "brand"
-      : Math.abs(props.feedbackResult.errorSemitones) === 1
-        ? "amber"
-        : "coral";
-    const feedbackLabel = props.feedbackResult.isCorrect
-      ? "正解"
-      : Math.abs(props.feedbackResult.errorSemitones) === 1
-        ? "惜しい"
-        : "大きくズレ";
+    const feedbackStatus = getDistanceFeedbackStatus(
+      props.feedbackResult.errorSemitones,
+    );
+    const feedbackLabel =
+      feedbackStatus.label === "完全一致"
+        ? "正解"
+        : feedbackStatus.label === "ずれあり"
+          ? "大きくズレ"
+          : feedbackStatus.label;
     const answerMidi = getTargetMidi(
       props.feedbackResult.question.baseMidi,
       props.feedbackResult.question.direction,
@@ -147,7 +148,7 @@ export const KeyboardFeedbackPanel = memo(
       <Surface tone="elevated">
         <SectionHeader
           title="フィードバック"
-          actions={<Chip tone={feedbackTone}>{feedbackLabel}</Chip>}
+          actions={<Chip tone={feedbackStatus.tone}>{feedbackLabel}</Chip>}
         />
         <SummaryBlock>
           <SummaryStat
@@ -188,8 +189,19 @@ export const KeyboardFeedbackPanel = memo(
           />
         </SummaryBlock>
         <div className="ui-sticky-actions">
-          <Button type="button" onClick={props.onReplayCorrectTarget} block>
-            正解の音を再生
+          <PlaybackButtonPair
+            isPlaybackLocked={false}
+            onReplayBase={props.onReplayBase}
+            onReplayTarget={props.onReplayCorrectTarget}
+            targetLabel="正解音"
+          />
+          <Button
+            type="button"
+            onClick={props.onContinue}
+            variant="primary"
+            block
+          >
+            {props.lastAnsweredWasFinal ? "結果を見る" : "次へ"}
           </Button>
           <Button
             type="button"
@@ -198,14 +210,6 @@ export const KeyboardFeedbackPanel = memo(
             variant="ghost"
           >
             ここで終了
-          </Button>
-          <Button
-            type="button"
-            onClick={props.onContinue}
-            variant="primary"
-            block
-          >
-            {props.lastAnsweredWasFinal ? "結果を見る" : "次へ"}
           </Button>
         </div>
       </Surface>
