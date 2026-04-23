@@ -21,6 +21,7 @@ repo の実行ルール、承認境界、報告形式は先に `AGENTS.md` を�
 - `docs/product/*`
   - 仕様、固定制約、UX 方針の正本
   - 実装が違って見えた場合でも、まずこちらを優先して確認する
+  - UI の design source of truth は `docs/product/ui-system.md`
 - `docs/implementation/*`
   - product docs をコードに落とすための bridge
   - `docs/implementation/route-status.md` は現在の route / persistence / page-level 実装の見取り図
@@ -38,7 +39,7 @@ repo の実行ルール、承認境界、報告形式は先に `AGENTS.md` を�
 - non-trivial work は Plan mode から始める
 - 長時間または複数セッション作業だけ `docs/plans/*.md` を持つ
 - route の現在地、保存挙動、実装済み画面の確認は `docs/implementation/route-status.md` を起点にする
-- UI の見た目、トークン、参照基準を判断するときは `docs/product/ui-system.md` を追加で読む
+- UI の見た目、トークン、コンポーネント指針を判断するときは `docs/product/ui-system.md` を design source of truth として読む
 - browser QA の完了有無は `docs/implementation/route-status.md` の注記と実際の検証結果を優先する
 
 ## Verification
