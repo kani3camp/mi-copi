@@ -199,6 +199,7 @@ export const FeedbackIncorrect: Story = {
     await expect(
       canvasElement.querySelector('[data-note="F#"][data-reference="true"]'),
     ).toBeNull();
+    await expect(canvas.getByText("不正解")).toBeVisible();
     await expect(actionLabels).toEqual([
       "基準音を再生",
       "正解音を再生",
@@ -289,6 +290,7 @@ export const ResultSaveSuccess: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
 
+    await expect(canvas.getByText("保存済み")).toBeVisible();
     await expect(
       canvas.getByRole("link", { name: "セッション詳細を見る" }),
     ).toBeVisible();
@@ -324,6 +326,7 @@ export const ResultSaveFailure: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
 
+    await expect(canvas.getByText("保存失敗")).toBeVisible();
     await expect(
       canvas.getByText(
         "セッション情報が不足しているため、この結果は保存できませんでした。",

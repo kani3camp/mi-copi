@@ -127,12 +127,6 @@ export const KeyboardFeedbackPanel = memo(
     const feedbackStatus = getDistanceFeedbackStatus(
       props.feedbackResult.errorSemitones,
     );
-    const feedbackLabel =
-      feedbackStatus.label === "完全一致"
-        ? "正解"
-        : feedbackStatus.label === "ずれあり"
-          ? "大きくズレ"
-          : feedbackStatus.label;
     const answerMidi = getTargetMidi(
       props.feedbackResult.question.baseMidi,
       props.feedbackResult.question.direction,
@@ -143,19 +137,24 @@ export const KeyboardFeedbackPanel = memo(
       <Surface tone="elevated">
         <SectionHeader
           title="フィードバック"
-          actions={<Chip tone={feedbackStatus.tone}>{feedbackLabel}</Chip>}
+          description="正解と回答の差を確認して、次の問題へ進みます。"
+          actions={
+            <Chip tone={feedbackStatus.tone}>{feedbackStatus.label}</Chip>
+          }
         />
-        <SummaryBlock>
+        <SummaryBlock className="ui-feedback-answer-block">
           <SummaryStat
             label="正解"
             value={formatKeyboardNoteLabel(
               props.feedbackResult.question.targetNote,
             )}
             emphasis="primary"
+            tone="success"
           />
           <SummaryStat
             label="回答"
             value={formatKeyboardNoteLabel(props.feedbackResult.answeredNote)}
+            tone="teal"
           />
         </SummaryBlock>
         <FeedbackKeyboardView
@@ -164,7 +163,7 @@ export const KeyboardFeedbackPanel = memo(
           referenceNote={props.feedbackResult.question.baseNote}
           showLabels={props.showLabels}
         />
-        <SummaryBlock>
+        <SummaryBlock className="ui-feedback-metrics-block">
           <SummaryStat
             label="誤差"
             value={formatPitchComparisonSemitoneLabel({
@@ -181,6 +180,7 @@ export const KeyboardFeedbackPanel = memo(
           <SummaryStat
             label="スコア"
             value={formatScoreLabel(props.feedbackResult.score)}
+            tone="brand"
           />
         </SummaryBlock>
         <div className="ui-sticky-actions">
@@ -229,28 +229,33 @@ export const KeyboardResultPanel = memo(function KeyboardResultPanel(props: {
         title="結果"
         description="今回の精度と反応速度をまとめました。"
       />
-      <SummaryBlock>
-        <SummaryStat
-          label="セッションスコア"
-          value={formatScoreLabel(props.summary.sessionScore)}
-          emphasis="primary"
-        />
+      <div className="ui-result-hero">
+        <span className="ui-result-hero__label">セッションスコア</span>
+        <strong className="ui-result-hero__value">
+          {formatScoreLabel(props.summary.sessionScore)}
+        </strong>
+        <div className="ui-result-hero__meta">
+          <Chip tone="brand">
+            {formatFinishReasonLabel(props.finishReason)}
+          </Chip>
+        </div>
+      </div>
+      <SummaryBlock className="ui-result-stats-block">
         <SummaryStat
           label="正答率"
           value={formatAccuracyLabel(props.summary.accuracyRate)}
+          tone="brand"
         />
         <SummaryStat label="回答数" value={props.summary.questionCount} />
         <SummaryStat
           label="平均誤差"
           value={formatAvgErrorLabel(props.summary.avgErrorAbs)}
+          tone="info"
         />
         <SummaryStat
           label="平均回答時間"
           value={formatResponseTimeMsLabel(props.summary.avgResponseTimeMs)}
-        />
-        <SummaryStat
-          label="終了理由"
-          value={formatFinishReasonLabel(props.finishReason)}
+          tone="info"
         />
       </SummaryBlock>
 
@@ -275,10 +280,12 @@ export const KeyboardResultPanel = memo(function KeyboardResultPanel(props: {
         </Notice>
       ) : null}
 
-      <div className="ui-sticky-actions">
+      <div className="ui-result-next-step">
         <div className="ui-stack-sm">
-          <strong>次のセッション</strong>
-          <span className="ui-muted">設定に戻って続けて練習できます。</span>
+          <strong>次の練習</strong>
+          <span className="ui-muted">
+            設定に戻って、同じ条件でも別条件でもすぐ続けられます。
+          </span>
         </div>
         <Button type="button" onClick={props.onReset} block variant="primary">
           {props.cannotSaveBecauseNoAnswers

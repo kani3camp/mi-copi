@@ -915,6 +915,120 @@ button,
   color: var(--accent-teal);
 }
 
+.ui-feedback-answer-block {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ui-feedback-answer-block .ui-summary-stat {
+  min-height: 132px;
+}
+
+.ui-feedback-metrics-block {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ui-feedback-metrics-block .ui-summary-stat {
+  min-height: 96px;
+  padding: var(--space-3);
+}
+
+.ui-result-hero {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px solid rgba(16, 168, 97, 0.18);
+  border-radius: var(--radius-card);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(242, 255, 247, 0.94) 100%
+    ),
+    var(--surface-elevated);
+  box-shadow: var(--shadow-md);
+}
+
+.ui-result-hero__label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.ui-result-hero__value {
+  color: var(--brand-hover);
+  font-size: clamp(40px, 12vw, 56px);
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+  font-weight: 800;
+}
+
+.ui-result-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.ui-result-stats-block {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ui-result-save-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-sm);
+}
+
+.ui-result-save-card[data-tone="info"] {
+  background: var(--info-soft);
+  border-color: rgba(20, 184, 212, 0.18);
+}
+
+.ui-result-save-card[data-tone="success"] {
+  background: var(--success-soft);
+  border-color: rgba(34, 197, 94, 0.18);
+}
+
+.ui-result-save-card[data-tone="error"] {
+  background: var(--danger-soft);
+  border-color: rgba(239, 68, 68, 0.18);
+}
+
+.ui-result-save-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.ui-result-save-card__title {
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.ui-result-save-card__message {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.ui-result-next-step {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-sm);
+}
+
 .ui-list {
   display: grid;
   gap: var(--space-3);
@@ -1000,6 +1114,15 @@ button,
 
 .ui-list-link--compact {
   padding: var(--space-2) 0;
+}
+
+.ui-result-recent-list .ui-list-link--compact {
+  gap: 8px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-sm);
 }
 
 .ui-list-link--session {
@@ -2276,6 +2399,25 @@ button,
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+@media (max-width: 420px) {
+  .ui-feedback-metrics-block {
+    gap: var(--space-2);
+  }
+
+  .ui-feedback-metrics-block .ui-summary-stat {
+    min-height: 88px;
+    padding: 10px;
+  }
+
+  .ui-result-hero {
+    padding: var(--space-4);
+  }
+
+  .ui-result-save-card__title {
+    font-size: 14px;
+  }
 }
 
 /* Diagram geometry is in SVG (distance-feedback-diagram-svg). Wrapper only. */

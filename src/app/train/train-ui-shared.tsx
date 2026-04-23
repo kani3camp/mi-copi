@@ -2,10 +2,10 @@ import type { ReactNode } from "react";
 
 import type { SessionFinishReason } from "../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
-import { getTrainingResultSaveErrorMessage } from "../../lib/async-action-errors";
 import { ButtonLink } from "../ui/navigation-link";
 import { Button, Chip, Notice } from "../ui/primitives";
 import { getDistanceFeedbackStatus } from "./distance-feedback-status";
+import { getTrainingResultSaveStatusViewModel } from "./training-result-save-status";
 
 export {
   confirmManualSessionEnd,
@@ -169,46 +169,38 @@ export function TrainingResultPersistenceSection(props: {
     return null;
   }
 
+  const status = getTrainingResultSaveStatusViewModel({
+    canSaveResult: props.canSaveResult,
+    isSavePending: props.isSavePending,
+    saveResult: props.saveResult,
+  });
+
   return (
-    <>
-      <Notice
-        tone={
-          props.saveResult?.ok
-            ? "success"
-            : props.saveResult
-              ? "error"
-              : props.canSaveResult
-                ? "info"
-                : "error"
-        }
-      >
-        {props.saveResult?.ok ? (
-          <div className="ui-stack-md">
-            <div>結果を自動保存しました。</div>
-            <div className="ui-nav-row">
-              <ButtonLink
-                href={`/sessions/${props.saveResult.sessionId}`}
-                pendingLabel="セッション詳細を開いています..."
-              >
-                セッション詳細を見る
-              </ButtonLink>
-              <ButtonLink href="/stats" pendingLabel="統計を開いています...">
-                統計を見る
-              </ButtonLink>
-            </div>
-          </div>
-        ) : props.saveResult ? (
-          <div>{getSaveFailureMessage(props.saveResult)}</div>
-        ) : props.canSaveResult ? (
-          <div>
-            {props.isSavePending
-              ? "結果を自動保存しています..."
-              : "保存の準備をしています..."}
-          </div>
-        ) : (
-          <div>セッション情報が不足しているため保存できません。</div>
-        )}
-      </Notice>
+    <div className="ui-result-save-card" data-tone={status.tone}>
+      <div className="ui-result-save-card__header">
+        <Chip tone={status.tone}>{status.label}</Chip>
+        <strong className="ui-result-save-card__title">{status.title}</strong>
+      </div>
+      <p className="ui-result-save-card__message">{status.message}</p>
+
+      {props.saveResult?.ok ? (
+        <div className="ui-nav-row">
+          <ButtonLink
+            href={`/sessions/${props.saveResult.sessionId}`}
+            pendingLabel="セッション詳細を開いています..."
+            variant="secondary"
+          >
+            セッション詳細を見る
+          </ButtonLink>
+          <ButtonLink
+            href="/stats"
+            pendingLabel="統計を開いています..."
+            variant="secondary"
+          >
+            統計を見る
+          </ButtonLink>
+        </div>
+      ) : null}
 
       {props.saveResult && !props.saveResult.ok && props.canSaveResult ? (
         <div className="ui-action-row">
@@ -223,12 +215,6 @@ export function TrainingResultPersistenceSection(props: {
           </Button>
         </div>
       ) : null}
-    </>
+    </div>
   );
-}
-
-function getSaveFailureMessage(
-  result: Extract<SaveTrainingSessionResult, { ok: false }>,
-): string {
-  return getTrainingResultSaveErrorMessage(result);
 }

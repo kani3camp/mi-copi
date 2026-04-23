@@ -134,7 +134,7 @@ export const FeedbackIncorrect: Story = {
         button.getAttribute("aria-label") ?? button.textContent?.trim() ?? "",
     );
 
-    await expect(canvas.getByText("ずれあり")).toBeVisible();
+    await expect(canvas.getByText("不正解")).toBeVisible();
     await expect(canvas.getByText("完全5度")).toBeVisible();
     await expect(canvas.getByText("完全4度")).toBeVisible();
     await expect(canvas.queryByText("方向が逆")).toBeNull();
@@ -192,7 +192,7 @@ export const FeedbackIncorrectDownward: Story = {
     await expect(
       canvas.getByLabelText("距離フィードバック: 0 が基準音、下方向"),
     ).toBeVisible();
-    await expect(canvas.getByText("ずれあり")).toBeVisible();
+    await expect(canvas.getByText("不正解")).toBeVisible();
     await expect(canvas.getByText("完全4度")).toBeVisible();
     await expect(canvas.getByText("短3度")).toBeVisible();
     await expect(canvas.queryByText("方向が逆")).toBeNull();
@@ -242,9 +242,8 @@ export const FeedbackExactMatch: Story = {
         button.getAttribute("aria-label") ?? button.textContent?.trim() ?? "",
     );
 
-    await expect(canvas.getByText("完全一致")).toBeVisible();
+    await expect(canvas.getAllByText("正解")).toHaveLength(2);
     await expect(canvas.getAllByText("長2度")).toHaveLength(2);
-    await expect(canvas.getByText("正解")).toBeVisible();
     await expect(canvas.getByText("回答")).toBeVisible();
     await expect(actionLabels).toEqual([
       "基準音を再生",
@@ -319,8 +318,11 @@ export const ResultSaveFailure: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
 
+    await expect(canvas.getByText("保存失敗")).toBeVisible();
     await expect(
-      canvas.getByText("結果を保存できませんでした。もう一度お試しください。"),
+      canvas.getByText(
+        "結果を保存できませんでした。結果画面のまま再試行できます。",
+      ),
     ).toBeVisible();
     await userEvent.click(canvas.getByRole("button", { name: "保存を再試行" }));
 

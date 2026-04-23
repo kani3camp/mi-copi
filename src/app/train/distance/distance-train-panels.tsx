@@ -146,6 +146,7 @@ export function DistanceFeedbackPanel(props: {
     <Surface tone="elevated">
       <SectionHeader
         title="フィードバック"
+        description="正解と回答の差を確認して、次の問題へ進みます。"
         actions={
           <FeedbackStatusChip
             errorSemitones={props.feedbackResult.errorSemitones}
@@ -153,7 +154,7 @@ export function DistanceFeedbackPanel(props: {
         }
       />
 
-      <SummaryBlock>
+      <SummaryBlock className="ui-feedback-answer-block">
         <SummaryStat
           label="正解"
           value={correctIntervalLabel}
@@ -169,7 +170,7 @@ export function DistanceFeedbackPanel(props: {
         answeredSemitones={props.feedbackResult.answeredDistanceSemitones}
       />
 
-      <SummaryBlock>
+      <SummaryBlock className="ui-feedback-metrics-block">
         <SummaryStat
           label="誤差"
           value={formatPitchComparisonSemitoneLabel({
@@ -184,6 +185,7 @@ export function DistanceFeedbackPanel(props: {
         <SummaryStat
           label="スコア"
           value={formatScoreLabel(props.feedbackResult.score)}
+          tone="brand"
         />
       </SummaryBlock>
 
@@ -235,35 +237,41 @@ export function DistanceResultPanel(props: {
         description="今回の精度と反応速度をまとめました。"
       />
 
-      <SummaryBlock>
-        <SummaryStat
-          label="セッションスコア"
-          value={formatScoreLabel(props.summary.sessionScore)}
-          emphasis="primary"
-        />
+      <div className="ui-result-hero">
+        <span className="ui-result-hero__label">セッションスコア</span>
+        <strong className="ui-result-hero__value">
+          {formatScoreLabel(props.summary.sessionScore)}
+        </strong>
+        <div className="ui-result-hero__meta">
+          <Chip tone="brand">
+            {formatFinishReasonLabel(props.finishReason)}
+          </Chip>
+        </div>
+      </div>
+
+      <SummaryBlock className="ui-result-stats-block">
         <SummaryStat
           label="正答率"
           value={formatAccuracyLabel(props.summary.accuracyRate)}
+          tone="brand"
         />
         <SummaryStat label="回答数" value={props.summary.questionCount} />
         <SummaryStat
           label="平均誤差"
           value={formatAvgErrorLabel(props.summary.avgErrorAbs)}
+          tone="info"
         />
         <SummaryStat
           label="平均回答時間"
           value={formatResponseTimeMsLabel(props.summary.avgResponseTimeMs)}
-        />
-        <SummaryStat
-          label="終了理由"
-          value={formatFinishReasonLabel(props.finishReason)}
+          tone="info"
         />
       </SummaryBlock>
 
       {props.recentResults.length > 0 ? (
         <div className="ui-stack-md">
           <SectionHeader title="直近の回答" />
-          <div className="ui-list">
+          <div className="ui-list ui-result-recent-list">
             {props.recentResults.map((result) => (
               <div
                 key={result.answeredAt}
@@ -313,10 +321,12 @@ export function DistanceResultPanel(props: {
         </Notice>
       ) : null}
 
-      <div className="ui-sticky-actions">
+      <div className="ui-result-next-step">
         <div className="ui-stack-sm">
-          <strong>次のセッション</strong>
-          <span className="ui-muted">設定に戻って続けて練習できます。</span>
+          <strong>次の練習</strong>
+          <span className="ui-muted">
+            設定に戻って、同じ条件でも別条件でもすぐ続けられます。
+          </span>
         </div>
         <Button type="button" onClick={props.onReset} block variant="primary">
           {props.cannotSaveBecauseNoAnswers
