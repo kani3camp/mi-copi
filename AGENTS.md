@@ -19,7 +19,7 @@ ChatGPT は **仕様不足・仕様変更・設計相談・ブロッカー解消
 3. `docs/product/requirements.md`
 4. `docs/product/basic-design.md`
 5. `docs/product/tech-stack.md`
-6. `docs/product/ui-system.md`
+6. `DESIGN.md`
 7. `docs/delivery/acceptance-criteria.md`
 8. `docs/delivery/pr-plan.md`
 9. `AGENTS.md`
