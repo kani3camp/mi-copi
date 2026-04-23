@@ -2035,6 +2035,237 @@ button,
   }
 }
 
+.ui-keyboard-pad {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ui-keyboard-pad__shell {
+  position: relative;
+  overflow: hidden;
+  padding: 10px 10px 14px;
+  border: 1px solid rgba(16, 168, 97, 0.14);
+  border-radius: var(--radius-card);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(242, 255, 247, 0.52) 100%
+    ),
+    var(--surface-elevated);
+  box-shadow:
+    0 12px 28px rgba(16, 34, 24, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.ui-keyboard-pad__white-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.ui-keyboard-pad__black-row {
+  position: absolute;
+  inset: 10px 10px auto;
+  height: clamp(92px, 21vw, 132px);
+}
+
+.ui-keyboard-key {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: clamp(148px, 38vw, 206px);
+  padding: 12px 6px 14px;
+  border: 1px solid #d8e1d8;
+  border-radius: 0 0 14px 14px;
+  background: #ffffff;
+  color: #18201b;
+  box-shadow: 0 4px 12px rgba(24, 32, 27, 0.06);
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform var(--motion-fast) var(--motion-easing),
+    box-shadow var(--motion-base) var(--motion-easing),
+    border-color var(--motion-base) var(--motion-easing),
+    background var(--motion-base) var(--motion-easing),
+    color var(--motion-base) var(--motion-easing),
+    opacity var(--motion-base) var(--motion-easing);
+}
+
+.ui-keyboard-key[data-black="true"] {
+  position: absolute;
+  top: 0;
+  left: var(--keyboard-left);
+  width: 10.8%;
+  min-height: clamp(92px, 21vw, 132px);
+  padding: 12px 4px 8px;
+  border-color: #0f1511;
+  border-radius: 0 0 10px 10px;
+  background: #202722;
+  color: #f4f7f4;
+  box-shadow: 0 6px 16px rgba(24, 32, 27, 0.18);
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.ui-keyboard-key:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(24, 32, 27, 0.1);
+}
+
+.ui-keyboard-key:focus-visible {
+  outline: 2px solid rgba(16, 168, 97, 0.28);
+  outline-offset: 2px;
+}
+
+.ui-keyboard-key:disabled,
+.ui-keyboard-key[data-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+.ui-keyboard-key[data-reference="true"] {
+  border-color: rgba(16, 168, 97, 0.48);
+  background: linear-gradient(
+    180deg,
+    rgba(232, 255, 243, 0.98) 0%,
+    rgba(242, 255, 247, 0.96) 100%
+  );
+  color: var(--brand-hover);
+  box-shadow:
+    0 0 0 3px rgba(16, 168, 97, 0.12),
+    0 10px 26px rgba(16, 168, 97, 0.14);
+}
+
+.ui-keyboard-key[data-black="true"][data-reference="true"] {
+  background: linear-gradient(
+    180deg,
+    rgba(187, 240, 207, 0.98) 0%,
+    rgba(127, 232, 178, 0.94) 100%
+  );
+  border-color: rgba(11, 138, 82, 0.58);
+  color: #103322;
+}
+
+.ui-keyboard-key[data-correct="true"] {
+  border-color: rgba(121, 207, 83, 0.62);
+  background: linear-gradient(180deg, #effdd5 0%, #d8f39a 100%);
+  color: #193122;
+  box-shadow:
+    0 0 0 3px rgba(156, 221, 43, 0.16),
+    0 12px 24px rgba(24, 32, 27, 0.08);
+}
+
+.ui-keyboard-key[data-answered="true"] {
+  border-color: rgba(42, 143, 153, 0.56);
+  box-shadow:
+    0 0 0 3px rgba(205, 235, 240, 0.72),
+    0 10px 22px rgba(24, 32, 27, 0.08);
+}
+
+.ui-keyboard-key[data-black="true"][data-answered="true"] {
+  background: linear-gradient(180deg, #2c8b94 0%, #246f77 100%);
+  color: #f7fbfb;
+}
+
+.ui-keyboard-key[data-match="true"] {
+  border-color: rgba(121, 207, 83, 0.62);
+  box-shadow:
+    0 0 0 3px rgba(156, 221, 43, 0.18),
+    0 12px 24px rgba(24, 32, 27, 0.08);
+}
+
+.ui-keyboard-key__label {
+  display: block;
+  font-size: 13px;
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.ui-keyboard-key__label--dual {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  font-size: 11px;
+}
+
+.ui-keyboard-key__label--dual span:last-child {
+  opacity: 0.82;
+}
+
+.ui-keyboard-key__reference-badge {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(11, 138, 82, 0.12);
+  color: var(--brand-hover);
+  font-size: 10px;
+  line-height: 20px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.ui-keyboard-key[data-black="true"] .ui-keyboard-key__reference-badge {
+  top: 6px;
+  background: rgba(16, 51, 34, 0.14);
+  color: #103322;
+}
+
+.ui-keyboard-key[data-labels="hidden"] {
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 10px;
+}
+
+.ui-keyboard-key[data-labels="hidden"] .ui-keyboard-key__label {
+  display: none;
+}
+
+.ui-keyboard-key[data-labels="hidden"][data-reference="true"]
+  .ui-keyboard-key__reference-badge {
+  top: auto;
+  bottom: 10px;
+}
+
+.ui-keyboard-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ui-keyboard-legend__item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ui-keyboard-legend__item[data-tone="reference"] {
+  background: var(--brand-soft);
+  color: var(--brand-hover);
+}
+
+.ui-keyboard-legend__item[data-tone="correct"] {
+  background: #d8f39a;
+  color: #193122;
+}
+
+.ui-keyboard-legend__item[data-tone="answered"] {
+  background: #cdebf0;
+  color: #18535a;
+}
+
 .ui-sticky-actions {
   display: grid;
   gap: var(--space-3);

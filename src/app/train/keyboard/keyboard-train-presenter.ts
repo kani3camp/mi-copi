@@ -3,6 +3,7 @@ import {
   getQuestionCountSelectOptions,
   getTimeLimitSecondsSelectOptions,
 } from "../../../features/training/model/config.ts";
+import { formatScoreLabel } from "../../../features/training/model/format.ts";
 import type { KeyboardGuestResult } from "../../../features/training/model/keyboard-guest.ts";
 import {
   buildKeyboardGuestSummary,
@@ -36,6 +37,12 @@ export function buildKeyboardTrainViewModel(props: {
       : 0;
   const cannotSaveBecauseNoAnswers =
     props.phase === "result" && props.results.length === 0;
+  const liveSummary = props.summary ?? buildKeyboardGuestSummary(props.results);
+  const isActiveTrainingPhase =
+    props.phase === "preparing" ||
+    props.phase === "playing" ||
+    props.phase === "answering" ||
+    props.phase === "feedback";
 
   return {
     cannotSaveBecauseNoAnswers,
@@ -56,7 +63,10 @@ export function buildKeyboardTrainViewModel(props: {
       props.activeQuestionIndex,
       plannedQuestionCount,
     ),
-    summary: props.summary ?? buildKeyboardGuestSummary(props.results),
+    runningScoreLabel: isActiveTrainingPhase
+      ? formatScoreLabel(liveSummary.sessionScore)
+      : null,
+    summary: liveSummary,
     timeLimitOptions:
       props.config.endCondition.type === "time_limit"
         ? getTimeLimitSecondsSelectOptions(

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useReducer, useState } from "react";
+import { type ReactNode, useCallback, useReducer, useState } from "react";
 
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
 import { useTrainingSessionCore } from "../../../features/training/client/use-training-session-core";
@@ -12,6 +12,7 @@ import type {
   KeyboardTrainingConfig,
   NoteClass,
   SaveTrainingSessionInput,
+  SessionPhase,
 } from "../../../features/training/model/types";
 import type { KeyboardTrainingPageBootstrap } from "../../../features/training/server/getTrainingPageBootstrap";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
@@ -27,6 +28,7 @@ import {
   FieldGrid,
   Notice,
   SectionHeader,
+  SegmentedControl,
   Surface,
 } from "../../ui/primitives";
 import { confirmManualSessionEnd } from "../train-ui-shared";
@@ -207,7 +209,13 @@ export function KeyboardTrainClient({
         modeLabel="鍵盤モード"
         modeTone={getTrainingModeTone("keyboard")}
         questionLabel={viewModel.questionLabel}
-        meta={viewModel.headerMeta}
+        meta={
+          <KeyboardTrainingHeaderMeta
+            phase={session.phase}
+            runningScoreLabel={viewModel.runningScoreLabel}
+            statusLabel={viewModel.headerMeta}
+          />
+        }
         actions={
           <ButtonLink
             href="/"
@@ -232,26 +240,44 @@ export function KeyboardTrainClient({
             description="必要な設定だけを整えて、そのまま開始します。"
           />
           <div className="ui-form-layout">
-            <div className="ui-form-section">
-              <h3 className="ui-form-section__title">終了条件</h3>
+            <TrainingConfigGroup
+              title="終了条件"
+              description="回数で区切るか、時間で区切るかだけ決めて始めます。"
+            >
+              <Field
+                label="終了方法"
+                hint="よく使う 2 つの進め方をすぐ切り替えられます。"
+              >
+                <SegmentedControl
+                  ariaLabel="終了方法"
+                  value={config.endCondition.type}
+                  items={[
+                    { value: "question_count", label: "問題数" },
+                    { value: "time_limit", label: "制限時間" },
+                  ]}
+                  onChange={(value) =>
+                    dispatchConfigAction({
+                      type: "set_end_condition_type",
+                      value,
+                    })
+                  }
+                  stretch
+                />
+              </Field>
+              <p className="ui-form-inline-note">
+                {config.endCondition.type === "question_count"
+                  ? "指定した問題数で終了します。"
+                  : "時間になった時点で終了します。"}
+              </p>
               <FieldGrid>
-                <Field label="終了方法">
-                  <select
-                    className="ui-select"
-                    onChange={(event) =>
-                      dispatchConfigAction({
-                        type: "set_end_condition_type",
-                        value: event.target.value,
-                      })
-                    }
-                    value={config.endCondition.type}
-                  >
-                    <option value="question_count">問題数</option>
-                    <option value="time_limit">制限時間</option>
-                  </select>
-                </Field>
-                {config.endCondition.type === "question_count" ? (
-                  <Field label="問題数">
+                <Field
+                  label={
+                    config.endCondition.type === "question_count"
+                      ? "問題数"
+                      : "制限時間（秒）"
+                  }
+                >
+                  {config.endCondition.type === "question_count" ? (
                     <select
                       className="ui-select"
                       onChange={(event) =>
@@ -268,9 +294,7 @@ export function KeyboardTrainClient({
                         </option>
                       ))}
                     </select>
-                  </Field>
-                ) : (
-                  <Field label="制限時間（秒）">
+                  ) : (
                     <select
                       className="ui-select"
                       onChange={(event) =>
@@ -287,13 +311,15 @@ export function KeyboardTrainClient({
                         </option>
                       ))}
                     </select>
-                  </Field>
-                )}
+                  )}
+                </Field>
               </FieldGrid>
-            </div>
+            </TrainingConfigGroup>
 
-            <div className="ui-form-section">
-              <h3 className="ui-form-section__title">出題範囲</h3>
+            <TrainingConfigGroup
+              title="出題範囲"
+              description="上下の出題方向と、基準音の決め方をまとめて調整します。"
+            >
               <FieldGrid>
                 <Field label="最小半音数">
                   <input
@@ -329,38 +355,44 @@ export function KeyboardTrainClient({
                   />
                 </Field>
                 <Field label="出題方向">
-                  <select
-                    className="ui-select"
-                    onChange={(event) =>
+                  <SegmentedControl
+                    ariaLabel="出題方向"
+                    value={config.directionMode}
+                    items={[
+                      {
+                        value: "mixed",
+                        label: formatDirectionModeLabel("mixed"),
+                      },
+                      {
+                        value: "up_only",
+                        label: formatDirectionModeLabel("up_only"),
+                      },
+                    ]}
+                    onChange={(value) =>
                       dispatchConfigAction({
                         type: "set_direction_mode",
-                        value: event.target.value,
+                        value,
                       })
                     }
-                    value={config.directionMode}
-                  >
-                    <option value="mixed">
-                      {formatDirectionModeLabel("mixed")}
-                    </option>
-                    <option value="up_only">
-                      {formatDirectionModeLabel("up_only")}
-                    </option>
-                  </select>
+                    stretch
+                  />
                 </Field>
                 <Field label="基準音モード">
-                  <select
-                    className="ui-select"
-                    onChange={(event) =>
+                  <SegmentedControl
+                    ariaLabel="基準音モード"
+                    value={config.baseNoteMode}
+                    items={[
+                      { value: "random", label: "ランダム" },
+                      { value: "fixed", label: "固定" },
+                    ]}
+                    onChange={(value) =>
                       dispatchConfigAction({
                         type: "set_base_note_mode",
-                        value: event.target.value,
+                        value,
                       })
                     }
-                    value={config.baseNoteMode}
-                  >
-                    <option value="random">ランダム</option>
-                    <option value="fixed">固定</option>
-                  </select>
+                    stretch
+                  />
                 </Field>
               </FieldGrid>
 
@@ -384,43 +416,47 @@ export function KeyboardTrainClient({
                   </select>
                 </Field>
               ) : null}
-            </div>
+            </TrainingConfigGroup>
 
-            <div className="ui-form-section">
-              <h3 className="ui-form-section__title">回答スタイル</h3>
-              <label className="ui-checkbox-card">
-                <input
-                  checked={config.includeUnison}
-                  onChange={(event) =>
-                    dispatchConfigAction({
-                      type: "toggle_include_unison",
-                      checked: event.target.checked,
-                    })
-                  }
-                  type="checkbox"
-                />
-                <span>同音を含める</span>
-              </label>
-              <label className="ui-checkbox-card">
-                <input
-                  checked={config.includeOctave}
-                  onChange={(event) =>
-                    dispatchConfigAction({
-                      type: "toggle_include_octave",
-                      checked: event.target.checked,
-                    })
-                  }
-                  type="checkbox"
-                />
-                <span>オクターブを含める</span>
-              </label>
+            <TrainingConfigGroup
+              title="回答スタイル"
+              description="回答候補は常に 12 音です。含める距離とラベル表示だけを整えます。"
+            >
+              <div className="ui-train-config-toggle-grid">
+                <label className="ui-checkbox-card">
+                  <input
+                    checked={config.includeUnison}
+                    onChange={(event) =>
+                      dispatchConfigAction({
+                        type: "toggle_include_unison",
+                        checked: event.target.checked,
+                      })
+                    }
+                    type="checkbox"
+                  />
+                  <span>同音を含める</span>
+                </label>
+                <label className="ui-checkbox-card">
+                  <input
+                    checked={config.includeOctave}
+                    onChange={(event) =>
+                      dispatchConfigAction({
+                        type: "toggle_include_octave",
+                        checked: event.target.checked,
+                      })
+                    }
+                    type="checkbox"
+                  />
+                  <span>オクターブを含める</span>
+                </label>
+              </div>
               <p className="ui-form-inline-note">
                 {settings.keyboardNoteLabelsVisible
                   ? "鍵盤ラベルは表示中です。黒鍵はシャープ / フラット表記で出ます。"
                   : "鍵盤ラベルは非表示です。表示切替は設定画面で行えます。"}
               </p>
-              <p className="ui-mini-note">回答候補は 12 音すべてです。</p>
-            </div>
+              <p className="ui-mini-note">回答候補は常に 12 音すべてです。</p>
+            </TrainingConfigGroup>
           </div>
 
           {bootstrap.isBootstrapPending ? (
@@ -516,5 +552,58 @@ export function KeyboardTrainClient({
         />
       ) : null}
     </AppShell>
+  );
+}
+
+function TrainingConfigGroup(props: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="ui-form-section ui-train-config-group">
+      <div className="ui-train-config-group__header">
+        <h3 className="ui-form-section__title">{props.title}</h3>
+        <p className="ui-train-config-group__description">
+          {props.description}
+        </p>
+      </div>
+      {props.children}
+    </section>
+  );
+}
+
+function KeyboardTrainingHeaderMeta(props: {
+  phase: SessionPhase;
+  statusLabel: string | null;
+  runningScoreLabel: string | null;
+}) {
+  if (props.phase === "result") {
+    return props.statusLabel;
+  }
+
+  if (!props.statusLabel && !props.runningScoreLabel) {
+    return null;
+  }
+
+  return (
+    <div className="ui-training-progress-meta">
+      {props.statusLabel ? (
+        <div className="ui-training-progress-meta__item" data-tone="info">
+          <span className="ui-training-progress-meta__label">残り</span>
+          <strong className="ui-training-progress-meta__value">
+            {props.statusLabel}
+          </strong>
+        </div>
+      ) : null}
+      {props.runningScoreLabel ? (
+        <div className="ui-training-progress-meta__item" data-tone="brand">
+          <span className="ui-training-progress-meta__label">スコア</span>
+          <strong className="ui-training-progress-meta__value">
+            {props.runningScoreLabel}
+          </strong>
+        </div>
+      ) : null}
+    </div>
   );
 }

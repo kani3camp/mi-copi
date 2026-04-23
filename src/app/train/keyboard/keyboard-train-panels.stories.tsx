@@ -98,17 +98,65 @@ export const AnsweringWithReferenceKey: Story = {
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
+    const referenceKey = canvasElement.querySelector(
+      '[data-note="C"][data-reference="true"]',
+    );
 
     await userEvent.click(canvas.getByRole("button", { name: "基準音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "問題音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "G" }));
+    await expect(referenceKey).not.toBeNull();
     await expect(
-      canvasElement.querySelector('[data-note="C"][data-reference="true"]'),
+      referenceKey?.querySelector(".ui-keyboard-key__reference-badge"),
     ).not.toBeNull();
 
     await expect(args.onReplayBase).toHaveBeenCalledTimes(1);
     await expect(args.onReplayTarget).toHaveBeenCalledTimes(1);
     await expect(args.onAnswer).toHaveBeenCalledWith("G");
+  },
+};
+
+export const PlayingLocked: Story = {
+  render: (args) => (
+    <KeyboardQuestionPanel
+      isPlaybackLocked
+      questionIndex={0}
+      direction="up"
+      replayBaseCount={1}
+      replayTargetCount={1}
+      answerChoices={[
+        "C",
+        "C#",
+        "D",
+        "D#",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "G#",
+        "A",
+        "A#",
+        "B",
+      ]}
+      referenceNote="A#"
+      showLabels={false}
+      onReplayBase={args.onReplayBase}
+      onReplayTarget={args.onReplayTarget}
+      onAnswer={args.onAnswer}
+    />
+  ),
+  args: {
+    onReplayBase: fn(),
+    onReplayTarget: fn(),
+    onAnswer: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const lockedButton = canvasElement.querySelector(
+      '[data-note="A#"][data-reference="true"]',
+    ) as HTMLButtonElement | null;
+
+    await expect(lockedButton).not.toBeNull();
+    await expect(lockedButton?.disabled).toBe(true);
   },
 };
 
@@ -207,7 +255,12 @@ export const AnsweringWithHiddenLabels: Story = {
     );
 
     await expect(referenceKey).not.toBeNull();
-    await expect(referenceKey?.textContent).toBe("");
+    await expect(
+      referenceKey?.querySelector(".ui-keyboard-key__label"),
+    ).toBeNull();
+    await expect(
+      referenceKey?.querySelector(".ui-keyboard-key__reference-badge"),
+    ).not.toBeNull();
   },
 };
 
