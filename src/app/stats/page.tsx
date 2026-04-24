@@ -23,6 +23,12 @@ import {
   TrainingModeChip,
 } from "../ui/primitives";
 import { MetricBarChart, MetricLineChart } from "./stats-charts";
+import { StatsTrendSwitch } from "./stats-trend-switch";
+import {
+  createScoreTrendOptions,
+  formatCompactDateLabel,
+  getCompactIntervalChartLabel,
+} from "./stats-view-model";
 
 export default async function StatsPage() {
   const currentUser = await getCurrentUserOrNullCached();
@@ -31,17 +37,15 @@ export default async function StatsPage() {
     getGlobalUserSettingsForCurrentUser({ currentUser }),
   ]);
   const intervalNotationStyle = globalSettings.settings.intervalNotationStyle;
+  const scoreTrendOptions = createScoreTrendOptions(stats.scoreTrends);
 
   return (
     <AppShell>
       <PageHeader
-        title="統計"
-        eyebrow="学習の記録"
-        subtitle="保存済みセッションから、成長の流れと苦手傾向をまとめて確認できます。"
-      />
-
-      <Surface>
-        <div className="ui-page-aux-actions">
+        title="成長の記録"
+        eyebrow="統計"
+        subtitle="スコア、ズレ、反応速度を保存済みセッションから確認します。"
+        actions={
           <ButtonLink
             href="/"
             variant="ghost"
@@ -50,81 +54,60 @@ export default async function StatsPage() {
           >
             ホーム
           </ButtonLink>
-        </div>
-      </Surface>
+        }
+      />
 
       {stats.isAuthenticated ? (
         <>
-          <Surface tone="accent">
-            <SectionHeader
-              title="全体概要"
-              description={`累計 ${stats.totalSessions} セッション / 保存済み回答 ${stats.totalSavedQuestionResults} 件の流れです。`}
-            />
-            <SummaryBlock className="ui-summary-block--insight">
-              <SummaryStat
-                label="累計スコア"
-                value={formatScoreLabel(stats.overview.cumulativeScore)}
-                emphasis="primary"
-                className="ui-summary-stat--brand"
-              />
-              <SummaryStat
-                label="正答率"
-                value={formatAccuracyLabel(stats.overview.correctRate)}
-                detail="回答の安定度"
-                className="ui-summary-stat--teal"
-              />
-              <SummaryStat
-                label="平均誤差"
-                value={formatAvgErrorLabel(stats.overview.averageError)}
-                detail="ズレの大きさ"
-                className="ui-summary-stat--coral"
-              />
-              <SummaryStat
-                label="平均回答時間"
-                value={formatResponseTimeMsLabel(
-                  stats.overview.averageResponseTimeMs,
-                )}
-                detail="反応速度"
-                className="ui-summary-stat--blue"
-              />
-            </SummaryBlock>
+          <Surface tone="accent" className="ui-stats-hero-surface">
+            <div className="ui-stats-hero">
+              <div className="ui-stats-hero__score">
+                <span className="ui-stats-hero__label">累計スコア</span>
+                <strong className="ui-stats-hero__value">
+                  {formatScoreLabel(stats.overview.cumulativeScore)}
+                </strong>
+                <span className="ui-stats-hero__meta">
+                  {stats.totalSessions} セッション / 保存済み回答{" "}
+                  {stats.totalSavedQuestionResults} 件
+                </span>
+              </div>
+              <SummaryBlock className="ui-summary-block--insight ui-stats-hero__supporting">
+                <SummaryStat
+                  label="正答率"
+                  value={formatAccuracyLabel(stats.overview.correctRate)}
+                  detail="回答の安定度"
+                  tone="success"
+                />
+                <SummaryStat
+                  label="平均誤差"
+                  value={formatAvgErrorLabel(stats.overview.averageError)}
+                  detail={`中央値 ${formatAvgErrorLabel(stats.overview.medianError)}`}
+                  tone="error"
+                />
+                <SummaryStat
+                  label="平均回答時間"
+                  value={formatResponseTimeMsLabel(
+                    stats.overview.averageResponseTimeMs,
+                  )}
+                  detail="反応速度"
+                  tone="info"
+                />
+              </SummaryBlock>
+            </div>
           </Surface>
 
           <GraphCard
-            title="日次スコア推移"
-            subtitle="主指標として、日ごとの平均スコアを確認します。"
+            title="スコア推移"
+            subtitle="全体、距離、鍵盤を切り替えて、日ごとの平均スコアを見ます。"
+            className="ui-stats-primary-chart"
           >
-            <MetricLineChart
-              title="日次スコア"
-              titleVisibility="sr-only"
-              tone="brand"
+            <StatsTrendSwitch
+              options={scoreTrendOptions}
               valueFormatter={formatScoreLabel}
-              points={stats.dailyTrends.map((trend) => ({
-                key: trend.date,
-                label: formatCompactDateLabel(trend.date),
-                assistiveLabel: `${formatDateLabel(trend.date)} 平均スコア ${formatScoreLabel(trend.averageScore)} / ${trend.questionCount} 問`,
-                value: trend.averageScore,
-              }))}
-              denseLabels
             />
           </GraphCard>
 
-          <div className="ui-grid-chart-panels">
-            <GraphCard title="正答率" subtitle="回答の安定度">
-              <MetricLineChart
-                title="正答率"
-                titleVisibility="sr-only"
-                tone="teal"
-                valueFormatter={formatAccuracyLabel}
-                points={stats.dailyTrends.map((trend) => ({
-                  key: `${trend.date}-accuracy`,
-                  label: formatCompactDateLabel(trend.date),
-                  assistiveLabel: `${formatDateLabel(trend.date)} 正答率 ${formatAccuracyLabel(trend.correctRate)} / ${trend.questionCount} 問`,
-                  value: trend.correctRate,
-                }))}
-                denseLabels
-              />
-            </GraphCard>
+          <div className="ui-grid-chart-panels ui-stats-support-chart-grid">
             <GraphCard title="平均誤差" subtitle="ズレの大きさ">
               <MetricLineChart
                 title="平均誤差"
@@ -155,17 +138,33 @@ export default async function StatsPage() {
                 denseLabels
               />
             </GraphCard>
+            <GraphCard title="正答率" subtitle="回答の安定度">
+              <MetricLineChart
+                title="正答率"
+                titleVisibility="sr-only"
+                tone="teal"
+                valueFormatter={formatAccuracyLabel}
+                points={stats.dailyTrends.map((trend) => ({
+                  key: `${trend.date}-accuracy`,
+                  label: formatCompactDateLabel(trend.date),
+                  assistiveLabel: `${formatDateLabel(trend.date)} 正答率 ${formatAccuracyLabel(trend.correctRate)} / ${trend.questionCount} 問`,
+                  value: trend.correctRate,
+                }))}
+                denseLabels
+              />
+            </GraphCard>
           </div>
 
-          <Surface>
+          <Surface className="ui-stats-learning-surface">
             <SectionHeader
-              title="モード別と直近の傾向"
-              description="モード差と直近の手応えを、同じ読み方で並べて確認できます。"
+              title="モード別と直近の手応え"
+              description="モード差と直近 10 / 30 問を、同じ読み方で確認します。"
             />
-            <div className="ui-flat-panel-list">
+            <div className="ui-flat-panel-list ui-stats-panel-grid">
               <ComparisonPanel
                 title="距離モード"
                 tone="teal"
+                badge={`${stats.byMode.distance.sessionCount} セッション`}
                 stats={[
                   {
                     label: "累計スコア",
@@ -196,6 +195,7 @@ export default async function StatsPage() {
               <ComparisonPanel
                 title="鍵盤モード"
                 tone="blue"
+                badge={`${stats.byMode.keyboard.sessionCount} セッション`}
                 stats={[
                   {
                     label: "累計スコア",
@@ -226,6 +226,7 @@ export default async function StatsPage() {
               <ComparisonPanel
                 title="直近 10 問"
                 tone="amber"
+                badge={`${stats.recentQuestionSummaries.recent10.questionCount} 問`}
                 stats={[
                   {
                     label: "平均スコア",
@@ -245,11 +246,19 @@ export default async function StatsPage() {
                       stats.recentQuestionSummaries.recent10.averageError,
                     ),
                   },
+                  {
+                    label: "平均回答時間",
+                    value: formatResponseTimeMsLabel(
+                      stats.recentQuestionSummaries.recent10
+                        .averageResponseTimeMs,
+                    ),
+                  },
                 ]}
               />
               <ComparisonPanel
                 title="直近 30 問"
                 tone="brand"
+                badge={`${stats.recentQuestionSummaries.recent30.questionCount} 問`}
                 stats={[
                   {
                     label: "平均スコア",
@@ -269,6 +278,91 @@ export default async function StatsPage() {
                       stats.recentQuestionSummaries.recent30.averageError,
                     ),
                   },
+                  {
+                    label: "平均回答時間",
+                    value: formatResponseTimeMsLabel(
+                      stats.recentQuestionSummaries.recent30
+                        .averageResponseTimeMs,
+                    ),
+                  },
+                ]}
+              />
+            </div>
+          </Surface>
+
+          <Surface className="ui-stats-learning-surface">
+            <SectionHeader
+              title="上下方向と回答傾向"
+              description="上方向 / 下方向の差と、高め低めに答える癖を確認します。"
+            />
+            <div className="ui-flat-panel-list ui-stats-panel-grid">
+              <ComparisonPanel
+                title="上方向"
+                tone="brand"
+                badge={`${stats.directionPerformance.up.questionCount} 問`}
+                stats={[
+                  {
+                    label: "平均スコア",
+                    value: formatScoreLabel(
+                      stats.directionPerformance.up.averageScore,
+                    ),
+                  },
+                  {
+                    label: "正答率",
+                    value: formatAccuracyLabel(
+                      stats.directionPerformance.up.correctRate,
+                    ),
+                  },
+                  {
+                    label: "平均誤差",
+                    value: formatAvgErrorLabel(
+                      stats.directionPerformance.up.averageError,
+                    ),
+                  },
+                ]}
+              />
+              <ComparisonPanel
+                title="下方向"
+                tone="blue"
+                badge={`${stats.directionPerformance.down.questionCount} 問`}
+                stats={[
+                  {
+                    label: "平均スコア",
+                    value: formatScoreLabel(
+                      stats.directionPerformance.down.averageScore,
+                    ),
+                  },
+                  {
+                    label: "正答率",
+                    value: formatAccuracyLabel(
+                      stats.directionPerformance.down.correctRate,
+                    ),
+                  },
+                  {
+                    label: "平均誤差",
+                    value: formatAvgErrorLabel(
+                      stats.directionPerformance.down.averageError,
+                    ),
+                  },
+                ]}
+              />
+              <ComparisonPanel
+                title="回答の偏り"
+                tone="amber"
+                badge="高め / 低め"
+                stats={[
+                  {
+                    label: "高め",
+                    value: `${stats.answerBias.higherCount} 問 (${formatAccuracyLabel(stats.answerBias.higherRate)})`,
+                  },
+                  {
+                    label: "低め",
+                    value: `${stats.answerBias.lowerCount} 問 (${formatAccuracyLabel(stats.answerBias.lowerRate)})`,
+                  },
+                  {
+                    label: "ぴったり",
+                    value: `${stats.answerBias.onTargetCount} 問 (${formatAccuracyLabel(stats.answerBias.onTargetRate)})`,
+                  },
                 ]}
               />
             </div>
@@ -277,6 +371,7 @@ export default async function StatsPage() {
           <GraphCard
             title="苦手分析"
             subtitle="平均誤差が大きい音程を、強いズレの順に見ます。"
+            className="ui-stats-interval-chart"
           >
             <MetricBarChart
               title="音程別の平均誤差"
@@ -293,13 +388,13 @@ export default async function StatsPage() {
             />
           </GraphCard>
 
-          <Surface>
+          <Surface className="ui-stats-recent-sessions">
             <SectionHeader
               title="最近のセッション"
-              description="ホームと同じ圧縮リストで、直近の保存結果を振り返れます。"
+              description="直近の保存結果から、詳細レビューへ移動できます。"
             />
             {stats.recentSessions.length > 0 ? (
-              <div className="ui-list">
+              <div className="ui-list ui-stats-session-list">
                 {stats.recentSessions.map((session) => (
                   <ListLinkCard
                     key={session.id}
@@ -309,14 +404,16 @@ export default async function StatsPage() {
                   >
                     <div className="ui-list-link__split">
                       <TrainingModeChip mode={session.mode} />
+                      <strong className="ui-stats-session-score">
+                        {formatScoreLabel(session.sessionScore)}
+                      </strong>
                     </div>
                     <span className="ui-muted">
-                      スコア {formatScoreLabel(session.sessionScore)} / 問題数{" "}
-                      {session.answeredQuestionCount} / 正答率{" "}
+                      回答 {session.answeredQuestionCount} 問 / 正答率{" "}
                       {formatAccuracyLabel(session.accuracyRate)}
                     </span>
                     <span className="ui-muted">
-                      完了日時 {formatDateTimeLabel(session.endedAt)}
+                      完了 {formatDateTimeLabel(session.endedAt)}
                     </span>
                   </ListLinkCard>
                 ))}
@@ -329,9 +426,20 @@ export default async function StatsPage() {
           </Surface>
         </>
       ) : (
-        <Notice tone="warning">
-          保存済みの学習統計を見るにはログインしてください。ゲストのセッションは保存されません。
-        </Notice>
+        <Surface className="ui-stats-auth-empty">
+          <Notice tone="warning">
+            保存済みの学習統計を見るにはログインしてください。ゲストのセッションは保存されません。
+          </Notice>
+          <div className="ui-nav-row">
+            <ButtonLink
+              href="/login"
+              variant="secondary"
+              pendingLabel="ログイン画面を開いています..."
+            >
+              ログインして統計を使う
+            </ButtonLink>
+          </div>
+        </Surface>
       )}
     </AppShell>
   );
@@ -340,12 +448,16 @@ export default async function StatsPage() {
 function ComparisonPanel(props: {
   title: string;
   tone: "brand" | "teal" | "amber" | "blue";
+  badge?: string;
   stats: Array<{ label: string; value: string }>;
 }) {
   return (
     <section className="ui-flat-panel" data-tone={props.tone}>
       <div className="ui-flat-panel__header">
         <strong>{props.title}</strong>
+        {props.badge ? (
+          <span className="ui-flat-panel__badge">{props.badge}</span>
+        ) : null}
       </div>
       <dl className="ui-flat-panel__list">
         {props.stats.map((stat) => (
@@ -360,34 +472,4 @@ function ComparisonPanel(props: {
       </dl>
     </section>
   );
-}
-
-function formatCompactDateLabel(value: string): string {
-  const [year, month, day] = value.split("-");
-
-  if (!year || !month || !day) {
-    return value;
-  }
-
-  return `${month}/${day}`;
-}
-
-function getCompactIntervalChartLabel(semitones: number): string {
-  const labels: Record<number, string> = {
-    0: "完1",
-    1: "短2",
-    2: "長2",
-    3: "短3",
-    4: "長3",
-    5: "完4",
-    6: "増4",
-    7: "完5",
-    8: "短6",
-    9: "長6",
-    10: "短7",
-    11: "長7",
-    12: "完8",
-  };
-
-  return labels[semitones] ?? `${semitones}半`;
 }

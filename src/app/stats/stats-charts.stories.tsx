@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { expect, within } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 
 import { AppShell, GraphCard } from "../ui/primitives";
 import { MetricBarChart, MetricLineChart } from "./stats-charts";
+import { StatsTrendSwitch } from "./stats-trend-switch";
+import { createScoreTrendOptions } from "./stats-view-model";
 
 const denseLinePoints = Array.from({ length: 10 }, (_, index) => {
   const day = `${index + 1}`.padStart(2, "0");
@@ -96,6 +98,24 @@ const intervalPoints = [
     value: 1.8,
   },
 ];
+
+const scoreTrendOptions = createScoreTrendOptions({
+  overall: [
+    { date: "2026-03-01", averageScore: 70, questionCount: 12 },
+    { date: "2026-03-02", averageScore: 76, questionCount: 16 },
+    { date: "2026-03-03", averageScore: 84, questionCount: 20 },
+  ],
+  distance: [
+    { date: "2026-03-01", averageScore: 72, questionCount: 8 },
+    { date: "2026-03-02", averageScore: 80, questionCount: 10 },
+    { date: "2026-03-03", averageScore: 86, questionCount: 12 },
+  ],
+  keyboard: [
+    { date: "2026-03-01", averageScore: 66, questionCount: 4 },
+    { date: "2026-03-02", averageScore: 71, questionCount: 6 },
+    { date: "2026-03-03", averageScore: 78, questionCount: 8 },
+  ],
+});
 
 const meta = {
   title: "Stats/Charts",
@@ -195,6 +215,26 @@ export const LineChartSinglePoint: Story = {
     const labelCenter = labelRect.left + labelRect.width / 2;
 
     await expect(Math.abs(plotCenter - labelCenter)).toBeLessThanOrEqual(1);
+  },
+};
+
+export const ScoreTrendModeSwitch: Story = {
+  render: () => (
+    <GraphCard title="スコア推移" subtitle="全体、距離、鍵盤を切り替えます。">
+      <StatsTrendSwitch
+        options={scoreTrendOptions}
+        valueFormatter={(value) => `${value.toFixed(1)} pt`}
+      />
+    </GraphCard>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const keyboardOption = canvas.getByLabelText("鍵盤");
+
+    await expect(canvas.getByLabelText("全体")).toBeChecked();
+    await userEvent.click(keyboardOption);
+    await expect(keyboardOption).toBeChecked();
+    await expect(canvas.getByText(/鍵盤モード 平均スコア/)).toBeInTheDocument();
   },
 };
 

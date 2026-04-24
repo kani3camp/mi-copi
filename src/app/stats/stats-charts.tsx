@@ -9,7 +9,7 @@ export type ChartPoint = {
   value: number;
 };
 
-type ChartTone = "brand" | "teal" | "coral" | "blue";
+export type ChartTone = "brand" | "teal" | "coral" | "blue";
 type BarChartLabelOrientation = "horizontal" | "vertical";
 type ChartTitleVisibility = "visible" | "sr-only";
 
