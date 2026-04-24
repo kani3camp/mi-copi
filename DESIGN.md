@@ -31,8 +31,8 @@ This document does not decide:
 - Smartphone browser portrait is the top priority.
 - The app is an ear-copy-oriented relative-pitch trainer, not a game.
 - Training flow must preserve tempo: `reference -> target -> answer -> feedback -> next`.
-- Training screens are client-heavy.
-- Home, settings, stats, and result screens are server-first by default.
+- Training screens are client-heavy, including the in-route `result` phase that keeps the finished-session payload for save and retry.
+- Home, settings, stats, and saved session detail/history screens are server-first by default.
 
 ## Reference Hierarchy
 
@@ -196,7 +196,8 @@ Do not flood the entire app with green blocks.
 
 ```txt
 Brand / Primary
-- primary-700: #0B8A52
+- primary-800: #065F38
+- primary-700: #087A49
 - primary-600: #10A861
 - primary-500: #19C06F
 - primary-400: #43D98E
@@ -244,8 +245,8 @@ Borders
 - border-strong: #B7C4BC
 
 Brand
-- brand-solid: #10A861
-- brand-hover: #0B8A52
+- brand-solid: #087A49
+- brand-hover: #065F38
 - brand-soft: #E8FFF3
 - brand-softer: #F2FFF7
 - brand-contrast: #FFFFFF
@@ -418,7 +419,8 @@ Training priority order:
 Primary button:
 
 - Use for the most important action in the current context.
-- Visual: solid green background, white text, medium-to-bold label, subtle shadow.
+- Visual: solid accessible green background, white text, medium-to-bold label, subtle shadow.
+- Use `brand-solid` / `brand-hover` with `brand-contrast`; do not use brighter greens with white text for normal-sized labels.
 - Use for: start training, answer submit when explicit submit exists, next question, go to stats, save retry when it is the main recovery path.
 
 Secondary button:
@@ -502,17 +504,21 @@ Use explicit status chips or inline cards.
 Required states:
 
 - 正解
-- 惜しい
 - 不正解
 - 保存中
 - 保存済み
 - 保存失敗
 
+Optional secondary emphasis:
+
+- `惜しい` may be shown only as support emphasis for incorrect answers within `±1` semitone, e.g. `不正解（惜しい）`.
+- `惜しい` must not replace the required correct / incorrect status.
+
 Color mapping:
 
 - 正解 = green
-- 惜しい = amber
 - 不正解 = red
+- 惜しい support emphasis = amber
 - 保存中 = cyan or neutral animated state
 - 保存済み = green
 - 保存失敗 = red
@@ -553,8 +559,9 @@ Another product-defining component.
 
 Rules:
 
-- upward and downward answers are visually separated
-- keep the two-row structure stable
+- in `mixed` direction sessions, upward and downward answers are visually separated
+- in `mixed` direction sessions, keep the two-row structure stable
+- in `up_only` sessions, use a single upward answer group and do not render an empty downward row
 - answer buttons should feel quick and game-like, but still premium
 - show current available candidates only
 - button sizes may adapt, but readability must remain good

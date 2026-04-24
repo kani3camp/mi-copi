@@ -1,5 +1,6 @@
 :root {
-  --primary-700: #0b8a52;
+  --primary-800: #065f38;
+  --primary-700: #087a49;
   --primary-600: #10a861;
   --primary-500: #19c06f;
   --primary-400: #43d98e;
@@ -31,8 +32,8 @@
   --border-subtle: #e2e8e4;
   --border-default: #d3dbd6;
   --border-strong: #b7c4bc;
-  --brand-solid: #10a861;
-  --brand-hover: #0b8a52;
+  --brand-solid: #087a49;
+  --brand-hover: #065f38;
   --brand-soft: #e8fff3;
   --brand-softer: #f2fff7;
   --brand-contrast: #ffffff;
