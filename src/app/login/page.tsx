@@ -1,15 +1,8 @@
 import { getCurrentUserOrNullCached } from "../../lib/auth/server";
 import { ButtonLink } from "../ui/navigation-link";
-import {
-  AppShell,
-  Notice,
-  PageHeader,
-  SectionHeader,
-  SummaryBlock,
-  SummaryStat,
-  Surface,
-} from "../ui/primitives";
+import { AppShell, Notice, PageHeader, Surface } from "../ui/primitives";
 import { LoginControls } from "./login-controls";
+import { LoginSignedInPanel } from "./login-panels";
 
 export default async function LoginPage() {
   const currentUser = await getCurrentUserOrNullCached();
@@ -17,24 +10,26 @@ export default async function LoginPage() {
   return (
     <AppShell narrow>
       <PageHeader
-        title="ログイン"
+        title="ログインして記録を残す"
         eyebrow="アカウント"
-        subtitle="Google でログインするか、ゲストでそのまま始めるかを選びます。"
+        subtitle="保存して続けるか、ゲストで今すぐ練習するかを選べます。"
       />
 
       {currentUser ? (
-        <Notice tone="success">
-          すでにサインイン済みです。必要ならそのままホームから学習を始められます。
-        </Notice>
-      ) : null}
+        <>
+          <Notice tone="success">
+            すでにサインイン済みです。このアカウントで結果保存と統計を使えます。
+          </Notice>
+          <LoginSignedInPanel
+            name={currentUser.name}
+            email={currentUser.email}
+          />
+        </>
+      ) : (
+        <LoginControls />
+      )}
 
-      <LoginControls />
-
-      {currentUser ? (
-        <LoginCurrentUserSection currentUser={currentUser} />
-      ) : null}
-
-      <Surface>
+      <Surface className="ui-login-secondary-nav">
         <div className="ui-page-aux-actions">
           <ButtonLink
             href="/"
@@ -47,26 +42,5 @@ export default async function LoginPage() {
         </div>
       </Surface>
     </AppShell>
-  );
-}
-
-function LoginCurrentUserSection(props: {
-  currentUser: Awaited<ReturnType<typeof getCurrentUserOrNullCached>>;
-}) {
-  return (
-    <Surface>
-      <SectionHeader title="サインイン中のアカウント" />
-      <SummaryBlock>
-        <SummaryStat
-          label="名前"
-          value={props.currentUser?.name ?? "不明"}
-          emphasis="primary"
-        />
-        <SummaryStat
-          label="メールアドレス"
-          value={props.currentUser?.email ?? "不明"}
-        />
-      </SummaryBlock>
-    </Surface>
   );
 }

@@ -789,9 +789,8 @@ button,
 }
 
 .ui-action-card__title {
-  font-size: clamp(22px, 6vw, 28px);
+  font-size: 24px;
   line-height: 1.15;
-  letter-spacing: -0.04em;
 }
 
 .ui-action-card__description {
@@ -2619,6 +2618,52 @@ button,
     var(--surface-elevated);
 }
 
+.ui-login-choice-layout {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ui-login-choice-card {
+  min-height: 100%;
+}
+
+.ui-login-choice-card--primary {
+  border-color: rgba(16, 168, 97, 0.24);
+  background:
+    radial-gradient(
+      circle at 18% 0%,
+      rgba(187, 247, 208, 0.5) 0%,
+      rgba(255, 255, 255, 0) 46%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #f2fff7 100%);
+}
+
+.ui-login-choice-card--guest {
+  border-style: dashed;
+}
+
+.ui-login-error-notice {
+  align-self: start;
+}
+
+.ui-login-signed-in-panel {
+  gap: var(--space-4);
+}
+
+.ui-login-account-summary {
+  gap: var(--space-3);
+}
+
+.ui-login-secondary-nav {
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.ui-login-loading-surface {
+  place-items: center;
+  min-height: 104px;
+}
+
 .ui-loading-hero,
 .ui-loading-surface {
   animation: ui-fade-in var(--motion-base) var(--motion-easing);
@@ -2884,6 +2929,18 @@ button,
   .ui-auth-choice-grid,
   .ui-grid-chart-panels {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ui-action-card__title {
+    font-size: 28px;
+  }
+
+  .ui-login-choice-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ui-login-error-notice {
+    grid-column: 1 / -1;
   }
 
   .ui-stats-hero,
