@@ -583,8 +583,8 @@ button,
 .ui-button--primary {
   background: linear-gradient(
     180deg,
-    var(--primary-500) 0%,
-    var(--brand-solid) 100%
+    var(--brand-solid) 0%,
+    var(--brand-hover) 100%
   );
   color: var(--brand-contrast);
   box-shadow:
@@ -595,7 +595,7 @@ button,
 .ui-button--primary:hover {
   background: linear-gradient(
     180deg,
-    var(--primary-600) 0%,
+    var(--brand-solid) 0%,
     var(--brand-hover) 100%
   );
   box-shadow:
@@ -689,6 +689,10 @@ button,
 
 .ui-grid-fields {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ui-grid-fields > .ui-field:has(.ui-segmented--block) {
+  grid-column: 1 / -1;
 }
 
 .ui-grid-cards,
@@ -1289,6 +1293,8 @@ button,
   background: transparent;
   color: var(--text-secondary);
   font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .ui-segmented__item[data-active="true"] {
@@ -2203,8 +2209,8 @@ button,
 .ui-playback-button[data-active="true"] .ui-playback-button__icon {
   background: linear-gradient(
     180deg,
-    var(--primary-500) 0%,
-    var(--brand-solid) 100%
+    var(--brand-solid) 0%,
+    var(--brand-hover) 100%
   );
   color: var(--brand-contrast);
 }
