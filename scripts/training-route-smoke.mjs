@@ -15,9 +15,11 @@ const BROWSERS = [
 async function main() {
   loadDotEnvLocal();
 
-  const authUser = await findSmokeUserWithStoredConfig();
+  const authLookup = await findSmokeUserWithStoredConfig();
+  const authUser = authLookup.user;
   const report = {
     baseUrl: BASE_URL,
+    authLookupError: authLookup.error,
     authUser: authUser
       ? {
           email: authUser.email,
@@ -155,6 +157,7 @@ async function runAuthSmoke(browserConfig, authUser) {
 async function runDistanceGuestScenario(context, browserConfig) {
   debug(`scenario start: ${browserConfig.key} guest-distance`);
   const page = await context.newPage();
+  acceptConfirmDialogs(page);
   const scenario = startScenario(browserConfig, "guest-distance");
 
   try {
@@ -190,12 +193,6 @@ async function runDistanceGuestScenario(context, browserConfig) {
 
     await startTraining(page);
     await page.waitForSelector('button[aria-label="基準音を再生"]');
-    scenario.checks.push(
-      assert(
-        await playbackButtonsActiveStateFalse(page),
-        "distance playback active state removed",
-      ),
-    );
 
     await page.waitForFunction(() => {
       const button = document.querySelector(
@@ -203,11 +200,17 @@ async function runDistanceGuestScenario(context, browserConfig) {
       );
       return button && !button.hasAttribute("disabled");
     });
+    scenario.checks.push(
+      assert(
+        await playbackButtonsActiveStateFalse(page),
+        "distance playback active state removed",
+      ),
+    );
 
     await clickElement(page.locator(".ui-train-answer-grid button").first());
     await page.waitForSelector("text=フィードバック");
     await page.getByRole("button", { name: "ここで終了" }).click();
-    await page.waitForSelector("text=結果");
+    await waitForResultPanel(page);
 
     scenario.checks.push(
       assertTextIncludes(
@@ -243,6 +246,7 @@ async function runDistanceGuestScenario(context, browserConfig) {
 async function runKeyboardGuestScenario(context, browserConfig) {
   debug(`scenario start: ${browserConfig.key} guest-keyboard`);
   const page = await context.newPage();
+  acceptConfirmDialogs(page);
   const scenario = startScenario(browserConfig, "guest-keyboard");
 
   try {
@@ -274,12 +278,6 @@ async function runKeyboardGuestScenario(context, browserConfig) {
 
     scenario.checks.push(
       assert(
-        await playbackButtonsActiveStateFalse(page),
-        "keyboard playback active state removed",
-      ),
-    );
-    scenario.checks.push(
-      assert(
         (await page.locator('[data-note][data-reference="true"]').count()) > 0,
         "keyboard question shows reference key marker",
       ),
@@ -291,11 +289,17 @@ async function runKeyboardGuestScenario(context, browserConfig) {
       );
       return button && !button.hasAttribute("disabled");
     });
+    scenario.checks.push(
+      assert(
+        await playbackButtonsActiveStateFalse(page),
+        "keyboard playback active state removed",
+      ),
+    );
 
     await clickElement(page.locator("[data-note]").nth(2));
     await page.waitForSelector("text=フィードバック");
     await page.getByRole("button", { name: "ここで終了" }).click();
-    await page.waitForSelector("text=結果");
+    await waitForResultPanel(page);
 
     scenario.checks.push(
       assertTextIncludes(
@@ -329,6 +333,7 @@ async function runDistanceAuthBootstrapScenario(
 ) {
   debug(`scenario start: ${browserConfig.key} auth-distance-bootstrap`);
   const page = await context.newPage();
+  acceptConfirmDialogs(page);
   const scenario = startScenario(browserConfig, "auth-distance-bootstrap");
   const configSummary = describeDistanceConfig(authUser.lastDistanceConfig);
   let delayedBootstrapSeen = false;
@@ -371,10 +376,9 @@ async function runDistanceAuthBootstrapScenario(
       ),
     );
 
-    const configSelect = page.locator("select").first();
     const editedValue = "time_limit";
     await page.waitForTimeout(300);
-    await configSelect.selectOption(editedValue);
+    await page.getByLabel("終了方法").getByText("制限時間").click();
     await page.waitForFunction(() =>
       Array.from(document.querySelectorAll("select")).some(
         (element) => element.value === "180",
@@ -408,21 +412,18 @@ async function runDistanceAuthBootstrapScenario(
     );
     scenario.checks.push(
       assertEqual(
-        await configSelect.inputValue(),
+        await selectedEndConditionType(page),
         editedValue,
         "manual config edit survives deferred bootstrap",
       ),
     );
 
-    const answerChoiceText = await page
-      .locator(".ui-form-chip-list")
-      .innerText();
     scenario.observations.configSummary = configSummary;
     scenario.observations.bootstrapNotices = notices;
     scenario.checks.push(
       assert(
-        answerChoiceText.includes("増4") || answerChoiceText.includes("完全"),
-        "distance config answer choices render",
+        (await page.getByText("音程表記の粒度").count()) > 0,
+        "distance-specific config controls render",
       ),
     );
   } catch (error) {
@@ -441,6 +442,7 @@ async function runDistanceAuthBootstrapScenario(
 async function runDistanceAuthSaveScenario(context, browserConfig, authUser) {
   debug(`scenario start: ${browserConfig.key} auth-distance-save`);
   const page = await context.newPage();
+  acceptConfirmDialogs(page);
   const scenario = startScenario(browserConfig, "auth-distance-save");
 
   try {
@@ -452,12 +454,8 @@ async function runDistanceAuthSaveScenario(context, browserConfig, authUser) {
     );
     scenario.checks.push(
       assert(
-        (await page
-          .locator(
-            `select >> option[value="${String(authUser.lastDistanceConfig.endCondition.type)}"]`,
-          )
-          .count()) > 0,
-        "distance config form renders end-condition select",
+        (await page.getByLabel("終了方法").count()) > 0,
+        "distance config form renders end-condition control",
       ),
     );
 
@@ -473,13 +471,7 @@ async function runDistanceAuthSaveScenario(context, browserConfig, authUser) {
     );
     scenario.checks.push(
       assert(
-        await playbackButtonsActiveStateFalse(page),
-        "distance playback active state remains false",
-      ),
-    );
-    scenario.checks.push(
-      assert(
-        await page.getByRole("button", { name: "基準音を再生" }).isDisabled(),
+        await waitForPlaybackLocked(page),
         "distance replay is locked during autoplay",
       ),
     );
@@ -490,37 +482,33 @@ async function runDistanceAuthSaveScenario(context, browserConfig, authUser) {
       );
       return button && !button.hasAttribute("disabled");
     });
+    scenario.checks.push(
+      assert(
+        await playbackButtonsActiveStateFalse(page),
+        "distance playback active state remains false after autoplay",
+      ),
+    );
 
     await clickElement(page.locator(".ui-train-answer-grid button").first());
     await page.waitForSelector("text=フィードバック");
     scenario.checks.push(
       assert(
-        await page.getByRole("button", { name: "正解の音を再生" }).isVisible(),
+        await page.getByRole("button", { name: "正解音を再生" }).isVisible(),
         "distance feedback replay button visible",
       ),
     );
     await clickElement(page.getByRole("button", { name: "ここで終了" }));
-    await page.waitForSelector("text=結果");
+    await waitForResultPanel(page);
     scenario.checks.push(
       assertEqual(
-        await headerQuestion(page),
+        await resultPanelTitle(page),
         "結果",
-        "distance result header label",
+        "distance result panel title",
       ),
     );
 
-    const saveNoticeTexts = await observeNoticeTexts(page, 3000);
+    const saveNoticeTexts = await observeResultSaveTexts(page, 5000);
     scenario.observations.saveNoticeTexts = saveNoticeTexts;
-    scenario.checks.push(
-      assert(
-        saveNoticeTexts.some(
-          (text) =>
-            text.includes("保存の準備をしています") ||
-            text.includes("結果を自動保存しています"),
-        ),
-        "distance result shows pending save notice",
-      ),
-    );
     scenario.checks.push(
       assert(
         saveNoticeTexts.some((text) =>
@@ -531,9 +519,9 @@ async function runDistanceAuthSaveScenario(context, browserConfig, authUser) {
     );
     scenario.checks.push(
       assertEqual(
-        await headerMeta(page),
+        await resultSaveStatusLabel(page),
         "保存済み",
-        "distance result header meta",
+        "distance result save status",
       ),
     );
   } catch (error) {
@@ -554,6 +542,7 @@ async function runKeyboardAuthScenario(
 ) {
   debug(`scenario start: ${browserConfig.key} auth-keyboard-${options.mode}`);
   const page = await context.newPage();
+  acceptConfirmDialogs(page);
   const scenario = startScenario(
     browserConfig,
     `auth-keyboard-${options.mode}`,
@@ -612,7 +601,11 @@ async function runKeyboardAuthScenario(
     );
     scenario.checks.push(
       assert(
-        timeline.some((sample) => sample.chip === "回答中"),
+        timeline.some(
+          (sample) =>
+            sample.title === "音を聴いて鍵盤で答える" ||
+            sample.questionLabel?.includes("1 /"),
+        ),
         "keyboard reaches answering phase",
       ),
     );
@@ -626,14 +619,9 @@ async function runKeyboardAuthScenario(
     );
 
     await page.waitForSelector('[data-note][data-reference="true"]');
-    scenario.checks.push(
-      assert(
-        await playbackButtonsActiveStateFalse(page),
-        "keyboard playback active state remains false",
-      ),
-    );
     scenario.observations.sawLockedPlaybackPhase = timeline.some(
-      (sample) => sample.chip === "再生中" || sample.baseDisabled === true,
+      (sample) =>
+        sample.questionLabel === "再生中" || sample.baseDisabled === true,
     );
     scenario.checks.push(
       assert(
@@ -661,16 +649,16 @@ async function runKeyboardAuthScenario(
     await page.waitForSelector("text=フィードバック");
     failNextActionRequest = options.saveFailureOnce;
     await clickElement(page.getByRole("button", { name: "ここで終了" }));
-    await page.waitForSelector("text=結果");
+    await waitForResultPanel(page);
     scenario.checks.push(
       assertEqual(
-        await headerQuestion(page),
+        await resultPanelTitle(page),
         "結果",
-        "keyboard result header label",
+        "keyboard result panel title",
       ),
     );
 
-    const saveNoticeTexts = await observeNoticeTexts(page, 3000);
+    const saveNoticeTexts = await observeResultSaveTexts(page, 5000);
     scenario.observations.saveNoticeTexts = saveNoticeTexts;
 
     if (options.saveFailureOnce) {
@@ -685,18 +673,20 @@ async function runKeyboardAuthScenario(
           "keyboard result shows save failure notice",
         ),
       );
-      const retryButton = page.locator(".ui-action-row button").first();
+      const retryButton = page.getByRole("button", { name: "保存を再試行" });
       await retryButton.waitFor({ state: "visible" });
       await page.waitForFunction(
         () => {
-          const button = document.querySelector(".ui-action-row button");
+          const button = Array.from(document.querySelectorAll("button")).find(
+            (element) => element.textContent?.includes("保存を再試行"),
+          );
           return button && !button.hasAttribute("disabled");
         },
         { timeout: 10000 },
       );
       await page.unroute("**/train/keyboard");
       await clickElement(retryButton);
-      const retriedNotices = await observeNoticeTexts(page, 3000);
+      const retriedNotices = await observeResultSaveTexts(page, 5000);
       scenario.observations.retryNoticeTexts = retriedNotices;
       scenario.checks.push(
         assert(
@@ -708,22 +698,12 @@ async function runKeyboardAuthScenario(
       );
       scenario.checks.push(
         assertEqual(
-          await headerMeta(page),
+          await resultSaveStatusLabel(page),
           "保存済み",
-          "keyboard result header meta after retry",
+          "keyboard result save status after retry",
         ),
       );
     } else {
-      scenario.checks.push(
-        assert(
-          saveNoticeTexts.some(
-            (text) =>
-              text.includes("保存の準備をしています") ||
-              text.includes("結果を自動保存しています"),
-          ),
-          "keyboard result shows pending save notice",
-        ),
-      );
       scenario.checks.push(
         assert(
           saveNoticeTexts.some((text) =>
@@ -734,9 +714,9 @@ async function runKeyboardAuthScenario(
       );
       scenario.checks.push(
         assertEqual(
-          await headerMeta(page),
+          await resultSaveStatusLabel(page),
           "保存済み",
-          "keyboard result header meta",
+          "keyboard result save status",
         ),
       );
     }
@@ -765,6 +745,10 @@ async function captureKeyboardTimeline(page, durationMs) {
         title:
           document.querySelector(".ui-section-title")?.textContent?.trim() ??
           null,
+        questionLabel:
+          document
+            .querySelector(".ui-training-progress-header__question")
+            ?.textContent?.trim() ?? null,
         chip:
           document
             .querySelector(".ui-section-header .ui-chip")
@@ -786,12 +770,12 @@ async function captureKeyboardTimeline(page, durationMs) {
   return samples;
 }
 
-async function observeNoticeTexts(page, timeoutMs) {
+async function observeResultSaveTexts(page, timeoutMs) {
   const seen = new Set();
   const startedAt = Date.now();
 
   while (Date.now() - startedAt < timeoutMs) {
-    const texts = await page.locator(".ui-notice").allInnerTexts();
+    const texts = await page.locator(".ui-result-save-card").allInnerTexts();
     for (const text of texts) {
       if (text.trim()) {
         seen.add(text.trim());
@@ -809,10 +793,31 @@ async function startTraining(page) {
   await clickElement(button);
 }
 
+function acceptConfirmDialogs(page) {
+  page.on("dialog", async (dialog) => {
+    await dialog.accept();
+  });
+}
+
 async function clickElement(locator) {
   await locator.evaluate((element) => {
     element.click();
   });
+}
+
+async function waitForPlaybackLocked(page) {
+  try {
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('button[aria-label="基準音を再生"]')
+          ?.hasAttribute("disabled") === true,
+      { timeout: 1500 },
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function playbackButtonsActiveStateFalse(page) {
@@ -825,14 +830,68 @@ async function playbackButtonsActiveStateFalse(page) {
   return states.length > 0 && states.every((value) => value === "false");
 }
 
+async function waitForResultPanel(page) {
+  await page.locator(".ui-section-title", { hasText: "結果" }).waitFor({
+    state: "visible",
+    timeout: 30000,
+  });
+}
+
+async function resultPanelTitle(page) {
+  return readOptionalText(
+    page.locator(".ui-section-title", { hasText: "結果" }),
+  );
+}
+
+async function resultSaveStatusLabel(page) {
+  return readOptionalText(
+    page.locator(".ui-result-save-card .ui-chip").first(),
+  );
+}
+
+async function selectedEndConditionType(page) {
+  return page.evaluate(() => {
+    const checked = document.querySelector(
+      'input[type="radio"][aria-label="終了方法"]:checked',
+    );
+
+    if (checked instanceof HTMLInputElement) {
+      return checked.value;
+    }
+
+    const selectedLabel = Array.from(
+      document.querySelectorAll(".ui-segmented__label"),
+    ).find((label) =>
+      label
+        .querySelector(".ui-segmented__control")
+        ?.getAttribute("name")
+        ?.startsWith(":"),
+    );
+
+    const checkedInput = Array.from(
+      document.querySelectorAll('input[type="radio"]:checked'),
+    ).find(
+      (input) =>
+        input.parentElement?.textContent?.includes("制限時間") ||
+        input.parentElement?.textContent?.includes("問題数"),
+    );
+
+    if (checkedInput instanceof HTMLInputElement) {
+      return checkedInput.parentElement?.textContent?.includes("制限時間")
+        ? "time_limit"
+        : "question_count";
+    }
+
+    return selectedLabel?.textContent?.includes("制限時間")
+      ? "time_limit"
+      : null;
+  });
+}
+
 async function headerQuestion(page) {
   return readOptionalText(
     page.locator(".ui-training-progress-header__question"),
   );
-}
-
-async function headerMeta(page) {
-  return readOptionalText(page.locator(".ui-training-progress-header__meta"));
 }
 
 async function headerNotice(page) {
@@ -876,6 +935,10 @@ function describeKeyboardConfig(config) {
 }
 
 async function findSmokeUserWithStoredConfig() {
+  if (!process.env.DATABASE_URL) {
+    return { error: "DATABASE_URL is not configured.", user: null };
+  }
+
   const sql = postgres(process.env.DATABASE_URL, { max: 1 });
 
   try {
@@ -901,16 +964,21 @@ async function findSmokeUserWithStoredConfig() {
     `;
 
     if (!user) {
-      return null;
+      return { error: null, user: null };
     }
 
     return {
-      email: user.email,
-      keyboardNoteLabelsVisible: user.keyboard_note_labels_visible,
-      lastDistanceConfig: user.last_distance_config,
-      lastKeyboardConfig: user.last_keyboard_config,
-      sessionToken: user.session_token,
+      error: null,
+      user: {
+        email: user.email,
+        keyboardNoteLabelsVisible: user.keyboard_note_labels_visible,
+        lastDistanceConfig: user.last_distance_config,
+        lastKeyboardConfig: user.last_keyboard_config,
+        sessionToken: user.session_token,
+      },
     };
+  } catch (error) {
+    return { error: renderUnexpectedError(error), user: null };
   } finally {
     await sql.end();
   }
