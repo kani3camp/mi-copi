@@ -6,6 +6,7 @@ on:
       - develop
       - main
       - "codex/**"
+      - "agent/**"
   pull_request:
 
 permissions:
