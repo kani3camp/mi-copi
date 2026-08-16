@@ -4,11 +4,13 @@ import { expect, within } from "storybook/test";
 
 import { DistanceFeedbackDiagram } from "./train-ui-shared";
 
+type DiagramDirection = "up" | "down" | "unison";
+
 type DiagramArgs = {
-  direction: "up" | "down";
+  direction: DiagramDirection;
   correctSemitones: number;
   answeredSemitones: number;
-  answeredDirection?: "up" | "down";
+  answeredDirection?: DiagramDirection;
 };
 
 const meta = {
@@ -45,6 +47,17 @@ export const Downward: Story = {
   },
   play: async ({ canvasElement }) => {
     await expectDiagram(canvasElement, "下方向");
+  },
+};
+
+export const Unison: Story = {
+  args: {
+    direction: "unison",
+    correctSemitones: 0,
+    answeredSemitones: 0,
+  },
+  play: async ({ canvasElement }) => {
+    await expectDiagram(canvasElement, "同音");
   },
 };
 
@@ -170,7 +183,7 @@ export const NarrowMobile390: Story = {
 
 async function expectDiagram(
   canvasElement: HTMLElement,
-  directionLabel: "上方向" | "下方向",
+  directionLabel: "上方向" | "下方向" | "同音",
 ) {
   const canvas = within(canvasElement);
 
