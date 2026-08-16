@@ -189,7 +189,9 @@ export const FeedbackIncorrectDownward: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const summaryLabels = Array.from(
-      canvasElement.querySelectorAll(".ui-summary-stat__label"),
+      canvasElement.querySelectorAll(
+        ".ui-feedback-answer-block .ui-summary-stat__label",
+      ),
       (element) => element.textContent?.trim() ?? "",
     );
 
@@ -241,7 +243,9 @@ export const FeedbackExactMatch: Story = {
     const stickyActions = canvasElement.querySelector(".ui-sticky-actions");
     const feedbackStatus = canvasElement.querySelector(".ui-feedback-status");
     const summaryLabels = Array.from(
-      canvasElement.querySelectorAll(".ui-summary-stat__label"),
+      canvasElement.querySelectorAll(
+        ".ui-feedback-answer-block .ui-summary-stat__label",
+      ),
       (element) => element.textContent?.trim() ?? "",
     );
     const actionLabels = Array.from(
