@@ -16,7 +16,7 @@ Product behavior, persistence, authentication, scoring, training state transitio
 
 When a visual mock contains sample data, simplified controls, placeholder wording, or prototype-only interaction, do not treat it as a product requirement. Preserve the current product specification and translate the approved visual language into repo-owned components.
 
-The shipped token layer is `src/app/design-system-v2.css`. Existing class names may be retained as implementation contracts, but their visual meaning must resolve through v2 semantic tokens rather than screen-specific colors.
+The shipped token layer is `src/app/design-system-v2.css`. Existing class names may be retained as implementation contracts, but their visual meaning must resolve through v2 semantic tokens rather than screen-specific colors. `src/app/design-system-v2-compat.css` is a temporary bridge for legacy class contracts and must remain small.
 
 ## 2. Design principles
 
@@ -264,7 +264,7 @@ Inputs use neutral surfaces and borders. Focus uses the Azure focus ring. Native
 
 ### 9.6 Toggle
 
-Boolean settings should read as a switch-like state visually and remain a real checkbox semantically. State must be understandable from position, not color alone.
+Boolean settings use a clear native checkbox-style control. State must remain understandable from the checked state and label, not from color alone. Do not replace the approved checkbox with a custom switch solely for decoration.
 
 ### 9.7 Slider
 
@@ -504,7 +504,7 @@ At minimum keep stable states for:
 - Feedback Status
 - Metric / Score
 - Input
-- Toggle
+- Toggle / checkbox
 - Slider
 
 Storybook accessibility tests run with violations treated as errors. Training route smoke tests remain part of the full verification pipeline.
