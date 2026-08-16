@@ -1,0 +1,36 @@
+/*
+ * Accessibility-specific foreground adjustments.
+ * Keep these rules after globals.css so compact labels and semantic metric
+ * colors retain sufficient contrast without changing the broader palette.
+ */
+
+.ui-metric-label,
+.ui-kv-label,
+.ui-summary-stat__label,
+.ui-mini-stat__label,
+.ui-training-progress-meta__label {
+  color: var(--text-secondary);
+}
+
+.ui-summary-stat--success .ui-summary-stat__label,
+.ui-summary-stat--success .ui-summary-stat__value {
+  color: #177b43;
+}
+
+.ui-summary-stat--teal .ui-summary-stat__value,
+.ui-summary-stat--teal-diagram .ui-summary-stat__label,
+.ui-summary-stat--teal-diagram .ui-summary-stat__value {
+  color: #0f766e;
+}
+
+.ui-summary-stat--warning .ui-summary-stat__value {
+  color: #9a6200;
+}
+
+.ui-summary-stat--info .ui-summary-stat__value {
+  color: #0f7490;
+}
+
+.ui-summary-stat--coral .ui-summary-stat__value {
+  color: #bb2f2f;
+}

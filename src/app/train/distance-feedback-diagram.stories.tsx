@@ -32,10 +32,7 @@ export const CloseMissHigher: Story = {
     answeredSemitones: 6,
   },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByText("正解")).toBeVisible();
-    await expect(canvas.getByText("回答")).toBeVisible();
-    await expect(canvas.getByText("基準音")).toBeVisible();
+    await expectDiagram(canvasElement, "上方向");
   },
 };
 
@@ -46,9 +43,7 @@ export const CloseMissLower: Story = {
     answeredSemitones: 4,
   },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByText("正解")).toBeVisible();
-    await expect(canvas.getByText("回答")).toBeVisible();
+    await expectDiagram(canvasElement, "上方向");
   },
 };
 
@@ -59,10 +54,7 @@ export const ExactMatch: Story = {
     answeredSemitones: 2,
   },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByText("正解")).toBeVisible();
-    await expect(canvas.getByText("回答")).toBeVisible();
-    await expect(canvas.getByText("基準音")).toBeVisible();
+    await expectDiagram(canvasElement, "上方向");
   },
 };
 
@@ -73,10 +65,7 @@ export const AnswerAtBase: Story = {
     answeredSemitones: 0,
   },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByText("正解")).toBeVisible();
-    await expect(canvas.getByText("回答")).toBeVisible();
-    await expect(canvas.getByText("基準音")).toBeVisible();
+    await expectDiagram(canvasElement, "上方向");
   },
 };
 
@@ -87,12 +76,7 @@ export const BoundaryCase: Story = {
     answeredSemitones: 11,
   },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(
-      canvas.getByLabelText("距離フィードバック: 0 が基準音、下方向"),
-    ).toBeVisible();
-    await expect(canvas.getByText("正解")).toBeVisible();
-    await expect(canvas.getByText("回答")).toBeVisible();
+    await expectDiagram(canvasElement, "下方向");
   },
 };
 
@@ -110,9 +94,7 @@ export const NarrowMobile320: Story = {
     ),
   ],
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByText("正解")).toBeVisible();
-    await expect(canvas.getByText("回答")).toBeVisible();
+    await expectDiagram(canvasElement, "上方向");
   },
 };
 
@@ -130,11 +112,29 @@ export const NarrowMobile375: Story = {
     ),
   ],
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(
-      canvas.getByLabelText("距離フィードバック: 0 が基準音、下方向"),
-    ).toBeVisible();
-    await expect(canvas.getByText("正解")).toBeVisible();
-    await expect(canvas.getByText("回答")).toBeVisible();
+    await expectDiagram(canvasElement, "下方向");
   },
 };
+
+async function expectDiagram(
+  canvasElement: HTMLElement,
+  directionLabel: "上方向" | "下方向",
+) {
+  const canvas = within(canvasElement);
+
+  await expect(
+    canvas.getByRole("img", {
+      name: `距離フィードバック: 0 が基準音、${directionLabel}`,
+    }),
+  ).toBeVisible();
+  await expect(getDiagramAnnotationLabels(canvasElement)).toEqual(
+    expect.arrayContaining(["基準音", "正解", "回答"]),
+  );
+}
+
+function getDiagramAnnotationLabels(root: ParentNode): string[] {
+  return Array.from(
+    root.querySelectorAll<SVGTextElement>(".ui-distance-diagram__svg text"),
+    (label) => label.textContent?.trim() ?? "",
+  );
+}

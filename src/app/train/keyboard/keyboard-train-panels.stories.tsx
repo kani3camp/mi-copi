@@ -199,7 +199,7 @@ export const FeedbackIncorrect: Story = {
     await expect(
       canvasElement.querySelector('[data-note="F#"][data-reference="true"]'),
     ).toBeNull();
-    await expect(canvas.getByText("不正解")).toBeVisible();
+    await expect(canvas.getByText("惜しい")).toBeVisible();
     await expect(actionLabels).toEqual([
       "基準音を再生",
       "正解音を再生",
