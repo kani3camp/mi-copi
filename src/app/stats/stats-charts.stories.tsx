@@ -230,9 +230,10 @@ export const ScoreTrendModeSwitch: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const keyboardOption = canvas.getByLabelText("鍵盤");
+    const keyboardOptionLabel = canvas.getByText("鍵盤");
 
     await expect(canvas.getByLabelText("全体")).toBeChecked();
-    await userEvent.click(keyboardOption);
+    await userEvent.click(keyboardOptionLabel);
     await expect(keyboardOption).toBeChecked();
     await expect(canvas.getByText(/鍵盤モード 平均スコア/)).toBeInTheDocument();
   },
