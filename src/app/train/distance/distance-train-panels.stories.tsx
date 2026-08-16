@@ -90,7 +90,7 @@ export const Answering: Story = {
       ".ui-train-answer-grid__row",
     );
 
-    await expect(canvas.getByText("上方向")).toBeVisible();
+    await expect(canvas.getAllByText("上方向")).toHaveLength(2);
     await userEvent.click(canvas.getByRole("button", { name: "基準音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "問題音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "完全5度" }));
