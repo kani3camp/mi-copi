@@ -11,6 +11,13 @@
 - 理由: デザイン成果物の見た目を丸コピーせず、既存の有効なUXと機能を保ったまま再利用可能な Design System としてコードベースへ統合するため
 - 影響: `DESIGN.md`, global theme, shared UI primitives, training-specific UI, Storybook, PWA metadata
 
+### Typography
+- 決定: Outfit はアプリから廃止し、読み込み・実表示ともに使用しない
+- 決定: 見出し・ボタン・通常UIを含むプロポーショナル書体は Zen Kaku Gothic New に統一する
+- 決定: スコア、回答時間、誤差、音程値など走査性を重視する数値は JetBrains Mono を使用する
+- 理由: Outfit の太く丸い字形が mi-copi の画面上で野暮ったく見え、数値・見出し双方の視覚品質を損ねるため
+- 影響: `src/app/layout.tsx`, typography tokens, home / stats / result / session detail を含む全画面
+
 ## 2026-03-10
 ### train 画面構成
 - 決定: train ルートは 1 URL 内の状態切り替えで構成する

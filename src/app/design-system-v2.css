@@ -50,12 +50,10 @@
     inset 0 0 0 1px oklch(0.86 0.01 90), 0 2px 4px oklch(0.3 0.02 90 / 0.12);
   --mc-shadow-focus: 0 0 0 3px oklch(0.58 0.135 195 / 0.4);
 
-  --mc-font-display:
-    var(--font-outfit, "Outfit"), var(--font-zen-kaku, "Zen Kaku Gothic New"),
-    sans-serif;
   --mc-font-text:
     var(--font-zen-kaku, "Zen Kaku Gothic New"), "Hiragino Sans", system-ui,
     sans-serif;
+  --mc-font-display: var(--mc-font-text);
   --mc-font-mono:
     var(--font-jetbrains-mono, "JetBrains Mono"), ui-monospace,
     "SFMono-Regular", Menlo, monospace;
@@ -217,7 +215,6 @@ body {
   font-weight: 700;
   letter-spacing: 0.04em;
 }
-
 .ui-surface,
 .ui-surface--muted,
 .ui-surface--accent,
