@@ -1,0 +1,22 @@
+.accountSummary {
+  gap: var(--space-3);
+}
+
+.accountStat {
+  min-width: 0;
+}
+
+.accountStat :global(.ui-summary-stat__value) {
+  min-width: 0;
+  font-size: clamp(18px, 4.8vw, 24px);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 520px) {
+  .accountSummary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
