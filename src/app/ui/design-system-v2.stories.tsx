@@ -93,7 +93,7 @@ function FormControls() {
 
   return (
     <Surface>
-      <Field label="固定基準音" hint="入力・トグル・スライダーのv2状態確認">
+      <Field label="固定基準音" hint="入力・チェック・スライダーのv2状態確認">
         <input
           className="ui-input"
           aria-label="固定基準音"
@@ -110,7 +110,7 @@ function FormControls() {
         <span className="ui-checkbox-card__content">
           <span className="ui-checkbox-card__title">効果音を有効にする</span>
           <span className="ui-checkbox-card__description">
-            色だけでなくスイッチ位置でも状態を識別できます。
+            色だけに依存せず、チェック状態でも有効・無効を識別できます。
           </span>
         </span>
       </label>
