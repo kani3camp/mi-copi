@@ -1,0 +1,142 @@
+/*
+ * Temporary compatibility refinements for pre-v2 class contracts.
+ * Keep this layer small. New components should use the canonical --mc-* roles.
+ */
+
+/* The approved v2 control is a native checkbox, not a custom switch. */
+.ui-checkbox-card input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  flex: 0 0 auto;
+  appearance: auto;
+  border: initial;
+  border-radius: initial;
+  background: initial;
+  box-shadow: none;
+  accent-color: var(--mc-brand);
+  transition: none;
+}
+
+.ui-checkbox-card input[type="checkbox"]::before {
+  content: none;
+  display: none;
+}
+
+.ui-checkbox-card input[type="checkbox"]:checked {
+  border-color: initial;
+  background: initial;
+}
+
+.ui-checkbox-card input[type="checkbox"]:focus-visible {
+  outline: 3px solid oklch(0.58 0.135 195 / 0.4);
+  outline-offset: 2px;
+}
+
+/* v2 selected segments use a quiet Azure tint rather than a raised white tab. */
+.ui-segmented__item[data-active="true"] {
+  border-color: transparent;
+  background: oklch(0.58 0.135 195 / 0.13);
+  color: var(--mc-brand-text);
+  box-shadow: none;
+}
+
+/* Generic notices must not borrow Near/Amber learning semantics. */
+.ui-notice--warning {
+  border-color: var(--mc-line);
+  background: var(--mc-panel);
+  color: var(--mc-body);
+}
+
+.ui-home-login-card .ui-chip--warning {
+  border-color: var(--mc-line);
+  background: var(--mc-panel);
+  color: var(--mc-label);
+}
+
+.ui-feedback-status .ui-chip {
+  gap: 6px;
+}
+
+/* Session/result metrics stay neutral unless the value is itself a learning role. */
+.ui-result-stats-block .ui-summary-stat__value,
+.ui-stats-hero__supporting .ui-summary-stat__value {
+  color: var(--mc-ink);
+}
+
+.ui-result-stats-block .ui-summary-stat__label,
+.ui-stats-hero__supporting .ui-summary-stat__label {
+  color: var(--mc-label);
+}
+
+/* Existing stats tone props are presentation contracts, not training semantics. */
+.ui-stats-panel-grid .ui-flat-panel[data-tone] .ui-flat-panel__header strong,
+.ui-stats-panel-grid .ui-flat-panel[data-tone] .ui-flat-panel__row dd {
+  color: var(--mc-ink);
+}
+
+.ui-stats-panel-grid .ui-flat-panel__badge {
+  padding: 4px 7px;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-xs);
+  background: var(--mc-panel);
+  color: var(--mc-body);
+}
+
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="coral"]
+  .ui-line-chart__polyline {
+  stroke: var(--mc-ink);
+}
+
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="coral"]
+  .ui-line-chart__dot {
+  border-color: var(--mc-ink);
+}
+
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="blue"]
+  .ui-line-chart__polyline {
+  stroke: var(--mc-slate-text);
+}
+
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="blue"]
+  .ui-line-chart__dot {
+  border-color: var(--mc-slate-text);
+}
+
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="teal"]
+  .ui-line-chart__polyline {
+  stroke: var(--mc-sage);
+}
+
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="teal"]
+  .ui-line-chart__dot {
+  border-color: var(--mc-sage);
+}
+
+.ui-stats-interval-chart
+  .ui-chart-card[data-tone="coral"]
+  .ui-bar-chart__column {
+  background: var(--mc-ink);
+}
+
+/* Progress metadata is information, not brand state. */
+.ui-training-progress-meta__item,
+.ui-training-progress-meta__item[data-tone="brand"],
+.ui-training-progress-meta__item[data-tone="info"] {
+  border-color: var(--mc-line);
+  background: var(--mc-panel);
+  box-shadow: none;
+}
+
+.ui-training-progress-meta__item[data-tone="brand"]
+  .ui-training-progress-meta__value,
+.ui-training-progress-meta__item[data-tone="info"]
+  .ui-training-progress-meta__value {
+  color: var(--mc-ink);
+}

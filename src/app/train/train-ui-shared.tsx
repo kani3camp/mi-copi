@@ -126,10 +126,15 @@ export function MiniStatRow(props: {
 
 export function FeedbackStatusChip(props: { errorSemitones: number }) {
   const status = getDistanceFeedbackStatus(props.errorSemitones);
+  const symbol =
+    status.label === "正解" ? "○" : status.label === "惜しい" ? "≈" : "×";
 
   return (
     <div className="ui-feedback-status">
-      <Chip tone={status.tone}>{status.label}</Chip>
+      <Chip tone={status.tone}>
+        <span aria-hidden="true">{symbol}</span>
+        <span>{status.label}</span>
+      </Chip>
     </div>
   );
 }

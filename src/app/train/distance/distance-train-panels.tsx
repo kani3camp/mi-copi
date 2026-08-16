@@ -59,7 +59,7 @@ export function DistanceQuestionPanel(props: {
         description="再生ボタンで聞き直しながら、音程名をひとつ選びます。"
         eyebrow={`問題 ${props.questionIndex + 1}`}
         actions={
-          <Chip tone="brand">
+          <Chip tone="neutral">
             {formatQuestionDirectionLabel(props.direction)}
           </Chip>
         }
@@ -75,7 +75,6 @@ export function DistanceQuestionPanel(props: {
             id: "direction",
             label: "方向",
             value: formatQuestionDirectionLabel(props.direction),
-            tone: "brand",
           },
           {
             id: "base-replay-count",
@@ -86,7 +85,6 @@ export function DistanceQuestionPanel(props: {
             id: "target-replay-count",
             label: "問題音",
             value: `${props.replayTargetCount}回`,
-            tone: "blue",
           },
         ]}
       />
@@ -185,7 +183,6 @@ export function DistanceFeedbackPanel(props: {
         <SummaryStat
           label="スコア"
           value={formatScoreLabel(props.feedbackResult.score)}
-          tone="brand"
         />
       </SummaryBlock>
 
@@ -243,7 +240,7 @@ export function DistanceResultPanel(props: {
           {formatScoreLabel(props.summary.sessionScore)}
         </strong>
         <div className="ui-result-hero__meta">
-          <Chip tone="brand">
+          <Chip tone="neutral">
             {formatFinishReasonLabel(props.finishReason)}
           </Chip>
         </div>
@@ -253,18 +250,16 @@ export function DistanceResultPanel(props: {
         <SummaryStat
           label="正答率"
           value={formatAccuracyLabel(props.summary.accuracyRate)}
-          tone="brand"
+          tone="success"
         />
         <SummaryStat label="回答数" value={props.summary.questionCount} />
         <SummaryStat
           label="平均誤差"
           value={formatAvgErrorLabel(props.summary.avgErrorAbs)}
-          tone="info"
         />
         <SummaryStat
           label="平均回答時間"
           value={formatResponseTimeMsLabel(props.summary.avgResponseTimeMs)}
-          tone="info"
         />
       </SummaryBlock>
 

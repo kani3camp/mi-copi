@@ -1,13 +1,35 @@
 import type { Metadata, Viewport } from "next";
+import { JetBrains_Mono, Outfit, Zen_Kaku_Gothic_New } from "next/font/google";
 import type { ReactNode } from "react";
 
 import "./globals.css";
 import "./ui/accessibility.css";
+import "./design-system-v2.css";
+import "./design-system-v2-compat.css";
 
 const APP_NAME = "ミーコピ";
 const APP_DESCRIPTION =
   "基準音ありの相対音感トレーニングを、短く反復できる耳コピ向けWebアプリです。";
-const THEME_COLOR = "#10A861";
+const THEME_COLOR = "#009193";
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-outfit",
+  display: "swap",
+});
+
+const zenKakuGothicNew = Zen_Kaku_Gothic_New({
+  subsets: ["latin"],
+  weight: ["400", "500", "700", "900"],
+  variable: "--font-zen-kaku",
+  display: "swap",
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
@@ -62,7 +84,10 @@ export default async function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="ja">
+    <html
+      lang="ja"
+      className={`${outfit.variable} ${zenKakuGothicNew.variable} ${jetBrainsMono.variable}`}
+    >
       <body>
         <div className="app-root">{children}</div>
       </body>
