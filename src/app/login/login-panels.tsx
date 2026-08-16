@@ -9,6 +9,7 @@ import {
   SummaryStat,
   Surface,
 } from "../ui/primitives";
+import styles from "./login-panels.module.css";
 
 export function LoginChoicePanel(props: {
   isPending: boolean;
@@ -73,17 +74,21 @@ export function LoginSignedInPanel(props: {
         title="サインイン中のアカウント"
         description="このアカウントで、次回以降の結果保存と統計を使えます。"
       />
-      <SummaryBlock className="ui-login-account-summary">
+      <SummaryBlock
+        className={`ui-login-account-summary ${styles.accountSummary}`}
+      >
         <SummaryStat
           label="名前"
           value={props.name ?? "不明"}
           emphasis="primary"
           tone="brand"
+          className={styles.accountStat}
         />
         <SummaryStat
           label="メールアドレス"
           value={props.email ?? "不明"}
           tone="info"
+          className={styles.accountStat}
         />
       </SummaryBlock>
       <div className="ui-nav-row">
