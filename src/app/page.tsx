@@ -42,7 +42,7 @@ export default async function HomePage() {
         <div className="ui-cluster">
           <Chip tone="brand">スマホ縦向き優先</Chip>
           <Chip tone="neutral">基準音あり</Chip>
-          <Chip tone="success">短い反復</Chip>
+          <Chip tone="neutral">短い反復</Chip>
         </div>
       </PageHero>
 
@@ -205,7 +205,6 @@ async function AuthenticatedHomeContent(props: { currentUser: CurrentUser }) {
                 : formatAvgErrorLabel(summary.recentAverageError)
             }
             detail="ズレの平均"
-            className="ui-summary-stat--warning"
           />
           <SummaryStat
             label="最近の平均回答時間"
@@ -215,7 +214,6 @@ async function AuthenticatedHomeContent(props: { currentUser: CurrentUser }) {
                 : formatResponseTimeMsLabel(summary.recentAverageResponseTimeMs)
             }
             detail="反応速度"
-            className="ui-summary-stat--info"
           />
           <SummaryStat
             label="最終学習日時"
@@ -285,7 +283,6 @@ function GuestHomeContent() {
           label="ログイン後に増えること"
           value="保存 / 統計 / 同期"
           detail="過去の成長を見返せます。"
-          className="ui-summary-stat--info"
         />
       </SummaryBlock>
     </Surface>
