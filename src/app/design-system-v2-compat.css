@@ -3,11 +3,6 @@
  * Keep this layer small. New components should use the canonical --mc-* roles.
  */
 
-/* Outfit is intentionally removed from the app. Proportional display text uses Zen Kaku. */
-:root {
-  --mc-font-display: var(--mc-font-text);
-}
-
 /* The approved v2 control is a native checkbox, not a custom switch. */
 .ui-checkbox-card input[type="checkbox"] {
   width: 18px;
