@@ -4,7 +4,7 @@ import { expect, within } from "storybook/test";
 
 import { DistanceFeedbackDiagram } from "./train-ui-shared";
 
-type DiagramDirection = "up" | "down" | "unison";
+type DiagramDirection = "up" | "down";
 
 type DiagramArgs = {
   direction: DiagramDirection;
@@ -52,7 +52,7 @@ export const Downward: Story = {
 
 export const Unison: Story = {
   args: {
-    direction: "unison",
+    direction: "up",
     correctSemitones: 0,
     answeredSemitones: 0,
   },
