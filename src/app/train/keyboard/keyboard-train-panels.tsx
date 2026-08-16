@@ -325,7 +325,7 @@ const KeyboardAnswerPad = memo(function KeyboardAnswerPad(props: {
             />
           ))}
         </div>
-        <div className="ui-keyboard-pad__black-row" aria-hidden="true">
+        <div className="ui-keyboard-pad__black-row">
           {BLACK_KEY_LAYOUT.map(({ left, note }) => (
             <KeyboardAnswerKey
               key={note}
