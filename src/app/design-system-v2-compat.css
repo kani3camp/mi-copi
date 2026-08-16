@@ -58,6 +58,12 @@
   gap: 6px;
 }
 
+/* Numeric insight summaries use the dedicated metric face, not display typography. */
+.ui-summary-block--insight .ui-summary-stat__value {
+  font-family: var(--mc-font-mono);
+  font-weight: 700;
+}
+
 /* Session/result metrics stay neutral unless the value is itself a learning role. */
 .ui-result-stats-block .ui-summary-stat__value,
 .ui-stats-hero__supporting .ui-summary-stat__value {
