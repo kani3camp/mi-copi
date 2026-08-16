@@ -188,6 +188,10 @@ export const FeedbackIncorrectDownward: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const summaryLabels = Array.from(
+      canvasElement.querySelectorAll(".ui-summary-stat__label"),
+      (element) => element.textContent?.trim() ?? "",
+    );
 
     await expect(
       canvas.getByLabelText("距離フィードバック: 0 が基準音、下方向"),
@@ -196,8 +200,7 @@ export const FeedbackIncorrectDownward: Story = {
     await expect(canvas.getByText("完全4度")).toBeVisible();
     await expect(canvas.getByText("短3度")).toBeVisible();
     await expect(canvas.queryByText("方向が逆")).toBeNull();
-    await expect(canvas.getByText("正解")).toBeVisible();
-    await expect(canvas.getByText("回答")).toBeVisible();
+    await expect(summaryLabels).toEqual(["正解", "回答"]);
     await expect(
       canvas.getByRole("button", { name: "基準音を再生" }),
     ).toBeVisible();
@@ -236,15 +239,20 @@ export const FeedbackExactMatch: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const stickyActions = canvasElement.querySelector(".ui-sticky-actions");
+    const feedbackStatus = canvasElement.querySelector(".ui-feedback-status");
+    const summaryLabels = Array.from(
+      canvasElement.querySelectorAll(".ui-summary-stat__label"),
+      (element) => element.textContent?.trim() ?? "",
+    );
     const actionLabels = Array.from(
       stickyActions?.querySelectorAll("button") ?? [],
       (button) =>
         button.getAttribute("aria-label") ?? button.textContent?.trim() ?? "",
     );
 
-    await expect(canvas.getAllByText("正解")).toHaveLength(2);
+    await expect(feedbackStatus?.textContent).toContain("正解");
+    await expect(summaryLabels).toEqual(["正解", "回答"]);
     await expect(canvas.getAllByText("長2度")).toHaveLength(2);
-    await expect(canvas.getByText("回答")).toBeVisible();
     await expect(actionLabels).toEqual([
       "基準音を再生",
       "正解音を再生",
