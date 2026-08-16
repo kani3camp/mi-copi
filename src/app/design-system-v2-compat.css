@@ -83,31 +83,45 @@
   color: var(--mc-body);
 }
 
-.ui-stats-support-chart-grid .ui-chart-card[data-tone="coral"] .ui-line-chart__polyline {
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="coral"]
+  .ui-line-chart__polyline {
   stroke: var(--mc-ink);
 }
 
-.ui-stats-support-chart-grid .ui-chart-card[data-tone="coral"] .ui-line-chart__dot {
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="coral"]
+  .ui-line-chart__dot {
   border-color: var(--mc-ink);
 }
 
-.ui-stats-support-chart-grid .ui-chart-card[data-tone="blue"] .ui-line-chart__polyline {
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="blue"]
+  .ui-line-chart__polyline {
   stroke: var(--mc-slate-text);
 }
 
-.ui-stats-support-chart-grid .ui-chart-card[data-tone="blue"] .ui-line-chart__dot {
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="blue"]
+  .ui-line-chart__dot {
   border-color: var(--mc-slate-text);
 }
 
-.ui-stats-support-chart-grid .ui-chart-card[data-tone="teal"] .ui-line-chart__polyline {
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="teal"]
+  .ui-line-chart__polyline {
   stroke: var(--mc-sage);
 }
 
-.ui-stats-support-chart-grid .ui-chart-card[data-tone="teal"] .ui-line-chart__dot {
+.ui-stats-support-chart-grid
+  .ui-chart-card[data-tone="teal"]
+  .ui-line-chart__dot {
   border-color: var(--mc-sage);
 }
 
-.ui-stats-interval-chart .ui-chart-card[data-tone="coral"] .ui-bar-chart__column {
+.ui-stats-interval-chart
+  .ui-chart-card[data-tone="coral"]
+  .ui-bar-chart__column {
   background: var(--mc-ink);
 }
 
@@ -120,7 +134,9 @@
   box-shadow: none;
 }
 
-.ui-training-progress-meta__item[data-tone="brand"] .ui-training-progress-meta__value,
-.ui-training-progress-meta__item[data-tone="info"] .ui-training-progress-meta__value {
+.ui-training-progress-meta__item[data-tone="brand"]
+  .ui-training-progress-meta__value,
+.ui-training-progress-meta__item[data-tone="info"]
+  .ui-training-progress-meta__value {
   color: var(--mc-ink);
 }

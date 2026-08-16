@@ -39,13 +39,17 @@ function formatDirectionLabel(
   return direction === "down" ? "下方向" : "上方向";
 }
 
-function buildScale(params: {
-  correct: number;
-  answer: number;
-}): { min: number; max: number; ticks: number[] } {
+function buildScale(params: { correct: number; answer: number }): {
+  min: number;
+  max: number;
+  ticks: number[];
+} {
   const min = Math.min(0, params.correct, params.answer) - 1;
   const max = Math.max(0, params.correct, params.answer) + 1;
-  const ticks = Array.from({ length: max - min + 1 }, (_, index) => min + index);
+  const ticks = Array.from(
+    { length: max - min + 1 },
+    (_, index) => min + index,
+  );
 
   return { min, max, ticks };
 }
