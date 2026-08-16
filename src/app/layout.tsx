@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 import "./globals.css";
+import "./ui/accessibility.css";
 
 const APP_NAME = "ミーコピ";
 const APP_DESCRIPTION =
