@@ -37,5 +37,26 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
 
-      - name: Run verify
-        run: npm run verify
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Biome check
+        run: npm run check
+
+      - name: Repository lint
+        run: npm run lint:repo
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Storybook build
+        run: npm run build-storybook
+
+      - name: Storybook browser and a11y tests
+        run: npm run test:storybook
+
+      - name: Training route smoke
+        run: npm run verify:smoke
