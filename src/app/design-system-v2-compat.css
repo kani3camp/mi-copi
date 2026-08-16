@@ -48,6 +48,12 @@
   color: var(--mc-body);
 }
 
+.ui-home-login-card .ui-chip--warning {
+  border-color: var(--mc-line);
+  background: var(--mc-panel);
+  color: var(--mc-label);
+}
+
 .ui-feedback-status .ui-chip {
   gap: 6px;
 }
