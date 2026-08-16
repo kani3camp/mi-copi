@@ -28,6 +28,17 @@ function formatSignedTick(value: number): string {
   return value > 0 ? `+${value}` : String(value);
 }
 
+function formatDirectionLabel(direction: QuestionDirection): string {
+  switch (direction) {
+    case "down":
+      return "下方向";
+    case "unison":
+      return "同音";
+    default:
+      return "上方向";
+  }
+}
+
 function buildScale(params: {
   correct: number;
   answer: number;
@@ -52,10 +63,7 @@ function TriangleMarker(props: { x: number; y: number }) {
   const points = `${props.x},${props.y - 9} ${props.x - 9},${props.y + 8} ${props.x + 9},${props.y + 8}`;
 
   return (
-    <polygon
-      className="ui-distance-ruler__answer-marker"
-      points={points}
-    />
+    <polygon className="ui-distance-ruler__answer-marker" points={points} />
   );
 }
 
@@ -69,10 +77,7 @@ function DiamondMarker(props: { x: number; y: number }) {
   ].join(" ");
 
   return (
-    <polygon
-      className="ui-distance-ruler__reference-marker"
-      points={points}
-    />
+    <polygon className="ui-distance-ruler__reference-marker" points={points} />
   );
 }
 
@@ -92,7 +97,7 @@ export function DistanceFeedbackDiagram(props: {
   const correctX = getX(correct, scale.min, scale.max);
   const answerX = getX(answer, scale.min, scale.max);
   const isExactMatch = correct === answer;
-  const directionLabel = props.direction === "down" ? "下方向" : "上方向";
+  const directionLabel = formatDirectionLabel(props.direction);
 
   return (
     <div
@@ -138,9 +143,7 @@ export function DistanceFeedbackDiagram(props: {
               >
                 {formatSignedTick(tick)}
               </text>
-              {isReference ? (
-                <DiamondMarker x={x} y={AXIS_Y} />
-              ) : null}
+              {isReference ? <DiamondMarker x={x} y={AXIS_Y} /> : null}
             </g>
           );
         })}
