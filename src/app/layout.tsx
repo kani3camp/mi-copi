@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import "./ui/accessibility.css";
 import "./design-system-v2.css";
+import "./design-system-v2-compat.css";
 
 const APP_NAME = "ミーコピ";
 const APP_DESCRIPTION =
