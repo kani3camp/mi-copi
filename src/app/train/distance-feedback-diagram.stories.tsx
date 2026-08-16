@@ -8,10 +8,11 @@ type DiagramArgs = {
   direction: "up" | "down";
   correctSemitones: number;
   answeredSemitones: number;
+  answeredDirection?: "up" | "down";
 };
 
 const meta = {
-  title: "Train/Distance/Diagram",
+  title: "Train/Distance/Interval Ruler",
   component: DistanceFeedbackDiagram,
   args: {
     direction: "up",
@@ -25,7 +26,29 @@ export default meta;
 
 type Story = StoryObj<DiagramArgs>;
 
-export const CloseMissHigher: Story = {
+export const Upward: Story = {
+  args: {
+    direction: "up",
+    correctSemitones: 5,
+    answeredSemitones: 3,
+  },
+  play: async ({ canvasElement }) => {
+    await expectDiagram(canvasElement, "上方向");
+  },
+};
+
+export const Downward: Story = {
+  args: {
+    direction: "down",
+    correctSemitones: 5,
+    answeredSemitones: 3,
+  },
+  play: async ({ canvasElement }) => {
+    await expectDiagram(canvasElement, "下方向");
+  },
+};
+
+export const OneSemitoneHigher: Story = {
   args: {
     direction: "up",
     correctSemitones: 5,
@@ -36,7 +59,7 @@ export const CloseMissHigher: Story = {
   },
 };
 
-export const CloseMissLower: Story = {
+export const OneSemitoneLower: Story = {
   args: {
     direction: "up",
     correctSemitones: 5,
@@ -44,6 +67,32 @@ export const CloseMissLower: Story = {
   },
   play: async ({ canvasElement }) => {
     await expectDiagram(canvasElement, "上方向");
+  },
+};
+
+export const LargeError: Story = {
+  args: {
+    direction: "up",
+    correctSemitones: 2,
+    answeredSemitones: 11,
+  },
+  play: async ({ canvasElement }) => {
+    await expectDiagram(canvasElement, "上方向");
+  },
+};
+
+export const ReverseDirectionAnswer: Story = {
+  args: {
+    direction: "up",
+    correctSemitones: 5,
+    answeredSemitones: 3,
+    answeredDirection: "down",
+  },
+  play: async ({ canvasElement }) => {
+    await expectDiagram(canvasElement, "上方向");
+    await expect(
+      canvasElement.querySelector('[data-answer-direction="down"]'),
+    ).not.toBeNull();
   },
 };
 
@@ -55,10 +104,13 @@ export const ExactMatch: Story = {
   },
   play: async ({ canvasElement }) => {
     await expectDiagram(canvasElement, "上方向");
+    await expect(
+      canvasElement.querySelector('[data-exact-match="true"]'),
+    ).not.toBeNull();
   },
 };
 
-export const AnswerAtBase: Story = {
+export const AnswerAtReference: Story = {
   args: {
     direction: "up",
     correctSemitones: 3,
@@ -69,7 +121,7 @@ export const AnswerAtBase: Story = {
   },
 };
 
-export const BoundaryCase: Story = {
+export const OctaveBoundary: Story = {
   args: {
     direction: "down",
     correctSemitones: 12,
@@ -80,7 +132,7 @@ export const BoundaryCase: Story = {
   },
 };
 
-export const NarrowMobile320: Story = {
+export const NarrowMobile360: Story = {
   args: {
     direction: "up",
     correctSemitones: 5,
@@ -88,7 +140,7 @@ export const NarrowMobile320: Story = {
   },
   decorators: [
     (Story) => (
-      <div style={{ width: 320, maxWidth: "100%" }}>
+      <div style={{ width: 360, maxWidth: "100%" }}>
         <Story />
       </div>
     ),
@@ -98,7 +150,7 @@ export const NarrowMobile320: Story = {
   },
 };
 
-export const NarrowMobile375: Story = {
+export const NarrowMobile390: Story = {
   args: {
     direction: "down",
     correctSemitones: 4,
@@ -106,7 +158,7 @@ export const NarrowMobile375: Story = {
   },
   decorators: [
     (Story) => (
-      <div style={{ width: 375, maxWidth: "100%" }}>
+      <div style={{ width: 390, maxWidth: "100%" }}>
         <Story />
       </div>
     ),
