@@ -65,10 +65,11 @@ Line strong       oklch(0.860 0.006 90)
 Ink               oklch(0.220 0.008 90)
 Heading           oklch(0.270 0.008 90)
 Body              oklch(0.450 0.006 90)
-Label             oklch(0.560 0.006 90)
+Label             oklch(0.540 0.006 90)
 Faint             oklch(0.660 0.006 90)
 
 Brand Azure       oklch(0.580 0.135 195)
+Brand Action      oklch(0.520 0.140 195)
 Reference Gold    oklch(0.790 0.125 88)
 Correct Sage      oklch(0.700 0.100 138)
 Answer Violet     oklch(0.550 0.155 293)
@@ -228,7 +229,8 @@ Use restrained white or subtle neutral panels with a one-pixel structural border
 
 Primary:
 
-- Azure fill
+- darker Azure action fill; the canonical Brand Azure remains available for
+  non-text brand surfaces
 - light text
 - one dominant primary CTA per local context when possible
 - 48px minimum normal height

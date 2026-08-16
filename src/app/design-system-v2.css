@@ -12,12 +12,15 @@
   --mc-ink: oklch(0.22 0.008 90);
   --mc-heading: oklch(0.27 0.008 90);
   --mc-body: oklch(0.45 0.006 90);
-  --mc-label: oklch(0.56 0.006 90);
+  --mc-label: oklch(0.54 0.006 90);
   --mc-faint: oklch(0.66 0.006 90);
 
   --mc-brand: oklch(0.58 0.135 195);
   --mc-brand-hover: oklch(0.52 0.14 195);
   --mc-brand-press: oklch(0.46 0.145 195);
+  --mc-brand-action: var(--mc-brand-hover);
+  --mc-brand-action-hover: var(--mc-brand-press);
+  --mc-brand-action-press: oklch(0.42 0.145 195);
   --mc-brand-text: oklch(0.4 0.13 195);
   --mc-brand-on: oklch(0.99 0.01 195);
 
@@ -264,18 +267,18 @@ body {
 
 .ui-button--primary,
 .ui-button--primary:hover {
-  border-color: var(--mc-brand);
-  background: var(--mc-brand);
+  border-color: var(--mc-brand-action);
+  background: var(--mc-brand-action);
   color: var(--mc-brand-on);
   box-shadow: 0 6px 16px oklch(0.58 0.135 195 / 0.16);
 }
 .ui-button--primary:hover {
-  border-color: var(--mc-brand-hover);
-  background: var(--mc-brand-hover);
+  border-color: var(--mc-brand-action-hover);
+  background: var(--mc-brand-action-hover);
 }
 .ui-button--primary:active {
-  border-color: var(--mc-brand-press);
-  background: var(--mc-brand-press);
+  border-color: var(--mc-brand-action-press);
+  background: var(--mc-brand-action-press);
 }
 
 .ui-button--secondary,
