@@ -123,3 +123,26 @@ export const SignedInState: Story = {
     ).toHaveAttribute("href", "/");
   },
 };
+
+export const SignedInLongAccountText: Story = {
+  parameters: {
+    viewport: {
+      defaultViewport: "mobile1",
+    },
+  },
+  render: () => (
+    <LoginSignedInPanel
+      name="metro momo"
+      email="momometro1998.long-account-name@example.com"
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const email = canvas.getByText(
+      "momometro1998.long-account-name@example.com",
+    );
+
+    await expect(email).toBeVisible();
+    await expect(email.scrollWidth).toBeLessThanOrEqual(email.clientWidth);
+  },
+};
