@@ -111,8 +111,7 @@ These cues may appear as labels, markers, borders, bands, shapes, and connectors
 
 The app formally uses:
 
-- Display / Latin emphasis: **Outfit**
-- Japanese UI text: **Zen Kaku Gothic New**
+- Proportional UI text, display, headings, and buttons: **Zen Kaku Gothic New**
 - Notes / semitone values / ruler values / timer-like metrics: **JetBrains Mono**
 
 Fonts are loaded through `next/font` in `src/app/layout.tsx`. Fallbacks must remain usable if the web font is unavailable.
