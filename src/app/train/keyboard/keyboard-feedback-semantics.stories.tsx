@@ -48,7 +48,7 @@ function FeedbackStory(props: {
           targetNote: props.targetNote,
           targetMidi: props.targetMidi,
           distanceSemitones: props.distanceSemitones,
-          direction: props.distanceSemitones === 0 ? "unison" : "up",
+          direction: "up",
         },
         answeredNote: props.answeredNote,
         answeredDistanceSemitones: props.answeredDistanceSemitones,
