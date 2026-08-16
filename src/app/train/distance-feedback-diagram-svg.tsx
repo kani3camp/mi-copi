@@ -13,7 +13,7 @@ function toSignedDistance(
   direction: QuestionDirection,
   semitones: number,
 ): number {
-  if (semitones === 0 || direction === "unison") {
+  if (semitones === 0) {
     return 0;
   }
 
@@ -28,15 +28,15 @@ function formatSignedTick(value: number): string {
   return value > 0 ? `+${value}` : String(value);
 }
 
-function formatDirectionLabel(direction: QuestionDirection): string {
-  switch (direction) {
-    case "down":
-      return "下方向";
-    case "unison":
-      return "同音";
-    default:
-      return "上方向";
+function formatDirectionLabel(
+  direction: QuestionDirection,
+  semitones: number,
+): string {
+  if (semitones === 0) {
+    return "同音";
   }
+
+  return direction === "down" ? "下方向" : "上方向";
 }
 
 function buildScale(params: {
@@ -97,7 +97,10 @@ export function DistanceFeedbackDiagram(props: {
   const correctX = getX(correct, scale.min, scale.max);
   const answerX = getX(answer, scale.min, scale.max);
   const isExactMatch = correct === answer;
-  const directionLabel = formatDirectionLabel(props.direction);
+  const directionLabel = formatDirectionLabel(
+    props.direction,
+    props.correctSemitones,
+  );
 
   return (
     <div
