@@ -108,6 +108,8 @@ route ごとの詳細な実装見取り図は `docs/implementation/route-status.
 - `npm run build`
   - Next.js build
 - `npm run verify`
-  - `typecheck` → `check` → `lint:repo` → `test` → `build`
+  - `typecheck` → `check` → `lint:repo` → `test` → `build` → Storybook/a11y → route smoke
 
 日常の総合検証は `npm run verify` を基準にします。Codex 主体開発の実行境界、承認境界、報告形式は `AGENTS.md` を参照してください。
+
+認証済み route smoke は、既存のログイン済みユーザーで表示・導線・設定読込・既存の保存済み詳細を検証します。通常の `npm run verify` は認証済み結果の保存テストを実行しません。保存・保存失敗後の再試行・新しく保存した詳細の検証は、書き込み可能な検証用DB/アカウントで `npm run verify:smoke -- --allow-authenticated-write` を明示指定してください。この指定では接続先DBにセッションが保存されます。ゲストの学習・結果・再開検証は常に実行します。

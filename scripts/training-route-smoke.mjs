@@ -7,18 +7,33 @@ import postgres from "postgres";
 const BASE_URL = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
 const MOBILE_DEVICE = devices["iPhone 13"];
 const DEBUG = process.env.SMOKE_DEBUG === "1";
+const ALLOW_AUTHENTICATED_WRITE = process.argv
+  .slice(2)
+  .includes("--allow-authenticated-write");
 const BROWSERS = [
   { key: "chromium", label: "Chrome mobile emulation", launcher: chromium },
   { key: "webkit", label: "WebKit mobile emulation", launcher: webkit },
 ];
 
 async function main() {
+  for (const arg of process.argv.slice(2)) {
+    if (arg !== "--allow-authenticated-write")
+      throw new Error(`Unknown smoke option: ${arg}`);
+  }
   loadDotEnvLocal();
 
   const authLookup = await findSmokeUserWithStoredConfig();
   const authUser = authLookup.user;
   const report = {
     baseUrl: BASE_URL,
+    authenticatedWritesEnabled: ALLOW_AUTHENTICATED_WRITE,
+    skippedAuthenticatedWriteScenarios: ALLOW_AUTHENTICATED_WRITE
+      ? []
+      : [
+          "auth-distance-save",
+          "auth-keyboard-immediate",
+          "auth-keyboard-delayed",
+        ],
     authLookupError: authLookup.error,
     authUser: authUser
       ? {
@@ -88,6 +103,33 @@ async function runAuthenticatedStatsScenario(context, browserConfig) {
         "stats direct reload renders overall trend",
       ),
     );
+    const existingSession = page.locator(".ui-stats-session-list a").first();
+    if (await existingSession.count()) {
+      await existingSession.click();
+      await page
+        .getByRole("heading", { name: "セッション詳細", exact: true })
+        .waitFor();
+      scenario.checks.push(
+        assert(
+          (await page.locator(".ui-detail-kv-row").count()) === 9,
+          "existing saved detail retains all configuration rows",
+        ),
+      );
+      scenario.checks.push(
+        assert(
+          (await page.locator(".ui-detail-result-item").count()) > 0,
+          "existing saved detail renders saved answers",
+        ),
+      );
+      await page.getByRole("link", { name: "統計を見る", exact: true }).click();
+      await page.getByLabel("全体", { exact: true }).waitFor();
+      scenario.checks.push(
+        assert(
+          new URL(page.url()).pathname === "/stats",
+          "existing saved detail returns to statistics",
+        ),
+      );
+    }
   } catch (error) {
     scenario.failures.push(renderUnexpectedError(error));
   } finally {
@@ -340,31 +382,26 @@ async function runAuthSmoke(browserConfig, authUser) {
       browserConfig,
       authUser,
     );
-    const distanceSave = await runDistanceAuthSaveScenario(
-      context,
-      browserConfig,
-      authUser,
-    );
-    const keyboardImmediate = await runKeyboardAuthScenario(
-      context,
-      browserConfig,
-      authUser,
-      {
-        mode: "immediate",
-        saveFailureOnce: browserConfig.key === "chromium",
-        warmupDelayMs: 0,
-      },
-    );
-    const keyboardDelayed = await runKeyboardAuthScenario(
-      context,
-      browserConfig,
-      authUser,
-      {
-        mode: "delayed",
-        saveFailureOnce: false,
-        warmupDelayMs: 2000,
-      },
-    );
+    const writeScenarios = [];
+    if (ALLOW_AUTHENTICATED_WRITE) {
+      writeScenarios.push(
+        await runDistanceAuthSaveScenario(context, browserConfig, authUser),
+      );
+      writeScenarios.push(
+        await runKeyboardAuthScenario(context, browserConfig, authUser, {
+          mode: "immediate",
+          saveFailureOnce: browserConfig.key === "chromium",
+          warmupDelayMs: 0,
+        }),
+      );
+      writeScenarios.push(
+        await runKeyboardAuthScenario(context, browserConfig, authUser, {
+          mode: "delayed",
+          saveFailureOnce: false,
+          warmupDelayMs: 2000,
+        }),
+      );
+    }
 
     await context.close();
 
@@ -373,15 +410,7 @@ async function runAuthSmoke(browserConfig, authUser) {
       browserLabel: browserConfig.label,
       auth: "authenticated",
       userEmail: authUser.email,
-      scenarios: [
-        login,
-        settings,
-        stats,
-        distanceBootstrap,
-        distanceSave,
-        keyboardImmediate,
-        keyboardDelayed,
-      ],
+      scenarios: [login, settings, stats, distanceBootstrap, ...writeScenarios],
     };
   } finally {
     debug(`finish auth smoke: ${browserConfig.key}`);
