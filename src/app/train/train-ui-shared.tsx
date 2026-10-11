@@ -1,16 +1,20 @@
 import type { ReactNode } from "react";
 import {
+  formatAccuracyLabel,
+  formatAvgErrorLabel,
   formatResponseTimeMsLabel,
   formatScoreLabel,
 } from "../../features/training/model/format";
 import { formatPitchComparisonSemitoneLabel } from "../../features/training/model/interval-notation";
 import type { SessionFinishReason } from "../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
+import { MetricValue } from "../ui/metric-value";
 import { ButtonLink } from "../ui/navigation-link";
 import {
   Button,
   Chip,
   Notice,
+  SectionHeader,
   SummaryBlock,
   SummaryStat,
 } from "../ui/primitives";
@@ -221,6 +225,72 @@ export function FeedbackControls(props: {
 
 export { DistanceFeedbackDiagram } from "./distance-feedback-diagram-svg";
 
+export function TrainingResultSummary(props: {
+  summary: {
+    sessionScore: number;
+    questionCount: number;
+    accuracyRate: number;
+    avgErrorAbs: number;
+    avgResponseTimeMs: number;
+  };
+  finishReason: SessionFinishReason | null;
+  cannotSaveBecauseNoAnswers: boolean;
+  onReset: () => void;
+}) {
+  return (
+    <>
+      <SectionHeader title="結果" />
+      <div className="ui-result-hero">
+        <span className="ui-result-hero__label">セッションスコア</span>
+        <strong className="ui-result-hero__value">
+          {formatScoreLabel(props.summary.sessionScore)}
+        </strong>
+        <div className="ui-result-hero__meta">
+          <Chip tone="neutral">
+            {formatFinishReasonLabel(props.finishReason)}
+          </Chip>
+        </div>
+      </div>
+      <SummaryBlock className="ui-result-stats-block">
+        <SummaryStat
+          label="正答率"
+          value={
+            <MetricValue
+              value={formatAccuracyLabel(props.summary.accuracyRate)}
+            />
+          }
+        />
+        <SummaryStat
+          label="回答数"
+          value={<MetricValue value={props.summary.questionCount} unit="問" />}
+        />
+        <SummaryStat
+          label="平均誤差"
+          value={
+            <MetricValue
+              value={formatAvgErrorLabel(props.summary.avgErrorAbs)}
+              unit="半音"
+            />
+          }
+        />
+        <SummaryStat
+          label="平均回答時間"
+          value={
+            <MetricValue
+              value={formatResponseTimeMsLabel(props.summary.avgResponseTimeMs)}
+            />
+          }
+        />
+      </SummaryBlock>
+      <Button type="button" onClick={props.onReset} block variant="primary">
+        {props.cannotSaveBecauseNoAnswers
+          ? "新しいセッションを始める"
+          : "もう一度始める"}
+      </Button>
+    </>
+  );
+}
+
 export function TrainingResultPersistenceSection(props: {
   isAuthenticated: boolean;
   cannotSaveBecauseNoAnswers: boolean;
@@ -231,10 +301,8 @@ export function TrainingResultPersistenceSection(props: {
 }) {
   if (!props.isAuthenticated) {
     return (
-      <div className="ui-stack-md">
-        <Notice tone="warning">
-          ゲスト利用のため、この結果は保存されません。
-        </Notice>
+      <div className="ui-stack-md ui-result-persistence">
+        <Notice>ゲスト利用のため、この結果は保存されません。</Notice>
         <p className="ui-subtitle">
           ログインすると、次回以降のセッションから結果保存と統計を使えます。この結果は後から保存されません。
         </p>
@@ -263,7 +331,9 @@ export function TrainingResultPersistenceSection(props: {
   return (
     <div className="ui-result-save-card" data-tone={status.tone}>
       <div className="ui-result-save-card__header">
-        <Chip tone={status.tone}>{status.label}</Chip>
+        <Chip tone={status.tone === "success" ? "neutral" : status.tone}>
+          {status.label}
+        </Chip>
         <strong className="ui-result-save-card__title">{status.title}</strong>
       </div>
       <p className="ui-result-save-card__message">{status.message}</p>

@@ -1,11 +1,6 @@
 import { type CSSProperties, memo } from "react";
 
-import {
-  formatAccuracyLabel,
-  formatAvgErrorLabel,
-  formatResponseTimeMsLabel,
-  formatScoreLabel,
-} from "../../../features/training/model/format";
+import { formatResponseTimeMsLabel } from "../../../features/training/model/format";
 import { formatQuestionDirectionLabel } from "../../../features/training/model/interval-notation";
 import type {
   KeyboardGuestResult,
@@ -31,10 +26,10 @@ import {
   FeedbackControls,
   FeedbackMetrics,
   FeedbackStatusChip,
-  formatFinishReasonLabel,
   MiniStatRow,
   PlaybackButtonPair,
   TrainingResultPersistenceSection,
+  TrainingResultSummary,
 } from "../train-ui-shared";
 import { formatKeyboardNoteLabel } from "./keyboard-note-label";
 
@@ -185,38 +180,13 @@ export const KeyboardResultPanel = memo(function KeyboardResultPanel(props: {
   onReset: () => void;
 }) {
   return (
-    <Surface tone="elevated">
-      <SectionHeader
-        title="結果"
-        description="今回の精度と反応速度をまとめました。"
+    <Surface className="ui-training-result">
+      <TrainingResultSummary
+        summary={props.summary}
+        finishReason={props.finishReason}
+        cannotSaveBecauseNoAnswers={props.cannotSaveBecauseNoAnswers}
+        onReset={props.onReset}
       />
-      <div className="ui-result-hero">
-        <span className="ui-result-hero__label">セッションスコア</span>
-        <strong className="ui-result-hero__value">
-          {formatScoreLabel(props.summary.sessionScore)}
-        </strong>
-        <div className="ui-result-hero__meta">
-          <Chip tone="neutral">
-            {formatFinishReasonLabel(props.finishReason)}
-          </Chip>
-        </div>
-      </div>
-      <SummaryBlock className="ui-result-stats-block">
-        <SummaryStat
-          label="正答率"
-          value={formatAccuracyLabel(props.summary.accuracyRate)}
-          tone="success"
-        />
-        <SummaryStat label="回答数" value={props.summary.questionCount} />
-        <SummaryStat
-          label="平均誤差"
-          value={formatAvgErrorLabel(props.summary.avgErrorAbs)}
-        />
-        <SummaryStat
-          label="平均回答時間"
-          value={formatResponseTimeMsLabel(props.summary.avgResponseTimeMs)}
-        />
-      </SummaryBlock>
 
       {props.finishReason === "time_up" ? (
         <Notice>
@@ -238,20 +208,6 @@ export const KeyboardResultPanel = memo(function KeyboardResultPanel(props: {
           回答済みの問題がないため、このセッションは保存できません。時間に余裕を持ってもう一度お試しください。
         </Notice>
       ) : null}
-
-      <div className="ui-result-next-step">
-        <div className="ui-stack-sm">
-          <strong>次の練習</strong>
-          <span className="ui-muted">
-            設定に戻って、同じ条件でも別条件でもすぐ続けられます。
-          </span>
-        </div>
-        <Button type="button" onClick={props.onReset} block variant="primary">
-          {props.cannotSaveBecauseNoAnswers
-            ? "新しいセッションを始める"
-            : "もう一度始める"}
-        </Button>
-      </div>
     </Surface>
   );
 });

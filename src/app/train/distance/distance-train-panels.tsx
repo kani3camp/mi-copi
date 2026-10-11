@@ -1,15 +1,9 @@
 import type { CSSProperties } from "react";
-
 import type {
   DistanceGuestResult,
   DistanceGuestSummary,
 } from "../../../features/training/model/distance-guest";
-import {
-  formatAccuracyLabel,
-  formatAvgErrorLabel,
-  formatResponseTimeMsLabel,
-  formatScoreLabel,
-} from "../../../features/training/model/format";
+import { formatResponseTimeMsLabel } from "../../../features/training/model/format";
 import {
   formatPitchComparisonSemitoneLabel,
   formatQuestionDirectionLabel,
@@ -22,6 +16,7 @@ import type {
   SessionFinishReason,
 } from "../../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
+import { AnswerComparison } from "../../ui/answer-comparison";
 import {
   Button,
   Chip,
@@ -36,10 +31,10 @@ import {
   FeedbackControls,
   FeedbackMetrics,
   FeedbackStatusChip,
-  formatFinishReasonLabel,
   MiniStatRow,
   PlaybackButtonPair,
   TrainingResultPersistenceSection,
+  TrainingResultSummary,
 } from "../train-ui-shared";
 
 export function DistanceQuestionPanel(props: {
@@ -199,72 +194,13 @@ export function DistanceResultPanel(props: {
   onReset: () => void;
 }) {
   return (
-    <Surface tone="elevated">
-      <SectionHeader
-        title="結果"
-        description="今回の精度と反応速度をまとめました。"
+    <Surface className="ui-training-result">
+      <TrainingResultSummary
+        summary={props.summary}
+        finishReason={props.finishReason}
+        cannotSaveBecauseNoAnswers={props.cannotSaveBecauseNoAnswers}
+        onReset={props.onReset}
       />
-
-      <div className="ui-result-hero">
-        <span className="ui-result-hero__label">セッションスコア</span>
-        <strong className="ui-result-hero__value">
-          {formatScoreLabel(props.summary.sessionScore)}
-        </strong>
-        <div className="ui-result-hero__meta">
-          <Chip tone="neutral">
-            {formatFinishReasonLabel(props.finishReason)}
-          </Chip>
-        </div>
-      </div>
-
-      <SummaryBlock className="ui-result-stats-block">
-        <SummaryStat
-          label="正答率"
-          value={formatAccuracyLabel(props.summary.accuracyRate)}
-          tone="success"
-        />
-        <SummaryStat label="回答数" value={props.summary.questionCount} />
-        <SummaryStat
-          label="平均誤差"
-          value={formatAvgErrorLabel(props.summary.avgErrorAbs)}
-        />
-        <SummaryStat
-          label="平均回答時間"
-          value={formatResponseTimeMsLabel(props.summary.avgResponseTimeMs)}
-        />
-      </SummaryBlock>
-
-      {props.recentResults.length > 0 ? (
-        <div className="ui-stack-md">
-          <SectionHeader title="直近の回答" />
-          <div className="ui-list ui-result-recent-list">
-            {props.recentResults.map((result) => (
-              <div
-                key={result.answeredAt}
-                className="ui-list-link ui-list-link--compact"
-              >
-                <strong>問題 {result.question.questionIndex + 1}</strong>
-                <span className="ui-muted">
-                  正解{" "}
-                  {getIntervalLabel(
-                    result.question.distanceSemitones,
-                    props.intervalNotationStyle,
-                  )}{" "}
-                  / 回答{" "}
-                  {getIntervalLabel(
-                    result.answeredDistanceSemitones,
-                    props.intervalNotationStyle,
-                  )}
-                </span>
-                <span className="ui-muted">
-                  {formatDistanceErrorLabel(result)} /{" "}
-                  {formatResponseTimeMsLabel(result.responseTimeMs)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       <TrainingResultPersistenceSection
         isAuthenticated={props.isAuthenticated}
@@ -287,19 +223,35 @@ export function DistanceResultPanel(props: {
         </Notice>
       ) : null}
 
-      <div className="ui-result-next-step">
-        <div className="ui-stack-sm">
-          <strong>次の練習</strong>
-          <span className="ui-muted">
-            設定に戻って、同じ条件でも別条件でもすぐ続けられます。
-          </span>
+      {props.recentResults.length > 0 ? (
+        <div className="ui-stack-md">
+          <SectionHeader title="直近の回答" />
+          <div className="ui-list ui-result-recent-list">
+            {props.recentResults.map((result) => (
+              <div
+                key={result.answeredAt}
+                className="ui-list-link ui-list-link--compact"
+              >
+                <strong>問題 {result.question.questionIndex + 1}</strong>
+                <AnswerComparison
+                  correct={getIntervalLabel(
+                    result.question.distanceSemitones,
+                    props.intervalNotationStyle,
+                  )}
+                  answer={getIntervalLabel(
+                    result.answeredDistanceSemitones,
+                    props.intervalNotationStyle,
+                  )}
+                />
+                <span className="ui-muted">
+                  {formatDistanceErrorLabel(result)} /{" "}
+                  {formatResponseTimeMsLabel(result.responseTimeMs)}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-        <Button type="button" onClick={props.onReset} block variant="primary">
-          {props.cannotSaveBecauseNoAnswers
-            ? "新しいセッションを始める"
-            : "もう一度始める"}
-        </Button>
-      </div>
+      ) : null}
     </Surface>
   );
 }
