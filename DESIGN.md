@@ -423,6 +423,8 @@ Near is a supporting learning state, not a replacement for the underlying result
 
 Make training entry the first visual priority. Logged-in summaries remain useful but must not overpower the start actions. Do not create an oversized decorative hero.
 
+Keep distance and keyboard entrances equally prominent on one lightly divided surface, with both 48px start actions in the initial mobile viewport. Mode illustrations are decorative, contain no sample scores or interval values, and retain Gold reference cues. Use one neutral guest persistence note. Distinguish the latest session score from recent average error and response time; keep the existing ms unit. Render dates and prose in the UI font and numeric metrics in the mono font. Saved session links follow the summary without nested cards.
+
 ### Login
 
 Keep the Google login and guest paths unmistakable. Brand treatment is Azure and neutral, not success green.

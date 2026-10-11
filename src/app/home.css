@@ -1,0 +1,305 @@
+/* Home: two equal training entrances, followed by readable records. */
+.ui-home-shell {
+  gap: 32px;
+}
+.ui-home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ui-home-header .ui-title {
+  font-size: 28px;
+  line-height: 1.2;
+}
+.ui-home-header .ui-page-header__subtitle {
+  font-size: 12px;
+  margin-top: 4px;
+}
+.ui-home-nav {
+  display: flex;
+  gap: 4px;
+}
+.ui-home-nav .ui-button {
+  padding-inline: 8px;
+  border-color: transparent;
+  background: transparent;
+  font-size: 14px;
+}
+.ui-home-training {
+  display: grid;
+  gap: 16px;
+}
+.ui-home-entries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-lg);
+  background: var(--mc-card);
+}
+.ui-home-entry {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 16px;
+  padding: 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--mc-ink);
+}
+.ui-home-entry:first-child {
+  border-radius: var(--mc-radius-lg) 0 0 var(--mc-radius-lg);
+}
+.ui-home-entry:last-child {
+  border-left: 1px solid var(--mc-line);
+  border-radius: 0 var(--mc-radius-lg) var(--mc-radius-lg) 0;
+}
+.ui-home-entry:hover {
+  transform: none;
+  background: var(--mc-panel);
+  box-shadow: none;
+}
+.ui-home-entry__mode {
+  color: var(--mc-label);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ui-home-entry__copy {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+.ui-home-entry__copy h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.45;
+  letter-spacing: -0.035em;
+}
+.ui-home-entry__copy p {
+  margin: 0;
+  color: var(--mc-body);
+  font-size: 14px;
+  line-height: 1.6;
+  text-wrap: balance;
+}
+.ui-home-entry__start {
+  min-height: 48px;
+  padding-inline: 4px;
+  box-shadow: none;
+}
+.ui-home-entry[data-pending="true"] {
+  min-height: 252px;
+  justify-content: center;
+  font-size: 14px;
+}
+.ui-home-illustration {
+  display: block;
+  width: 100%;
+  max-width: 160px;
+  height: 44px;
+}
+.ui-home-illustration__line {
+  fill: none;
+  stroke: var(--mc-line-strong);
+  stroke-width: 2;
+}
+.ui-home-illustration__reference {
+  fill: var(--mc-gold);
+}
+.ui-home-illustration__white {
+  fill: var(--mc-card);
+  stroke: var(--mc-line-strong);
+}
+.ui-home-illustration__black {
+  fill: var(--mc-ink);
+}
+.ui-home-guest {
+  display: grid;
+  justify-items: start;
+  gap: 0;
+  color: var(--mc-body);
+  font-size: 14px;
+}
+.ui-home-guest p {
+  margin: 0;
+}
+.ui-home-guest .ui-button {
+  padding-inline: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--mc-brand-text);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.ui-home-records {
+  display: grid;
+  gap: 32px;
+}
+.ui-home-records__summary,
+.ui-home-history {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+}
+.ui-home-records .ui-section-header .ui-button {
+  padding-inline: 8px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--mc-brand-text);
+  font-size: 14px;
+}
+.ui-home-headline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-md);
+  background: var(--mc-card);
+}
+.ui-home-score {
+  display: grid;
+  gap: 8px;
+}
+.ui-home-score > span,
+.ui-home-headline dt {
+  color: var(--mc-label);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.ui-home-score > strong {
+  font-family: var(--mc-font-mono);
+  font-size: 40px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+.ui-home-headline dl {
+  margin: 0;
+  min-width: 0;
+}
+.ui-home-headline dd {
+  margin: 0;
+  color: var(--mc-ink);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.ui-home-last-training {
+  display: grid;
+  gap: 8px;
+}
+.ui-home-last-training > div {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 8px;
+}
+.ui-home-averages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  border-top: 1px solid var(--mc-line);
+  padding-top: 16px;
+}
+.ui-home-averages > div {
+  display: grid;
+  gap: 8px;
+}
+.ui-home-averages dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+.ui-home-averages strong {
+  font-family: var(--mc-font-mono);
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.ui-home-averages dd > span {
+  font-size: 13px;
+}
+.ui-home-history__list {
+  display: grid;
+}
+.ui-home-session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 4px;
+  border: 0;
+  border-top: 1px solid var(--mc-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ui-home-session:hover {
+  background: var(--mc-panel);
+  transform: none;
+  box-shadow: none;
+}
+.ui-home-session__copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  font-size: 14px;
+}
+.ui-home-session__copy > span,
+.ui-home-session time {
+  color: var(--mc-body);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.ui-home-session__score {
+  font-family: var(--mc-font-mono);
+  font-size: 24px;
+  font-weight: 600;
+}
+.ui-home-empty {
+  margin: 0;
+  color: var(--mc-body);
+  font-size: 14px;
+}
+.ui-home-sign-out {
+  justify-self: start;
+}
+@media (min-width: 600px) {
+  .ui-home-shell {
+    gap: 32px;
+  }
+  .ui-home-entry {
+    padding: 24px;
+    gap: 20px;
+  }
+  .ui-home-entry__copy h2 {
+    font-size: 21px;
+  }
+  .ui-home-header .ui-title {
+    font-size: 32px;
+  }
+  .ui-home-nav .ui-button {
+    padding-inline: 12px;
+  }
+  .ui-home-headline {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .ui-home-averages {
+    grid-column: 1 / -1;
+  }
+}
+@media (min-width: 1024px) {
+  .ui-home-records {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
+  }
+  .ui-home-sign-out {
+    grid-column: 1 / -1;
+  }
+}
