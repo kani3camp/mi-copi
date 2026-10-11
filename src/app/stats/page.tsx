@@ -101,10 +101,7 @@ export default async function StatsPage() {
             subtitle="全体、距離、鍵盤を切り替えて、日ごとの平均スコアを見ます。"
             className="ui-stats-primary-chart"
           >
-            <StatsTrendSwitch
-              options={scoreTrendOptions}
-              valueFormatter={formatScoreLabel}
-            />
+            <StatsTrendSwitch options={scoreTrendOptions} />
           </GraphCard>
 
           <div className="ui-grid-chart-panels ui-stats-support-chart-grid">

@@ -221,10 +221,7 @@ export const LineChartSinglePoint: Story = {
 export const ScoreTrendModeSwitch: Story = {
   render: () => (
     <GraphCard title="スコア推移" subtitle="全体、距離、鍵盤を切り替えます。">
-      <StatsTrendSwitch
-        options={scoreTrendOptions}
-        valueFormatter={(value) => `${value.toFixed(1)} pt`}
-      />
+      <StatsTrendSwitch options={scoreTrendOptions} />
     </GraphCard>
   ),
   play: async ({ canvasElement }) => {

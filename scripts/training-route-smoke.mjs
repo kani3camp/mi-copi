@@ -50,6 +50,52 @@ async function main() {
   }
 }
 
+async function runAuthenticatedStatsScenario(context, browserConfig) {
+  const page = await context.newPage();
+  const scenario = startScenario(browserConfig, "auth-stats");
+  try {
+    const response = await page.goto(`${BASE_URL}/stats`);
+    await page.getByRole("heading", { name: "成長の記録" }).waitFor();
+    scenario.checks.push(
+      assert(response.ok(), "stats server response succeeds"),
+    );
+    await page.getByText("累計スコア", { exact: true }).first().waitFor();
+    for (const mode of ["全体", "距離", "鍵盤", "全体"]) {
+      await page
+        .locator(".ui-stats-trend-switch")
+        .getByText(mode, { exact: true })
+        .click();
+      scenario.checks.push(
+        assert(
+          await page.getByLabel(mode, { exact: true }).isChecked(),
+          `stats ${mode} trend can be selected`,
+        ),
+      );
+      scenario.checks.push(
+        assert(
+          (await page
+            .getByText(`${mode}のスコア推移`, { exact: true })
+            .count()) === 1,
+          `stats ${mode} chart renders`,
+        ),
+      );
+    }
+    await page.reload();
+    await page.getByLabel("全体", { exact: true }).waitFor();
+    scenario.checks.push(
+      assert(
+        await page.getByLabel("全体", { exact: true }).isChecked(),
+        "stats direct reload renders overall trend",
+      ),
+    );
+  } catch (error) {
+    scenario.failures.push(renderUnexpectedError(error));
+  } finally {
+    await page.close();
+  }
+  return finishScenario(scenario);
+}
+
 async function runGuestSmoke(browserConfig) {
   debug(`start guest smoke: ${browserConfig.key}`);
   const browser = await browserConfig.launcher.launch({ headless: true });
@@ -90,7 +136,7 @@ async function runAuthSmoke(browserConfig, authUser) {
     });
     await context.addCookies([
       {
-        domain: "localhost",
+        domain: new URL(BASE_URL).hostname,
         httpOnly: true,
         name: "better-auth.session_token",
         path: "/",
@@ -102,6 +148,8 @@ async function runAuthSmoke(browserConfig, authUser) {
         ),
       },
     ]);
+
+    const stats = await runAuthenticatedStatsScenario(context, browserConfig);
 
     const distanceBootstrap = await runDistanceAuthBootstrapScenario(
       context,
@@ -142,6 +190,7 @@ async function runAuthSmoke(browserConfig, authUser) {
       auth: "authenticated",
       userEmail: authUser.email,
       scenarios: [
+        stats,
         distanceBootstrap,
         distanceSave,
         keyboardImmediate,

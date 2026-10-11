@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 
+import { formatScoreLabel } from "../../features/training/model/format";
+
 import { SegmentedControl } from "../ui/primitives";
 import { MetricLineChart } from "./stats-charts";
 import type { StatsTrendMode, StatsTrendOption } from "./stats-view-model";
 
-export function StatsTrendSwitch(props: {
-  options: StatsTrendOption[];
-  valueFormatter: (value: number) => string;
-}) {
+export function StatsTrendSwitch(props: { options: StatsTrendOption[] }) {
   const [activeMode, setActiveMode] = useState<StatsTrendMode>("overall");
   const activeOption =
     props.options.find((option) => option.id === activeMode) ??
@@ -35,7 +34,7 @@ export function StatsTrendSwitch(props: {
         title={`${activeOption.label}のスコア推移`}
         titleVisibility="sr-only"
         tone={activeOption.tone}
-        valueFormatter={props.valueFormatter}
+        valueFormatter={formatScoreLabel}
         points={activeOption.points}
         denseLabels
       />
