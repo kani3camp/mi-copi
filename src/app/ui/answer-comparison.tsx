@@ -4,9 +4,12 @@ import styles from "./answer-comparison.module.css";
 export function AnswerComparison(props: {
   correct: ReactNode;
   answer: ReactNode;
+  notation?: "text" | "note";
 }) {
   return (
-    <dl className={styles.comparison}>
+    <dl
+      className={`${styles.comparison} ${props.notation === "note" ? styles.notes : ""}`}
+    >
       <div className={styles.correct}>
         <dt>
           <span aria-hidden="true">○ </span>正解
