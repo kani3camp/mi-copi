@@ -76,10 +76,14 @@ async function waitForServer(baseUrl, server) {
 }
 
 async function runSmoke(baseUrl) {
-  const smoke = spawn(process.execPath, ["scripts/training-route-smoke.mjs"], {
-    env: { ...process.env, SMOKE_BASE_URL: baseUrl },
-    stdio: "inherit",
-  });
+  const smoke = spawn(
+    process.execPath,
+    ["scripts/training-route-smoke.mjs", ...process.argv.slice(2)],
+    {
+      env: { ...process.env, SMOKE_BASE_URL: baseUrl },
+      stdio: "inherit",
+    },
+  );
   const result = await waitForExit(smoke);
 
   if (result.code !== 0) {
