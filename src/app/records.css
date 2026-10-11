@@ -358,3 +358,117 @@
     align-items: center;
   }
 }
+
+/* Settings: one control surface, then complete snapshots and account rows. */
+.ui-settings-shell .ui-page-header {
+  display: grid;
+  gap: 12px;
+}
+.ui-settings-controls {
+  display: grid;
+  gap: 20px;
+}
+.ui-settings-controls .ui-field {
+  gap: 10px;
+}
+.ui-settings-controls .ui-field__label {
+  font-size: 14px;
+}
+.ui-settings-controls .ui-checkbox-card {
+  padding: 0;
+  min-height: 44px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ui-settings-controls .ui-checkbox-card__title {
+  font-size: 14px;
+}
+.ui-settings-controls .ui-checkbox-card__description {
+  font-size: 14px;
+}
+.ui-settings-controls .ui-range {
+  min-height: 44px;
+}
+.ui-settings-controls .ui-mini-note {
+  font-size: 14px;
+}
+.ui-settings-shell .ui-settings-save-notice {
+  font-size: 14px;
+}
+.ui-settings-shell .ui-settings-snapshot {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+.ui-settings-shell .ui-settings-snapshot__group {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ui-settings-shell .ui-settings-snapshot__group + .ui-settings-snapshot__group {
+  padding-top: 20px;
+  border-top: 1px solid var(--mc-line);
+}
+.ui-settings-shell .ui-settings-snapshot__title {
+  align-items: start;
+  gap: 12px;
+}
+.ui-settings-shell .ui-settings-snapshot__row {
+  padding: 4px 0;
+  gap: 12px;
+  border: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  font-size: 14px;
+  font-family: var(--mc-font-text);
+}
+.ui-settings-shell .ui-settings-snapshot__value {
+  font-family: var(--mc-font-text);
+  font-size: 14px;
+}
+.ui-settings-account-rows {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  font-family: var(--mc-font-text);
+}
+.ui-settings-account-rows > div {
+  display: grid;
+  gap: 6px;
+}
+.ui-settings-account-rows dt {
+  color: var(--mc-label);
+  font-size: 14px;
+}
+.ui-settings-account-rows dd {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 768px) {
+  .ui-settings-shell .ui-settings-snapshot {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+  .ui-settings-shell
+    .ui-settings-snapshot__group
+    + .ui-settings-snapshot__group {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.ui-settings-save-status {
+  margin: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--mc-line);
+  color: var(--mc-body);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.ui-settings-controls .ui-metric-reading__unit {
+  font-size: 1em;
+}

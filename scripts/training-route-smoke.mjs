@@ -201,6 +201,77 @@ async function runLoginScenario(context, browserConfig, authUser = null) {
   return finishScenario(scenario);
 }
 
+async function runSettingsScenario(context, browserConfig, authUser = null) {
+  const page = await context.newPage();
+  const scenario = startScenario(
+    browserConfig,
+    authUser ? "auth-settings" : "guest-settings",
+  );
+  try {
+    const response = await page.goto(`${BASE_URL}/settings`);
+    await page.getByRole("heading", { name: "設定", exact: true }).waitFor();
+    scenario.checks.push(
+      assert(response.ok(), "settings server response succeeds"),
+    );
+    scenario.checks.push(
+      assert(
+        await page
+          .getByRole("slider", { name: "音量", exact: true })
+          .isVisible(),
+        "settings volume is labeled",
+      ),
+    );
+    scenario.checks.push(
+      assert(
+        (await page.getByRole("checkbox").count()) === 2,
+        "both settings toggles remain visible",
+      ),
+    );
+    scenario.checks.push(
+      assert(
+        await page
+          .getByRole("radiogroup", { name: "音程表記スタイル", exact: true })
+          .isVisible(),
+        "all notation choices remain visible",
+      ),
+    );
+    if (authUser) {
+      scenario.checks.push(
+        assert(
+          await page.getByText(authUser.email, { exact: true }).isVisible(),
+          "settings account identity is shown",
+        ),
+      );
+    } else {
+      scenario.checks.push(
+        assert(
+          await page
+            .getByText(
+              "ゲストでは、これらの設定はこのブラウザにのみ保存されます。",
+            )
+            .isVisible(),
+          "guest local settings contract remains explicit",
+        ),
+      );
+    }
+    await page.getByRole("link", { name: "ホーム", exact: true }).click();
+    await page
+      .getByRole("heading", { name: "ミーコピ", exact: true })
+      .waitFor();
+    scenario.checks.push(
+      assert(
+        new URL(page.url()).pathname === "/",
+        "settings navigates to home",
+      ),
+    );
+  } catch (error) {
+    scenario.failures.push(renderUnexpectedError(error));
+  } finally {
+    await page.close();
+  }
+  return finishScenario(scenario);
+}
+
 async function runGuestSmoke(browserConfig) {
   debug(`start guest smoke: ${browserConfig.key}`);
   const browser = await browserConfig.launcher.launch({ headless: true });
@@ -213,6 +284,7 @@ async function runGuestSmoke(browserConfig) {
     });
 
     const login = await runLoginScenario(context, browserConfig);
+    const settings = await runSettingsScenario(context, browserConfig);
     const distance = await runDistanceGuestScenario(context, browserConfig);
     const keyboard = await runKeyboardGuestScenario(context, browserConfig);
 
@@ -222,7 +294,7 @@ async function runGuestSmoke(browserConfig) {
       browser: browserConfig.key,
       browserLabel: browserConfig.label,
       auth: "guest",
-      scenarios: [login, distance, keyboard],
+      scenarios: [login, settings, distance, keyboard],
     };
   } finally {
     debug(`finish guest smoke: ${browserConfig.key}`);
@@ -256,6 +328,11 @@ async function runAuthSmoke(browserConfig, authUser) {
     ]);
 
     const login = await runLoginScenario(context, browserConfig, authUser);
+    const settings = await runSettingsScenario(
+      context,
+      browserConfig,
+      authUser,
+    );
     const stats = await runAuthenticatedStatsScenario(context, browserConfig);
 
     const distanceBootstrap = await runDistanceAuthBootstrapScenario(
@@ -298,6 +375,7 @@ async function runAuthSmoke(browserConfig, authUser) {
       userEmail: authUser.email,
       scenarios: [
         login,
+        settings,
         stats,
         distanceBootstrap,
         distanceSave,
