@@ -8,6 +8,7 @@ import "./design-system-v2.css";
 import "./design-system-v2-compat.css";
 import "./home.css";
 import "./training.css";
+import "./records.css";
 
 const APP_NAME = "ミーコピ";
 const APP_DESCRIPTION =
