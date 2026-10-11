@@ -352,3 +352,95 @@ div.ui-keyboard-key {
     padding: 24px;
   }
 }
+
+/* Claude's compact configuration: ordinary grouped controls, natural-flow Start. */
+.ui-training-config-panel {
+  gap: 18px;
+}
+.ui-training-config-panel > .ui-section-header {
+  margin-bottom: 0;
+}
+.ui-training-config-panel .ui-section-header__title {
+  font-size: 20px;
+}
+.ui-training-config-layout {
+  display: grid;
+  gap: 14px;
+}
+.ui-training-config-group {
+  display: grid;
+  gap: 10px;
+}
+.ui-training-config-group + .ui-training-config-group {
+  border-top: 1px solid var(--mc-line);
+  padding-top: 12px;
+}
+.ui-training-config-group > h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+.ui-training-config-panel .ui-field__label {
+  font-size: 14px;
+}
+.ui-training-config-panel .ui-grid-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.ui-training-config-group:first-child .ui-grid-fields {
+  grid-template-columns: 1fr;
+}
+.ui-training-config-group:nth-child(2)
+  .ui-grid-fields
+  > .ui-field:nth-child(n + 3) {
+  grid-column: 1 / -1;
+}
+.ui-training-config-panel :is(.ui-input, .ui-select) {
+  min-height: 48px;
+  font-size: 16px;
+}
+.ui-training-config-panel .ui-segmented {
+  min-height: 48px;
+}
+.ui-training-config-panel .ui-segmented__item {
+  min-height: 44px;
+  font-size: 14px;
+}
+.ui-training-config-panel .ui-train-config-toggle-grid {
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ui-training-config-panel .ui-checkbox-card {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  min-height: 48px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 14px;
+  gap: 8px;
+}
+.ui-training-config-panel .ui-form-section__preview {
+  gap: 6px;
+}
+.ui-training-config-panel .ui-form-chip-list {
+  gap: 4px 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ui-training-config-panel .ui-form-inline-note {
+  margin: 0;
+  font-size: 13px;
+}
+.ui-training-config-start .ui-button {
+  min-height: 48px;
+}
+
+.ui-training-config-group:first-child {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: end;
+}
+
+.ui-training-config-group:first-child .ui-grid-fields {
+  display: contents;
+}
