@@ -565,3 +565,9 @@ A UI change is aligned with Design System v2 only when all of the following are 
 - Storybook covers important reusable states
 - focus, touch target, keyboard, screen-reader, and reduced-motion behavior remain acceptable
 - PWA/browser theme uses v2 brand styling
+
+## 21. Learning records
+
+Statistics use one quiet white overview with a single-line cumulative score and four neutral supporting metrics in two columns on mobile. Keep all existing trends, analysis breakdowns and recent-session links visible. Avoid nested metric cards or tabs that hide analysis.
+
+Formatted metric numbers use JetBrains Mono; Japanese labels, dates, unit suffixes and contextual text use Zen Kaku Gothic New. Semitone and response-time units remain explicit. Display formatting does not change internal precision or saved values. Comparison sections use simple label/value rows and subtle separators.
