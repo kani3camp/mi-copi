@@ -29,3 +29,7 @@
 .answer dt {
   color: var(--mc-violet-text);
 }
+
+.notes dd {
+  font-family: var(--mc-font-mono);
+}

@@ -96,6 +96,46 @@ async function runAuthenticatedStatsScenario(context, browserConfig) {
   return finishScenario(scenario);
 }
 
+async function checkSavedDetailNavigation(page, scenario) {
+  await page
+    .getByRole("link", { name: "セッション詳細を見る", exact: true })
+    .click();
+  await page
+    .getByRole("heading", { name: "セッション詳細", exact: true })
+    .waitFor();
+  scenario.checks.push(
+    assert(
+      (await page.locator(".ui-detail-result-item").count()) === 1,
+      "saved detail shows the answered question",
+    ),
+  );
+  scenario.checks.push(
+    assert(
+      (await page.locator(".ui-detail-kv-row").count()) === 9,
+      "saved detail preserves all configuration rows",
+    ),
+  );
+  const terms = await page
+    .locator(".ui-detail-result-item")
+    .getByRole("term")
+    .allTextContents();
+  scenario.checks.push(
+    assert(
+      terms.some((text) => text.includes("正解")) &&
+        terms.some((text) => text.includes("回答")),
+      "saved detail labels correct and answer independently",
+    ),
+  );
+  await page.getByRole("link", { name: "統計を見る", exact: true }).click();
+  await page.getByLabel("全体", { exact: true }).waitFor();
+  scenario.checks.push(
+    assert(
+      await page.getByLabel("全体", { exact: true }).isChecked(),
+      "saved detail navigates to statistics",
+    ),
+  );
+}
+
 async function runLoginScenario(context, browserConfig, authUser = null) {
   const page = await context.newPage();
   const scenario = startScenario(
@@ -665,6 +705,7 @@ async function runDistanceAuthSaveScenario(context, browserConfig, authUser) {
         "distance result save status",
       ),
     );
+    await checkSavedDetailNavigation(page, scenario);
   } catch (error) {
     scenario.failures.push(renderUnexpectedError(error));
   } finally {
@@ -861,6 +902,7 @@ async function runKeyboardAuthScenario(
         ),
       );
     }
+    await checkSavedDetailNavigation(page, scenario);
   } catch (error) {
     scenario.failures.push(renderUnexpectedError(error));
   } finally {
