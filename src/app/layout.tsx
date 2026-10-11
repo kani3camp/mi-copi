@@ -6,6 +6,7 @@ import "./globals.css";
 import "./ui/accessibility.css";
 import "./design-system-v2.css";
 import "./design-system-v2-compat.css";
+import "./home.css";
 
 const APP_NAME = "ミーコピ";
 const APP_DESCRIPTION =
