@@ -96,6 +96,71 @@ async function runAuthenticatedStatsScenario(context, browserConfig) {
   return finishScenario(scenario);
 }
 
+async function runLoginScenario(context, browserConfig, authUser = null) {
+  const page = await context.newPage();
+  const scenario = startScenario(
+    browserConfig,
+    authUser ? "auth-login" : "guest-login",
+  );
+  try {
+    const response = await page.goto(`${BASE_URL}/login`);
+    await page
+      .getByRole("heading", {
+        name: authUser ? "ログイン中" : "ログイン",
+        exact: true,
+      })
+      .waitFor();
+    scenario.checks.push(
+      assert(response.ok(), "login server response succeeds"),
+    );
+    if (authUser) {
+      scenario.checks.push(
+        assert(
+          await page.getByText(authUser.email, { exact: true }).isVisible(),
+          "signed-in account is shown",
+        ),
+      );
+      scenario.checks.push(
+        assert(
+          (await page
+            .getByRole("button", { name: "Google でログイン" })
+            .count()) === 0,
+          "signed-in screen does not prompt Google login",
+        ),
+      );
+    } else {
+      scenario.checks.push(
+        assert(
+          await page
+            .getByRole("button", { name: "Google でログイン" })
+            .isEnabled(),
+          "guest can start Google login",
+        ),
+      );
+    }
+    await page
+      .getByRole("link", {
+        name: authUser ? "ホームで練習を始める" : "ゲストで始める",
+        exact: true,
+      })
+      .click();
+    await page
+      .getByRole("heading", { name: "ミーコピ", exact: true })
+      .waitFor();
+    scenario.checks.push(
+      assert(
+        new URL(page.url()).pathname === "/",
+        "login choice navigates to home",
+      ),
+    );
+  } catch (error) {
+    scenario.failures.push(renderUnexpectedError(error));
+  } finally {
+    await page.close();
+  }
+  return finishScenario(scenario);
+}
+
 async function runGuestSmoke(browserConfig) {
   debug(`start guest smoke: ${browserConfig.key}`);
   const browser = await browserConfig.launcher.launch({ headless: true });
@@ -107,6 +172,7 @@ async function runGuestSmoke(browserConfig) {
       timezoneId: "Asia/Tokyo",
     });
 
+    const login = await runLoginScenario(context, browserConfig);
     const distance = await runDistanceGuestScenario(context, browserConfig);
     const keyboard = await runKeyboardGuestScenario(context, browserConfig);
 
@@ -116,7 +182,7 @@ async function runGuestSmoke(browserConfig) {
       browser: browserConfig.key,
       browserLabel: browserConfig.label,
       auth: "guest",
-      scenarios: [distance, keyboard],
+      scenarios: [login, distance, keyboard],
     };
   } finally {
     debug(`finish guest smoke: ${browserConfig.key}`);
@@ -149,6 +215,7 @@ async function runAuthSmoke(browserConfig, authUser) {
       },
     ]);
 
+    const login = await runLoginScenario(context, browserConfig, authUser);
     const stats = await runAuthenticatedStatsScenario(context, browserConfig);
 
     const distanceBootstrap = await runDistanceAuthBootstrapScenario(
@@ -190,6 +257,7 @@ async function runAuthSmoke(browserConfig, authUser) {
       auth: "authenticated",
       userEmail: authUser.email,
       scenarios: [
+        login,
         stats,
         distanceBootstrap,
         distanceSave,

@@ -2,8 +2,11 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { AppShell, Notice, PageHeader } from "../ui/primitives";
-import { LoginChoicePanel, LoginSignedInPanel } from "./login-panels";
+import {
+  LoginChoicePanel,
+  LoginPageLayout,
+  LoginSignedInPanel,
+} from "./login-panels";
 
 const meta = {
   title: "Login/Panels",
@@ -14,15 +17,12 @@ const meta = {
     onGoogleSignIn: fn(),
   },
   decorators: [
-    (Story) => (
-      <AppShell narrow>
-        <PageHeader
-          title="ログインして記録を残す"
-          eyebrow="アカウント"
-          subtitle="保存して続けるか、ゲストで今すぐ練習するかを選べます。"
-        />
-        <Story />
-      </AppShell>
+    (Story, context) => (
+      <div className="app-root">
+        <LoginPageLayout isAuthenticated={Boolean(context.parameters.signedIn)}>
+          <Story />
+        </LoginPageLayout>
+      </div>
     ),
   ],
   tags: ["autodocs"],
@@ -47,6 +47,9 @@ export const GuestChoiceIdle: Story = {
     });
     const guestLink = canvas.getByRole("link", { name: "ゲストで始める" });
 
+    await expect(
+      canvas.getByRole("heading", { name: "ログイン" }),
+    ).toBeVisible();
     await expect(googleButton).toBeEnabled();
     await expect(guestLink).toHaveAttribute("href", "/");
   },
@@ -106,17 +109,17 @@ export const ClickStartsGoogleLogin: Story = {
 };
 
 export const SignedInState: Story = {
+  parameters: { signedIn: true },
   render: () => (
-    <>
-      <Notice tone="success">
-        すでにサインイン済みです。このアカウントで結果保存と統計を使えます。
-      </Notice>
-      <LoginSignedInPanel name="Mi Copi User" email="user@example.com" />
-    </>
+    <LoginSignedInPanel name="Mi Copi User" email="user@example.invalid" />
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
+    await expect(
+      canvas.getByRole("heading", { name: "ログイン中" }),
+    ).toBeVisible();
+    await expect(canvas.queryByText("ゲストで始める")).not.toBeInTheDocument();
     await expect(canvas.getByText("Mi Copi User")).toBeVisible();
     await expect(
       canvas.getByRole("link", { name: "ホームで練習を始める" }),
@@ -126,20 +129,21 @@ export const SignedInState: Story = {
 
 export const SignedInLongAccountText: Story = {
   parameters: {
+    signedIn: true,
     viewport: {
       defaultViewport: "mobile1",
     },
   },
   render: () => (
     <LoginSignedInPanel
-      name="metro momo"
-      email="momometro1998.long-account-name@example.com"
+      name="練習ユーザー"
+      email="student.with.a.very.long.example.name@example.invalid"
     />
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const email = canvas.getByText(
-      "momometro1998.long-account-name@example.com",
+      "student.with.a.very.long.example.name@example.invalid",
     );
 
     await expect(email).toBeVisible();
