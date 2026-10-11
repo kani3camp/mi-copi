@@ -262,3 +262,93 @@
 div.ui-keyboard-key {
   cursor: default;
 }
+
+/* Results keep restarting close to the metrics and persistence visible below. */
+.ui-train-shell .ui-training-result {
+  padding: 16px;
+  gap: 20px;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-md);
+  background: var(--mc-card);
+  box-shadow: none;
+}
+.ui-training-result .ui-section-title {
+  font-size: 18px;
+}
+.ui-training-result .ui-result-hero {
+  padding: 0;
+  gap: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ui-training-result .ui-result-hero__value {
+  font-family: var(--mc-font-mono);
+  font-size: 40px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.ui-training-result .ui-result-hero__label,
+.ui-training-result .ui-result-hero__meta {
+  font-size: 14px;
+}
+.ui-training-result .ui-result-stats-block {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.ui-training-result .ui-summary-stat {
+  padding: 0;
+  gap: 6px;
+  min-height: 0;
+  justify-content: start;
+  align-content: start;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ui-training-result .ui-summary-stat__label {
+  font-size: 14px;
+}
+.ui-training-result .ui-summary-stat__value {
+  font-size: 22px;
+  line-height: 1.3;
+}
+.ui-training-result .ui-result-save-card {
+  padding: 16px 0 0;
+  border: 0;
+  border-top: 1px solid var(--mc-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 12px;
+}
+.ui-training-result .ui-result-save-card__header {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ui-training-result .ui-result-save-card__title {
+  font-size: 14px;
+}
+.ui-training-result .ui-result-save-card__message,
+.ui-training-result .ui-result-persistence .ui-subtitle {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.ui-training-result .ui-result-recent-list {
+  gap: 0;
+}
+.ui-training-result .ui-result-recent-list .ui-list-link {
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--mc-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+@media (min-width: 768px) {
+  .ui-train-shell .ui-training-result {
+    padding: 24px;
+  }
+}

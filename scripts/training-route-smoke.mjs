@@ -350,6 +350,18 @@ async function runDistanceGuestScenario(context, browserConfig) {
         "guest result shows retry button",
       ),
     );
+    await page.getByRole("button", { name: "もう一度始める" }).click();
+    await page
+      .getByRole("heading", { name: "出題設定", exact: true })
+      .waitFor();
+    scenario.checks.push(
+      assert(
+        await page
+          .getByRole("button", { name: "開始", exact: true })
+          .isEnabled(),
+        "result restart returns to configuration",
+      ),
+    );
   } catch (error) {
     scenario.failures.push(renderUnexpectedError(error));
   } finally {
@@ -431,6 +443,18 @@ async function runKeyboardGuestScenario(context, browserConfig) {
           .getByRole("link", { name: "今後の保存用にログイン" })
           .isVisible(),
         "guest result shows login CTA",
+      ),
+    );
+    await page.getByRole("button", { name: "もう一度始める" }).click();
+    await page
+      .getByRole("heading", { name: "出題設定", exact: true })
+      .waitFor();
+    scenario.checks.push(
+      assert(
+        await page
+          .getByRole("button", { name: "開始", exact: true })
+          .isEnabled(),
+        "result restart returns to configuration",
       ),
     );
   } catch (error) {
