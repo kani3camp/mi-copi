@@ -1,11 +1,11 @@
 import type { QuestionDirection } from "../../features/training/model/types";
 
-const WIDTH = 720;
-const HEIGHT = 220;
-const PADDING_X = 44;
+const WIDTH = 320;
+const HEIGHT = 208;
+const PADDING_X = 20;
 const AXIS_Y = 110;
-const CORRECT_LANE_Y = 70;
-const ANSWER_LANE_Y = 150;
+const CORRECT_LANE_Y = 76;
+const ANSWER_LANE_Y = 158;
 const TICK_HALF_HEIGHT = 7;
 const MARKER_RADIUS = 8;
 
@@ -142,14 +142,23 @@ export function DistanceFeedbackDiagram(props: {
                 y2={AXIS_Y + TICK_HALF_HEIGHT}
                 className="ui-distance-ruler__tick"
               />
-              <text
-                x={x}
-                y={AXIS_Y + 29}
-                textAnchor="middle"
-                className="ui-distance-ruler__tick-label"
-              >
-                {formatSignedTick(tick)}
-              </text>
+              {tick === 0 ||
+              tick %
+                (scale.max - scale.min >= 18
+                  ? 4
+                  : scale.max - scale.min >= 10
+                    ? 2
+                    : 1) ===
+                0 ? (
+                <text
+                  x={x}
+                  y={AXIS_Y + 29}
+                  textAnchor="middle"
+                  className="ui-distance-ruler__tick-label"
+                >
+                  {formatSignedTick(tick)}
+                </text>
+              ) : null}
               {isReference ? <DiamondMarker x={x} y={AXIS_Y} /> : null}
             </g>
           );
@@ -204,16 +213,16 @@ export function DistanceFeedbackDiagram(props: {
         <TriangleMarker x={answerX} y={ANSWER_LANE_Y} />
 
         <text
-          x={Math.min(WIDTH - 58, Math.max(58, referenceX))}
-          y={25}
-          textAnchor="middle"
+          x={20}
+          y={20}
+          textAnchor="start"
           className="ui-distance-ruler__role-label"
           fill="var(--mc-gold-text)"
         >
           基準音
         </text>
         <text
-          x={Math.min(WIDTH - 58, Math.max(58, correctX))}
+          x={Math.min(WIDTH - 36, Math.max(36, correctX))}
           y={51}
           textAnchor="middle"
           className="ui-distance-ruler__role-label"
@@ -222,8 +231,8 @@ export function DistanceFeedbackDiagram(props: {
           正解
         </text>
         <text
-          x={Math.min(WIDTH - 58, Math.max(58, answerX))}
-          y={185}
+          x={Math.min(WIDTH - 36, Math.max(36, answerX))}
+          y={202}
           textAnchor="middle"
           className="ui-distance-ruler__role-label"
           fill="var(--mc-violet-text)"
@@ -233,7 +242,7 @@ export function DistanceFeedbackDiagram(props: {
 
         <text
           x={correctX}
-          y={88}
+          y={66}
           textAnchor="middle"
           className="ui-distance-ruler__value"
           fill="var(--mc-sage-text)"
@@ -242,7 +251,7 @@ export function DistanceFeedbackDiagram(props: {
         </text>
         <text
           x={answerX}
-          y={174}
+          y={183}
           textAnchor="middle"
           className="ui-distance-ruler__value"
           fill="var(--mc-violet-text)"

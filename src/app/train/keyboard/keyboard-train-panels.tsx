@@ -6,10 +6,7 @@ import {
   formatResponseTimeMsLabel,
   formatScoreLabel,
 } from "../../../features/training/model/format";
-import {
-  formatPitchComparisonSemitoneLabel,
-  formatQuestionDirectionLabel,
-} from "../../../features/training/model/interval-notation";
+import { formatQuestionDirectionLabel } from "../../../features/training/model/interval-notation";
 import type {
   KeyboardGuestResult,
   KeyboardGuestSummary,
@@ -31,6 +28,8 @@ import {
   Surface,
 } from "../../ui/primitives";
 import {
+  FeedbackControls,
+  FeedbackMetrics,
   FeedbackStatusChip,
   formatFinishReasonLabel,
   MiniStatRow,
@@ -42,11 +41,11 @@ import { formatKeyboardNoteLabel } from "./keyboard-note-label";
 const WHITE_KEY_NOTES: NoteClass[] = ["C", "D", "E", "F", "G", "A", "B"];
 
 const BLACK_KEY_LAYOUT: Array<{ note: NoteClass; left: string }> = [
-  { note: "C#", left: "calc(14.2857% - 5.4%)" },
-  { note: "D#", left: "calc(28.5714% - 5.4%)" },
-  { note: "F#", left: "calc(57.1428% - 5.4%)" },
-  { note: "G#", left: "calc(71.4285% - 5.4%)" },
-  { note: "A#", left: "calc(85.7142% - 5.4%)" },
+  { note: "C#", left: "14.2857%" },
+  { note: "D#", left: "28.5714%" },
+  { note: "F#", left: "57.1428%" },
+  { note: "G#", left: "71.4285%" },
+  { note: "A#", left: "85.7142%" },
 ];
 
 export const KeyboardQuestionPanel = memo(
@@ -64,11 +63,9 @@ export const KeyboardQuestionPanel = memo(
     onAnswer: (note: NoteClass) => void;
   }) {
     return (
-      <Surface tone="accent">
+      <Surface tone="accent" className="ui-question-panel">
         <SectionHeader
           title="音を聴いて鍵盤で答える"
-          description="基準音キーを見て、問題音の鍵盤をひとつ選びます。"
-          eyebrow={`問題 ${props.questionIndex + 1}`}
           actions={
             <Chip tone="neutral">
               {formatQuestionDirectionLabel(props.direction)}
@@ -128,10 +125,9 @@ export const KeyboardFeedbackPanel = memo(
     );
 
     return (
-      <Surface tone="elevated">
+      <Surface tone="elevated" className="ui-feedback-panel">
         <SectionHeader
           title="フィードバック"
-          description="正解と回答の差を確認して、次の問題へ進みます。"
           actions={
             <FeedbackStatusChip
               errorSemitones={props.feedbackResult.errorSemitones}
@@ -159,49 +155,19 @@ export const KeyboardFeedbackPanel = memo(
           referenceNote={props.feedbackResult.question.baseNote}
           showLabels={props.showLabels}
         />
-        <SummaryBlock className="ui-feedback-metrics-block">
-          <SummaryStat
-            label="誤差"
-            value={formatPitchComparisonSemitoneLabel({
-              targetMidi: props.feedbackResult.question.targetMidi,
-              answerMidi,
-            })}
-          />
-          <SummaryStat
-            label="回答時間"
-            value={formatResponseTimeMsLabel(
-              props.feedbackResult.responseTimeMs,
-            )}
-          />
-          <SummaryStat
-            label="スコア"
-            value={formatScoreLabel(props.feedbackResult.score)}
-          />
-        </SummaryBlock>
-        <div className="ui-sticky-actions">
-          <PlaybackButtonPair
-            isPlaybackLocked={false}
-            onReplayBase={props.onReplayBase}
-            onReplayTarget={props.onReplayCorrectTarget}
-            targetLabel="正解音"
-          />
-          <Button
-            type="button"
-            onClick={props.onContinue}
-            variant="primary"
-            block
-          >
-            {props.lastAnsweredWasFinal ? "結果を見る" : "次へ"}
-          </Button>
-          <Button
-            type="button"
-            onClick={props.onEndSession}
-            block
-            variant="ghost"
-          >
-            ここで終了
-          </Button>
-        </div>
+        <FeedbackMetrics
+          targetMidi={props.feedbackResult.question.targetMidi}
+          answerMidi={answerMidi}
+          responseTimeMs={props.feedbackResult.responseTimeMs}
+          score={props.feedbackResult.score}
+        />
+        <FeedbackControls
+          lastAnsweredWasFinal={props.lastAnsweredWasFinal}
+          onReplayBase={props.onReplayBase}
+          onReplayCorrectTarget={props.onReplayCorrectTarget}
+          onContinue={props.onContinue}
+          onEndSession={props.onEndSession}
+        />
       </Surface>
     );
   },
@@ -452,6 +418,8 @@ function KeyboardDisplayKey(props: {
         note={props.note}
         showLabels={props.showLabels}
         isReference={props.isReference}
+        isCorrect={props.isCorrect}
+        isAnswered={props.isAnswered}
       />
     </div>
   );
@@ -461,16 +429,44 @@ function KeyboardKeyInner(props: {
   note: NoteClass;
   showLabels: boolean;
   isReference: boolean;
+  isCorrect?: boolean;
+  isAnswered?: boolean;
 }) {
   return (
-    <>
+    <span className="ui-keyboard-key__face">
       {props.showLabels ? <KeyLabel note={props.note} /> : null}
-      {props.isReference ? (
-        <span className="ui-keyboard-key__reference-badge" aria-hidden="true">
-          基準
-        </span>
-      ) : null}
-    </>
+      <span className="ui-keyboard-key__roles" aria-hidden="true">
+        {props.isReference ? (
+          <span
+            className="ui-keyboard-key__role ui-keyboard-key__reference-badge"
+            data-role="reference"
+          >
+            ◆
+          </span>
+        ) : null}
+        {props.isCorrect ? (
+          <span className="ui-keyboard-key__role" data-role="correct">
+            ○
+          </span>
+        ) : null}
+        {props.isAnswered ? (
+          <span className="ui-keyboard-key__role" data-role="answered">
+            △
+          </span>
+        ) : null}
+      </span>
+      <span className="ui-keyboard-key__bands" aria-hidden="true">
+        {props.isReference ? (
+          <span className="ui-keyboard-key__band" data-role="reference" />
+        ) : null}
+        {props.isCorrect ? (
+          <span className="ui-keyboard-key__band" data-role="correct" />
+        ) : null}
+        {props.isAnswered ? (
+          <span className="ui-keyboard-key__band" data-role="answered" />
+        ) : null}
+      </span>
+    </span>
   );
 }
 

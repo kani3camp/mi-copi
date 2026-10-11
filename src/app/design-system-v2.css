@@ -635,239 +635,185 @@ body {
   font-weight: 700;
 }
 
-/* Product-defining keyboard semantics. */
+/* Product-defining keyboard semantics. The transparent black-key button is the hit area. */
 .ui-keyboard-pad {
   gap: 10px;
 }
 .ui-keyboard-pad__shell {
-  overflow: hidden;
-  padding: 64px 8px 12px;
-  border: 1px solid var(--mc-line);
-  border-radius: var(--mc-radius-md);
-  background: var(--mc-tray);
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
+.ui-keyboard-pad__white-row {
+  gap: 1px;
+}
 .ui-keyboard-pad__black-row {
-  inset: 64px 8px auto;
-}
-.ui-keyboard-key {
-  min-height: clamp(148px, 38vw, 206px);
-  border: 1px solid var(--mc-line-strong);
-  border-radius: 0 0 10px 10px;
-  background: var(--mc-card);
-  color: var(--mc-ink);
-  box-shadow: var(--mc-shadow-key);
-  transition:
-    transform var(--mc-motion-fast) var(--mc-ease),
-    box-shadow var(--mc-motion-fast) var(--mc-ease),
-    border-color var(--mc-motion-fast) var(--mc-ease);
-}
-.ui-keyboard-key[data-black="true"] {
-  border-color: oklch(0.3 0.01 90);
-  border-radius: 0 0 8px 8px;
-  background: oklch(0.25 0.008 90);
-  color: oklch(0.96 0.004 90);
-  box-shadow: 0 2px 4px oklch(0.2 0.02 90 / 0.26);
-}
-.ui-keyboard-key:hover:not(:disabled) {
-  transform: translateY(1px);
-  border-color: var(--mc-brand);
-  box-shadow: var(--mc-shadow-key);
-}
-.ui-keyboard-key:disabled,
-.ui-keyboard-key[data-disabled="true"] {
-  opacity: 0.55;
-  filter: saturate(0);
-}
-
-.ui-keyboard-key[data-reference="true"] {
-  border-color: var(--mc-gold);
-  background: var(--mc-card);
-  color: var(--mc-ink);
-  box-shadow:
-    inset 0 -7px 0 var(--mc-gold),
-    var(--mc-shadow-key);
-}
-.ui-keyboard-key[data-correct="true"] {
-  border-color: var(--mc-sage);
-  background: var(--mc-card);
-  color: var(--mc-ink);
-  box-shadow:
-    inset 0 -7px 0 var(--mc-sage),
-    var(--mc-shadow-key);
-}
-.ui-keyboard-key[data-answered="true"] {
-  border-color: var(--mc-violet);
-  background: var(--mc-card);
-  color: var(--mc-ink);
-  box-shadow:
-    inset 0 -7px 0 var(--mc-violet),
-    var(--mc-shadow-key);
-}
-.ui-keyboard-key[data-reference="true"][data-correct="true"] {
-  box-shadow:
-    inset 0 -7px 0 var(--mc-sage),
-    inset 0 -14px 0 var(--mc-gold),
-    var(--mc-shadow-key);
-}
-.ui-keyboard-key[data-reference="true"][data-answered="true"] {
-  box-shadow:
-    inset 0 -7px 0 var(--mc-violet),
-    inset 0 -14px 0 var(--mc-gold),
-    var(--mc-shadow-key);
-}
-.ui-keyboard-key[data-match="true"] {
-  border-color: color-mix(in oklch, var(--mc-sage) 70%, var(--mc-violet));
-  box-shadow:
-    inset 0 -7px 0 var(--mc-sage),
-    inset 0 -14px 0 var(--mc-violet),
-    var(--mc-shadow-key);
-}
-.ui-keyboard-key[data-reference="true"][data-match="true"] {
-  box-shadow:
-    inset 0 -7px 0 var(--mc-sage),
-    inset 0 -14px 0 var(--mc-violet),
-    inset 0 -21px 0 var(--mc-gold),
-    var(--mc-shadow-key);
-}
-
-.ui-keyboard-key[data-black="true"][data-reference="true"] {
-  border-color: var(--mc-gold);
-  background:
-    linear-gradient(var(--mc-gold) 0 7px, transparent 7px), oklch(0.25 0.008 90);
-  color: oklch(0.96 0.004 90);
-  box-shadow:
-    0 0 0 2px oklch(0.79 0.125 88 / 0.5),
-    0 2px 4px oklch(0.2 0.02 90 / 0.26);
-}
-.ui-keyboard-key[data-black="true"][data-correct="true"] {
-  border-color: var(--mc-sage);
-  background:
-    linear-gradient(var(--mc-sage) 0 7px, transparent 7px), oklch(0.25 0.008 90);
-  color: oklch(0.96 0.004 90);
-  box-shadow:
-    0 0 0 2px oklch(0.7 0.1 138 / 0.55),
-    0 2px 4px oklch(0.2 0.02 90 / 0.26);
-}
-.ui-keyboard-key[data-black="true"][data-answered="true"] {
-  border-color: var(--mc-violet);
-  background:
-    linear-gradient(var(--mc-violet) 0 7px, transparent 7px),
-    oklch(0.25 0.008 90);
-  color: oklch(0.96 0.004 90);
-  box-shadow:
-    0 0 0 2px oklch(0.55 0.155 293 / 0.55),
-    0 2px 4px oklch(0.2 0.02 90 / 0.26);
-}
-.ui-keyboard-key[data-black="true"][data-reference="true"][data-correct="true"] {
-  background:
-    linear-gradient(
-      to bottom,
-      var(--mc-sage) 0 7px,
-      var(--mc-gold) 7px 14px,
-      transparent 14px
-    ),
-    oklch(0.25 0.008 90);
-}
-.ui-keyboard-key[data-black="true"][data-reference="true"][data-answered="true"] {
-  background:
-    linear-gradient(
-      to bottom,
-      var(--mc-violet) 0 7px,
-      var(--mc-gold) 7px 14px,
-      transparent 14px
-    ),
-    oklch(0.25 0.008 90);
-}
-.ui-keyboard-key[data-black="true"][data-match="true"] {
-  background:
-    linear-gradient(
-      to bottom,
-      var(--mc-sage) 0 7px,
-      var(--mc-violet) 7px 14px,
-      transparent 14px
-    ),
-    oklch(0.25 0.008 90);
-}
-.ui-keyboard-key[data-black="true"][data-reference="true"][data-match="true"] {
-  background:
-    linear-gradient(
-      to bottom,
-      var(--mc-sage) 0 7px,
-      var(--mc-violet) 7px 14px,
-      var(--mc-gold) 14px 21px,
-      transparent 21px
-    ),
-    oklch(0.25 0.008 90);
-}
-
-.ui-keyboard-key__label {
-  font-family: var(--mc-font-mono);
-  font-size: 11px;
-  font-weight: 700;
-}
-.ui-keyboard-key__reference-badge {
-  top: 8px;
-  min-height: 22px;
-  padding-inline: 7px;
-  border: 1px solid var(--mc-gold);
-  border-radius: var(--mc-radius-xs);
-  background: oklch(0.96 0.04 88);
-  color: var(--mc-gold-text);
-  font-size: 10px;
-  font-weight: 700;
-}
-.ui-keyboard-key__reference-badge::before {
-  content: "◆";
-  margin-right: 3px;
-  font-size: 8px;
-}
-.ui-keyboard-key[data-black="true"] .ui-keyboard-key__reference-badge {
-  top: 22px;
-  background: oklch(0.91 0.06 88);
-  color: var(--mc-gold-on);
-}
-
-.ui-keyboard-key[data-correct="true"]::before,
-.ui-keyboard-key[data-answered="true"]::after {
-  position: absolute;
-  left: 50%;
-  z-index: 4;
-  min-height: 22px;
-  padding: 2px 7px;
-  transform: translateX(-50%);
-  border-radius: var(--mc-radius-xs);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 16px;
-  white-space: nowrap;
+  inset: 0;
+  height: 124px;
   pointer-events: none;
 }
-.ui-keyboard-key[data-correct="true"]::before {
-  content: "○ 正解";
-  top: -34px;
-  border: 1px solid var(--mc-sage);
+.ui-keyboard-key[data-note],
+.ui-keyboard-key[data-black="true"][data-note] {
+  min-height: 204px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--mc-ink);
+  box-shadow: none;
+  transition: none;
+}
+.ui-keyboard-key[data-black="true"][data-note] {
+  min-height: 124px;
+  height: 124px;
+  width: max(44px, 12%);
+  margin-left: min(-22px, -6%);
+  color: oklch(0.96 0.004 90);
+  align-items: stretch;
+  justify-content: center;
+}
+.ui-keyboard-key__face {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 204px;
+  padding: 8px 0 16px;
+  overflow: hidden;
+  border: 1px solid var(--mc-line-strong);
+  border-radius: 0 0 8px 8px;
+  background: var(--mc-card);
+  color: var(--mc-ink);
+}
+.ui-keyboard-key[data-black="true"] .ui-keyboard-key__face {
+  width: 74%;
+  height: 124px;
+  padding-bottom: 8px;
+  border-color: oklch(0.3 0.01 90);
+  background: oklch(0.25 0.008 90);
+  color: oklch(0.96 0.004 90);
+  border-radius: 0 0 6px 6px;
+}
+.ui-keyboard-key[data-reference="true"] .ui-keyboard-key__face {
+  border-color: var(--mc-gold);
+}
+.ui-keyboard-key[data-correct="true"] .ui-keyboard-key__face {
+  border-color: var(--mc-sage);
+}
+.ui-keyboard-key[data-answered="true"] .ui-keyboard-key__face {
+  border-color: var(--mc-violet);
+}
+.ui-keyboard-key[data-note]:hover:not(:disabled) {
+  transform: none;
+}
+button.ui-keyboard-key:hover:not(:disabled) .ui-keyboard-key__face {
+  border-color: var(--mc-brand);
+}
+.ui-keyboard-key:disabled {
+  opacity: 0.55;
+  filter: none;
+}
+.ui-keyboard-key__label {
+  font-family: var(--mc-font-mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+.ui-keyboard-key__label--dual {
+  font-size: 12px;
+}
+.ui-keyboard-key[data-correct="true"]::before,
+.ui-keyboard-key[data-answered="true"]::after {
+  content: none;
+}
+.ui-keyboard-key__role,
+.ui-keyboard-key[data-note][data-labels] .ui-keyboard-key__reference-badge {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  padding: 0;
+  transform: translateX(-50%);
+  border: 0;
+  border-radius: 50%;
+  font-size: 15px;
+  line-height: 1;
+}
+.ui-keyboard-key__role[data-role="reference"],
+.ui-keyboard-key[data-note][data-labels] .ui-keyboard-key__reference-badge {
+  top: 126px;
+  bottom: auto;
+  background: oklch(0.96 0.04 88);
+  color: var(--mc-gold-text);
+}
+.ui-keyboard-key__role[data-role="correct"] {
+  top: 146px;
   background: oklch(0.95 0.04 138);
   color: var(--mc-sage-text);
 }
-.ui-keyboard-key[data-answered="true"]::after {
-  content: "△ 回答";
-  top: -58px;
-  border: 1px solid var(--mc-violet);
+.ui-keyboard-key__role[data-role="answered"] {
+  top: 166px;
   background: oklch(0.95 0.03 293);
   color: var(--mc-violet-text);
 }
-
+.ui-keyboard-key__reference-badge::before {
+  content: none;
+}
+.ui-keyboard-key[data-black="true"][data-note]
+  .ui-keyboard-key__role[data-role="reference"] {
+  top: 16px;
+  bottom: auto;
+}
+.ui-keyboard-key[data-black="true"]
+  .ui-keyboard-key__role[data-role="correct"] {
+  top: 36px;
+}
+.ui-keyboard-key[data-black="true"]
+  .ui-keyboard-key__role[data-role="answered"] {
+  top: 56px;
+}
+.ui-keyboard-key__bands {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  inset: auto 0 0;
+}
+.ui-keyboard-key__band {
+  height: 4px;
+}
+.ui-keyboard-key[data-black="true"] .ui-keyboard-key__bands {
+  inset: 0 0 auto;
+}
+.ui-keyboard-key__bands > [data-role="reference"] {
+  background: var(--mc-gold);
+}
+.ui-keyboard-key__bands > [data-role="correct"] {
+  background: var(--mc-sage);
+}
+.ui-keyboard-key__bands > [data-role="answered"] {
+  background: var(--mc-violet);
+}
+.ui-keyboard-legend {
+  justify-content: center;
+  gap: 12px;
+}
 .ui-keyboard-legend__item {
-  min-height: 28px;
-  padding-inline: 8px;
-  border: 1px solid var(--mc-line);
-  border-radius: var(--mc-radius-xs);
-  font-size: 10px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  font-size: 14px;
   font-weight: 700;
 }
 .ui-keyboard-legend__item[data-tone="reference"] {
-  background: oklch(0.96 0.04 88);
+  background: transparent;
   color: var(--mc-gold-text);
 }
 .ui-keyboard-legend__item[data-tone="reference"]::before {
@@ -875,7 +821,7 @@ body {
   margin-right: 4px;
 }
 .ui-keyboard-legend__item[data-tone="correct"] {
-  background: oklch(0.95 0.04 138);
+  background: transparent;
   color: var(--mc-sage-text);
 }
 .ui-keyboard-legend__item[data-tone="correct"]::before {
@@ -883,7 +829,7 @@ body {
   margin-right: 4px;
 }
 .ui-keyboard-legend__item[data-tone="answered"] {
-  background: oklch(0.95 0.03 293);
+  background: transparent;
   color: var(--mc-violet-text);
 }
 .ui-keyboard-legend__item[data-tone="answered"]::before {
