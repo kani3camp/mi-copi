@@ -577,3 +577,5 @@ Session results place the restart action immediately after the score and four ne
 Saved session details use ordinary UI-font rows for completion/save dates and neutral score metrics. Preserve all configuration rows and all answers in natural flow. Each answer has a compact problem/direction/reference/status header, stable correct/answer rows, then error/time. Keep distance's signed pitch comparison and keyboard's absolute error unchanged; musical keyboard names use Mono.
 
 Settings place all four global controls in one white surface. Keep auto-save, saving, failure/retry and guest-local meanings visible; use a quiet live status line for saved/guest state. Previous distance/keyboard conditions remain complete as flat label/value rows, and account identity/dates use wrapping UI text. Volume must have an associated label; all primary controls remain at least 44px high.
+
+- 出題設定は1つの白い面で、終了方法と回数/時間を同列に置く。範囲は最小/最大だけ2列、方向と基準音は全幅とし、回答候補は装飾なしで全件表示する。開始はフォーム末尾の通常フローに置き、設定・選択肢・初期値は省略しない。
