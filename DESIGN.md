@@ -366,6 +366,8 @@ Reference uses:
 - `基準` label
 - diamond cue
 
+Keep the Japanese role labels in a fixed legend beside the keyboard. Inside each key, use the corresponding shape and band; do not squeeze a Japanese badge into a narrow black key. Both black and white keys have a non-overlapping target region of at least 44×44px, even when the black key face is narrower.
+
 Do not fall back to a tiny strip that can be overlooked.
 
 ### 12.3 Feedback roles
@@ -389,7 +391,7 @@ Roles may overlap:
 
 Do not replace multiple meanings with one arbitrary color. Stack bands or otherwise preserve every applicable role.
 
-Labels may be vertically offset when adjacent keys would collide. Marker/label association should remain visually obvious.
+Keep role markers inside the key in separate slots when roles overlap. A fixed 14px legend names all roles without floating labels colliding across adjacent keys. Marker/label association should remain visually obvious.
 
 ### 12.5 Required Storybook coverage
 

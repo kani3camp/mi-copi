@@ -33,6 +33,8 @@ import {
 } from "../../ui/primitives";
 import {
   DistanceFeedbackDiagram,
+  FeedbackControls,
+  FeedbackMetrics,
   FeedbackStatusChip,
   formatFinishReasonLabel,
   MiniStatRow,
@@ -53,11 +55,9 @@ export function DistanceQuestionPanel(props: {
   onAnswer: (value: number) => void;
 }) {
   return (
-    <Surface tone="accent">
+    <Surface tone="accent" className="ui-question-panel">
       <SectionHeader
         title="音を聴いて答える"
-        description="再生ボタンで聞き直しながら、音程名をひとつ選びます。"
-        eyebrow={`問題 ${props.questionIndex + 1}`}
         actions={
           <Chip tone="neutral">
             {formatQuestionDirectionLabel(props.direction)}
@@ -141,10 +141,9 @@ export function DistanceFeedbackPanel(props: {
   );
 
   return (
-    <Surface tone="elevated">
+    <Surface tone="elevated" className="ui-feedback-panel">
       <SectionHeader
         title="フィードバック"
-        description="正解と回答の差を確認して、次の問題へ進みます。"
         actions={
           <FeedbackStatusChip
             errorSemitones={props.feedbackResult.errorSemitones}
@@ -168,48 +167,20 @@ export function DistanceFeedbackPanel(props: {
         answeredSemitones={props.feedbackResult.answeredDistanceSemitones}
       />
 
-      <SummaryBlock className="ui-feedback-metrics-block">
-        <SummaryStat
-          label="誤差"
-          value={formatPitchComparisonSemitoneLabel({
-            targetMidi: props.feedbackResult.question.targetMidi,
-            answerMidi,
-          })}
-        />
-        <SummaryStat
-          label="回答時間"
-          value={formatResponseTimeMsLabel(props.feedbackResult.responseTimeMs)}
-        />
-        <SummaryStat
-          label="スコア"
-          value={formatScoreLabel(props.feedbackResult.score)}
-        />
-      </SummaryBlock>
+      <FeedbackMetrics
+        targetMidi={props.feedbackResult.question.targetMidi}
+        answerMidi={answerMidi}
+        responseTimeMs={props.feedbackResult.responseTimeMs}
+        score={props.feedbackResult.score}
+      />
 
-      <div className="ui-sticky-actions">
-        <PlaybackButtonPair
-          isPlaybackLocked={false}
-          onReplayBase={props.onReplayBase}
-          onReplayTarget={props.onReplayCorrectTarget}
-          targetLabel="正解音"
-        />
-        <Button
-          type="button"
-          onClick={props.onContinue}
-          variant="primary"
-          block
-        >
-          {props.lastAnsweredWasFinal ? "結果を見る" : "次へ"}
-        </Button>
-        <Button
-          type="button"
-          onClick={props.onEndSession}
-          block
-          variant="ghost"
-        >
-          ここで終了
-        </Button>
-      </div>
+      <FeedbackControls
+        lastAnsweredWasFinal={props.lastAnsweredWasFinal}
+        onReplayBase={props.onReplayBase}
+        onReplayCorrectTarget={props.onReplayCorrectTarget}
+        onContinue={props.onContinue}
+        onEndSession={props.onEndSession}
+      />
     </Surface>
   );
 }

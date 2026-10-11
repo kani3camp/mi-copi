@@ -1,9 +1,19 @@
 import type { ReactNode } from "react";
-
+import {
+  formatResponseTimeMsLabel,
+  formatScoreLabel,
+} from "../../features/training/model/format";
+import { formatPitchComparisonSemitoneLabel } from "../../features/training/model/interval-notation";
 import type { SessionFinishReason } from "../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
 import { ButtonLink } from "../ui/navigation-link";
-import { Button, Chip, Notice } from "../ui/primitives";
+import {
+  Button,
+  Chip,
+  Notice,
+  SummaryBlock,
+  SummaryStat,
+} from "../ui/primitives";
 import { getDistanceFeedbackStatus } from "./distance-feedback-status";
 import { getTrainingResultSaveStatusViewModel } from "./training-result-save-status";
 
@@ -135,6 +145,76 @@ export function FeedbackStatusChip(props: { errorSemitones: number }) {
         <span aria-hidden="true">{symbol}</span>
         <span>{status.label}</span>
       </Chip>
+    </div>
+  );
+}
+
+export function FeedbackMetrics(props: {
+  targetMidi: number;
+  answerMidi: number;
+  responseTimeMs: number;
+  score: number;
+}) {
+  const errorLabel = formatPitchComparisonSemitoneLabel(props);
+  const [errorValue, errorMeaning] = errorLabel.split("半音");
+  const timeValue = formatResponseTimeMsLabel(props.responseTimeMs).replace(
+    / ms$/,
+    "",
+  );
+  return (
+    <SummaryBlock className="ui-feedback-metrics-block">
+      <SummaryStat
+        label="誤差"
+        value={
+          <>
+            <span className="ui-feedback-number">{errorValue}</span>
+            <span className="ui-feedback-unit">半音</span>
+          </>
+        }
+        detail={errorMeaning}
+      />
+      <SummaryStat
+        label="回答時間"
+        value={
+          <>
+            <span className="ui-feedback-number">{timeValue}</span>
+            <span className="ui-feedback-unit"> ms</span>
+          </>
+        }
+      />
+      <SummaryStat
+        label="スコア"
+        value={
+          <span className="ui-feedback-number">
+            {formatScoreLabel(props.score)}
+          </span>
+        }
+      />
+    </SummaryBlock>
+  );
+}
+
+export function FeedbackControls(props: {
+  onReplayBase: () => void;
+  onReplayCorrectTarget: () => void;
+  onContinue: () => void;
+  onEndSession: () => void;
+  lastAnsweredWasFinal: boolean;
+}) {
+  return (
+    <div className="ui-sticky-actions ui-feedback-controls">
+      <PlaybackButtonPair
+        isPlaybackLocked={false}
+        onReplayBase={props.onReplayBase}
+        onReplayTarget={props.onReplayCorrectTarget}
+        targetLabel="正解音"
+      />
+      <Button type="button" onClick={props.onContinue} variant="primary" block>
+        {props.lastAnsweredWasFinal ? "結果を見る" : "次へ"}
+      </Button>
+      <Button type="button" onClick={props.onEndSession} block variant="ghost">
+        ここで終了
+      </Button>
     </div>
   );
 }
