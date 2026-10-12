@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { expect, userEvent, within } from "storybook/test";
+import { expect, fireEvent, userEvent, within } from "storybook/test";
 
 import { AppShell, GraphCard } from "../ui/primitives";
 import { MetricBarChart, MetricLineChart } from "./stats-charts";
@@ -9,12 +9,13 @@ import { createScoreTrendOptions } from "./stats-view-model";
 
 const denseLinePoints = Array.from({ length: 10 }, (_, index) => {
   const day = `${index + 1}`.padStart(2, "0");
+  const value = 72 + index * 2 + (index % 3);
 
   return {
     key: `2026-03-${day}`,
     label: `3/${day}`,
-    assistiveLabel: `2026-03-${day} 平均スコア ${72 + index}`,
-    value: 72 + index * 2 + (index % 3),
+    assistiveLabel: `2026-03-${day} 平均スコア ${value}`,
+    value,
   };
 });
 
@@ -183,6 +184,39 @@ export const LineChartMobileDense: Story = {
     await expect(
       visibleLabels.map((label) => label.textContent?.trim()),
     ).toEqual(["3/01", "3/04", "3/07", "3/10"]);
+
+    const slider = canvas.getByRole("slider");
+    const detail = requireElement<HTMLElement>(
+      canvasElement,
+      ".ui-chart-point-detail p",
+    );
+    await expect(detail).toHaveTextContent("2026-03-10 平均スコア 90");
+    await expect(canvas.getByRole("button", { name: "次の点" })).toBeDisabled();
+    await userEvent.click(canvas.getByRole("button", { name: "前の点" }));
+    await expect(detail).toHaveTextContent("2026-03-09 平均スコア 90");
+
+    fireEvent.change(slider, { target: { value: "1" } });
+    await expect(detail).toHaveTextContent("2026-03-02 平均スコア 75");
+    await expect(slider).toHaveAttribute("aria-valuetext", detail.textContent);
+    fireEvent.change(slider, { target: { value: "9" } });
+    await expect(detail).toHaveTextContent("2026-03-10");
+
+    const rect = slider.getBoundingClientRect();
+    // Touch an interior point whose axis date is omitted.
+    const clientX = rect.left + rect.width * (0.04 + (2 / 9) * 0.92);
+    fireEvent.pointerDown(slider, { clientX, pointerType: "touch" });
+    fireEvent.pointerUp(slider, { clientX, pointerType: "touch" });
+    await expect(detail).toHaveTextContent("2026-03-03 平均スコア 78");
+    fireEvent.pointerMove(slider, {
+      clientX: rect.left + rect.width * 0.04,
+      pointerType: "mouse",
+      buttons: 0,
+    });
+    await expect(detail).toHaveTextContent("2026-03-01 平均スコア 72");
+    await expect(canvas.getByRole("button", { name: "前の点" })).toBeDisabled();
+    await expect(canvasElement.scrollWidth).toBeLessThanOrEqual(
+      canvasElement.clientWidth,
+    );
   },
 };
 
@@ -220,6 +254,10 @@ export const LineChartSinglePoint: Story = {
     const labelCenter = labelRect.left + labelRect.width / 2;
 
     await expect(Math.abs(plotCenter - labelCenter)).toBeLessThanOrEqual(1);
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("slider")).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "前の点" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "次の点" })).toBeDisabled();
   },
 };
 
@@ -237,7 +275,35 @@ export const ScoreTrendModeSwitch: Story = {
     await expect(canvas.getByLabelText("全体")).toBeChecked();
     await userEvent.click(keyboardOptionLabel);
     await expect(keyboardOption).toBeChecked();
-    await expect(canvas.getByText(/鍵盤モード 平均スコア/)).toBeInTheDocument();
+    await expect(canvas.getByRole("slider")).toHaveAttribute(
+      "aria-valuetext",
+      expect.stringContaining("鍵盤モード 平均スコア"),
+    );
+  },
+};
+
+export const ScoreTrendEmptyMode: Story = {
+  render: () => (
+    <GraphCard title="スコア推移">
+      <StatsTrendSwitch
+        options={scoreTrendOptions.map((option) =>
+          option.id === "keyboard" ? { ...option, points: [] } : option,
+        )}
+      />
+    </GraphCard>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByText("鍵盤"));
+    await expect(canvas.queryByRole("slider")).toBeNull();
+    await expect(
+      canvas.getByText("表示できるデータはまだありません。"),
+    ).toBeVisible();
+    await userEvent.click(canvas.getByText("全体"));
+    await expect(canvas.getByRole("slider")).toHaveAttribute(
+      "aria-valuetext",
+      expect.stringContaining("全体 平均スコア"),
+    );
   },
 };
 

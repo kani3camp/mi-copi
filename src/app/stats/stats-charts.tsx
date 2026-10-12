@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 
 import { ScreenReaderText } from "../ui/primitives";
+import { LineChartInspector } from "./stats-line-chart-inspector";
 
 export type ChartPoint = {
   key: string | number;
@@ -65,61 +66,68 @@ export function MetricLineChart(props: {
         title={props.title}
         visibility={props.titleVisibility ?? "visible"}
       />
-      <div className="ui-line-chart">
-        <div className="ui-line-chart__axis">
-          <span>{props.valueFormatter(maxValue)}</span>
-          <span>{props.valueFormatter(minValue)}</span>
-        </div>
-        <div className="ui-line-chart__plot" aria-hidden="true">
-          <svg
-            viewBox="0 0 100 72"
-            preserveAspectRatio="none"
-            className="ui-line-chart__svg"
-            aria-hidden="true"
-          >
-            <line
-              x1="0"
-              y1="16"
-              x2="100"
-              y2="16"
-              className="ui-line-chart__grid"
-            />
-            <line
-              x1="0"
-              y1="40"
-              x2="100"
-              y2="40"
-              className="ui-line-chart__grid"
-            />
-            <line
-              x1="0"
-              y1="64"
-              x2="100"
-              y2="64"
-              className="ui-line-chart__grid"
-            />
-            <polyline
-              points={polylinePoints}
-              className="ui-line-chart__polyline"
-            />
-          </svg>
-          <div className="ui-line-chart__dots">
-            {positions.map((point) => (
-              <span
-                key={point.key}
-                className="ui-line-chart__dot"
-                style={
-                  {
-                    left: `${point.x}%`,
-                    top: `${(point.y / 72) * 100}%`,
-                  } as CSSProperties
-                }
+      <LineChartInspector
+        key={props.title}
+        title={props.title}
+        points={positions}
+        axis={
+          <>
+            <span>{props.valueFormatter(maxValue)}</span>
+            <span>{props.valueFormatter(minValue)}</span>
+          </>
+        }
+        labels={<ChartLabelRow labels={positions} />}
+        plot={
+          <>
+            <svg
+              viewBox="0 0 100 72"
+              preserveAspectRatio="none"
+              className="ui-line-chart__svg"
+              aria-hidden="true"
+            >
+              <line
+                x1="0"
+                y1="16"
+                x2="100"
+                y2="16"
+                className="ui-line-chart__grid"
               />
-            ))}
-          </div>
-        </div>
-      </div>
-      <ChartLabelRow labels={positions} />
+              <line
+                x1="0"
+                y1="40"
+                x2="100"
+                y2="40"
+                className="ui-line-chart__grid"
+              />
+              <line
+                x1="0"
+                y1="64"
+                x2="100"
+                y2="64"
+                className="ui-line-chart__grid"
+              />
+              <polyline
+                points={polylinePoints}
+                className="ui-line-chart__polyline"
+              />
+            </svg>
+            <div className="ui-line-chart__dots" aria-hidden="true">
+              {positions.map((point) => (
+                <span
+                  key={point.key}
+                  className="ui-line-chart__dot"
+                  style={
+                    {
+                      left: `${point.x}%`,
+                      top: `${(point.y / 72) * 100}%`,
+                    } as CSSProperties
+                  }
+                />
+              ))}
+            </div>
+          </>
+        }
+      />
       <ScreenReaderText as="p">
         {props.points.map((point) => point.assistiveLabel).join("、")}
       </ScreenReaderText>
