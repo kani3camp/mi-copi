@@ -120,9 +120,14 @@ const scoreTrendOptions = createScoreTrendOptions({
 const meta = {
   title: "Stats/Charts",
   decorators: [
-    (Story) => (
-      <AppShell narrow>
-        <div style={{ width: 320, margin: "0 auto" }}>
+    (Story, context) => (
+      <AppShell narrow={!context.parameters.chartFullWidth}>
+        <div
+          style={{
+            width: context.parameters.chartFullWidth ? "100%" : 320,
+            margin: "0 auto",
+          }}
+        >
           <Story />
         </div>
       </AppShell>
@@ -411,3 +416,27 @@ function expectBarLabelsNotToOverlap(labels: HTMLElement[]) {
     expect(currentRect.right).toBeLessThanOrEqual(nextRect.left + 1);
   }
 }
+
+export const LineChartSteepSegments: Story = {
+  parameters: { chartFullWidth: true },
+  render: () => (
+    <>
+      {(["brand", "teal", "coral", "blue"] as const).map((tone) => (
+        <GraphCard key={tone} title={`折れ線の線幅確認 (${tone})`}>
+          <MetricLineChart
+            title="水平・急上昇・急下降"
+            titleVisibility="sr-only"
+            tone={tone}
+            valueFormatter={(value) => `${value}`}
+            points={[30, 30, 85, 32, 31, 30, 90, 30].map((value, index) => ({
+              key: index,
+              label: `${index + 1}`,
+              assistiveLabel: `${index + 1}番目 ${value}`,
+              value,
+            }))}
+          />
+        </GraphCard>
+      ))}
+    </>
+  ),
+};

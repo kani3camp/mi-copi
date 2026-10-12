@@ -1707,7 +1707,8 @@ button,
 .ui-line-chart__polyline {
   fill: none;
   stroke: var(--brand-primary);
-  stroke-width: 2.4;
+  stroke-width: 2.4px;
+  vector-effect: non-scaling-stroke;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
