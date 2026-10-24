@@ -25,11 +25,12 @@ jobs:
         with:
           node-version-file: .nvmrc
       - name: Update framework and authentication
-        run: npm install --save-exact next@16.4.3 react@19.3.0 react-dom@19.3.0 better-auth@1.7.12
+        run: npm install --save-exact next@16.4.3 react@19.3.0 react-dom@19.3.0 better-auth@1.7.12 drizzle-orm@0.45.4
       - name: Update development tooling security patches
         run: |
           npm install --save-dev --save-exact \
             @better-auth/cli@1.7.12 \
+            drizzle-kit@0.31.11 \
             @storybook/addon-a11y@10.6.3 \
             @storybook/addon-vitest@10.6.3 \
             @storybook/nextjs-vite@10.6.3 \
