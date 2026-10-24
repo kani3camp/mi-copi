@@ -24,21 +24,34 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - name: Update framework and authentication
-        run: npm install --save-exact next@16.4.3 react@19.3.0 react-dom@19.3.0 better-auth@1.7.12 drizzle-orm@0.45.4
-      - name: Update development tooling security patches
+      - name: Pin compatible stable security releases
         run: |
-          npm install --save-dev --save-exact \
-            @better-auth/cli@1.7.12 \
-            drizzle-kit@0.31.11 \
-            @storybook/addon-a11y@10.6.3 \
-            @storybook/addon-vitest@10.6.3 \
-            @storybook/nextjs-vite@10.6.3 \
-            storybook@10.6.3 \
-            vite@7.3.7 \
-            vitest@4.1.12 \
-            @vitest/browser-playwright@4.1.12 \
-            @vitest/coverage-v8@4.1.12
+          node <<'NODE'
+          const fs = require('node:fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          Object.assign(pkg.dependencies, {
+            'next': '16.4.3',
+            'react': '19.3.0',
+            'react-dom': '19.3.0',
+            'better-auth': '1.7.12',
+            'drizzle-orm': '0.45.4'
+          });
+          Object.assign(pkg.devDependencies, {
+            '@better-auth/cli': '1.7.12',
+            'drizzle-kit': '0.31.11',
+            '@storybook/addon-a11y': '10.6.3',
+            '@storybook/addon-vitest': '10.6.3',
+            '@storybook/nextjs-vite': '10.6.3',
+            'storybook': '10.6.3',
+            'vite': '7.3.7',
+            'vitest': '4.1.12',
+            '@vitest/browser-playwright': '4.1.12',
+            '@vitest/coverage-v8': '4.1.12'
+          });
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          NODE
+      - name: Install all updated dependencies as one peer-compatible set
+        run: npm install
       - name: Upgrade existing compatible dependency ranges
         run: npm update
       - name: Report remaining outdated dependencies
