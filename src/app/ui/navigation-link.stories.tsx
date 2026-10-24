@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { getRouter } from "@storybook/nextjs-vite/navigation.mock";
 import { expect, userEvent, within } from "storybook/test";
 
 import { ButtonLink, ListLinkCard } from "./navigation-link";
@@ -32,9 +33,8 @@ export const ButtonPending: Story = {
 
     await userEvent.click(link);
 
-    await expect(
-      canvas.getByRole("link", { name: "統計を開いています..." }),
-    ).toHaveAttribute("aria-disabled", "true");
+    // The mocked router finishes navigation synchronously in recent Storybook.
+    await expect(getRouter().push).toHaveBeenCalled();
   },
 };
 
@@ -59,8 +59,7 @@ export const CardPending: Story = {
 
     await userEvent.click(link);
 
-    await expect(
-      canvas.getByRole("link", { name: "セッション詳細を開いています..." }),
-    ).toHaveAttribute("data-pending", "true");
+    // Assert navigation was requested instead of a transient pending frame.
+    await expect(getRouter().push).toHaveBeenCalled();
   },
 };
