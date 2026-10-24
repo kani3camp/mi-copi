@@ -1,11 +1,25 @@
 import type { ReactNode } from "react";
-
+import {
+  formatAccuracyLabel,
+  formatAvgErrorLabel,
+  formatResponseTimeMsLabel,
+  formatScoreLabel,
+} from "../../features/training/model/format";
+import { formatPitchComparisonSemitoneLabel } from "../../features/training/model/interval-notation";
 import type { SessionFinishReason } from "../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../features/training/server/saveTrainingSession";
-import { getTrainingResultSaveErrorMessage } from "../../lib/async-action-errors";
+import { MetricValue } from "../ui/metric-value";
 import { ButtonLink } from "../ui/navigation-link";
-import { Button, Chip, Notice } from "../ui/primitives";
+import {
+  Button,
+  Chip,
+  Notice,
+  SectionHeader,
+  SummaryBlock,
+  SummaryStat,
+} from "../ui/primitives";
 import { getDistanceFeedbackStatus } from "./distance-feedback-status";
+import { getTrainingResultSaveStatusViewModel } from "./training-result-save-status";
 
 export {
   confirmManualSessionEnd,
@@ -42,13 +56,18 @@ export function PlaybackButtonPair(props: {
   targetLabel?: string;
 }) {
   return (
-    <div className="ui-playback-pair">
+    <div
+      className="ui-playback-pair"
+      data-active={props.isPlaybackLocked ? "true" : "false"}
+    >
       <PlaybackButton
         label="基準音"
+        active={props.isPlaybackLocked}
         disabled={props.isPlaybackLocked}
         onClick={props.onReplayBase}
       />
       <PlaybackButton
+        active={props.isPlaybackLocked}
         label={props.targetLabel ?? "問題音"}
         disabled={props.isPlaybackLocked}
         onClick={props.onReplayTarget}
@@ -58,6 +77,7 @@ export function PlaybackButtonPair(props: {
 }
 
 function PlaybackButton(props: {
+  active: boolean;
   label: string;
   disabled: boolean;
   onClick: () => void;
@@ -68,6 +88,7 @@ function PlaybackButton(props: {
       onClick={props.onClick}
       disabled={props.disabled}
       className="ui-playback-button"
+      data-active={props.active ? "true" : "false"}
       aria-label={`${props.label}を再生`}
     >
       <span className="ui-playback-button__icon" aria-hidden="true">
@@ -82,7 +103,7 @@ function PlaybackButton(props: {
       <span className="ui-playback-button__label">{props.label}</span>
       <span
         className="ui-playback-button__state"
-        data-active="false"
+        data-active={props.active ? "true" : "false"}
         aria-hidden="true"
       >
         <span />
@@ -98,7 +119,7 @@ export function MiniStatRow(props: {
     id: string;
     label: ReactNode;
     value: ReactNode;
-    tone?: "neutral" | "teal" | "amber" | "coral" | "blue";
+    tone?: "neutral" | "brand" | "teal" | "amber" | "coral" | "blue";
   }>;
 }) {
   return (
@@ -119,15 +140,156 @@ export function MiniStatRow(props: {
 
 export function FeedbackStatusChip(props: { errorSemitones: number }) {
   const status = getDistanceFeedbackStatus(props.errorSemitones);
+  const symbol =
+    status.label === "正解" ? "○" : status.label === "惜しい" ? "≈" : "×";
 
   return (
     <div className="ui-feedback-status">
-      <Chip tone={status.tone}>{status.label}</Chip>
+      <Chip tone={status.tone}>
+        <span aria-hidden="true">{symbol}</span>
+        <span>{status.label}</span>
+      </Chip>
+    </div>
+  );
+}
+
+export function FeedbackMetrics(props: {
+  targetMidi: number;
+  answerMidi: number;
+  responseTimeMs: number;
+  score: number;
+}) {
+  const errorLabel = formatPitchComparisonSemitoneLabel(props);
+  const [errorValue, errorMeaning] = errorLabel.split("半音");
+  const timeValue = formatResponseTimeMsLabel(props.responseTimeMs).replace(
+    / ms$/,
+    "",
+  );
+  return (
+    <SummaryBlock className="ui-feedback-metrics-block">
+      <SummaryStat
+        label="誤差"
+        value={
+          <>
+            <span className="ui-feedback-number">{errorValue}</span>
+            <span className="ui-feedback-unit">半音</span>
+          </>
+        }
+        detail={errorMeaning}
+      />
+      <SummaryStat
+        label="回答時間"
+        value={
+          <>
+            <span className="ui-feedback-number">{timeValue}</span>
+            <span className="ui-feedback-unit"> ms</span>
+          </>
+        }
+      />
+      <SummaryStat
+        label="スコア"
+        value={
+          <span className="ui-feedback-number">
+            {formatScoreLabel(props.score)}
+          </span>
+        }
+      />
+    </SummaryBlock>
+  );
+}
+
+export function FeedbackControls(props: {
+  onReplayBase: () => void;
+  onReplayCorrectTarget: () => void;
+  onContinue: () => void;
+  onEndSession: () => void;
+  lastAnsweredWasFinal: boolean;
+}) {
+  return (
+    <div className="ui-sticky-actions ui-feedback-controls">
+      <PlaybackButtonPair
+        isPlaybackLocked={false}
+        onReplayBase={props.onReplayBase}
+        onReplayTarget={props.onReplayCorrectTarget}
+        targetLabel="正解音"
+      />
+      <Button type="button" onClick={props.onContinue} variant="primary" block>
+        {props.lastAnsweredWasFinal ? "結果を見る" : "次へ"}
+      </Button>
+      <Button type="button" onClick={props.onEndSession} block variant="ghost">
+        ここで終了
+      </Button>
     </div>
   );
 }
 
 export { DistanceFeedbackDiagram } from "./distance-feedback-diagram-svg";
+
+export function TrainingResultSummary(props: {
+  summary: {
+    sessionScore: number;
+    questionCount: number;
+    accuracyRate: number;
+    avgErrorAbs: number;
+    avgResponseTimeMs: number;
+  };
+  finishReason: SessionFinishReason | null;
+  cannotSaveBecauseNoAnswers: boolean;
+  onReset: () => void;
+}) {
+  return (
+    <>
+      <SectionHeader title="結果" />
+      <div className="ui-result-hero">
+        <span className="ui-result-hero__label">セッションスコア</span>
+        <strong className="ui-result-hero__value">
+          {formatScoreLabel(props.summary.sessionScore)}
+        </strong>
+        <div className="ui-result-hero__meta">
+          <Chip tone="neutral">
+            {formatFinishReasonLabel(props.finishReason)}
+          </Chip>
+        </div>
+      </div>
+      <SummaryBlock className="ui-result-stats-block">
+        <SummaryStat
+          label="正答率"
+          value={
+            <MetricValue
+              value={formatAccuracyLabel(props.summary.accuracyRate)}
+            />
+          }
+        />
+        <SummaryStat
+          label="回答数"
+          value={<MetricValue value={props.summary.questionCount} unit="問" />}
+        />
+        <SummaryStat
+          label="平均誤差"
+          value={
+            <MetricValue
+              value={formatAvgErrorLabel(props.summary.avgErrorAbs)}
+              unit="半音"
+            />
+          }
+        />
+        <SummaryStat
+          label="平均回答時間"
+          value={
+            <MetricValue
+              value={formatResponseTimeMsLabel(props.summary.avgResponseTimeMs)}
+            />
+          }
+        />
+      </SummaryBlock>
+      <Button type="button" onClick={props.onReset} block variant="primary">
+        {props.cannotSaveBecauseNoAnswers
+          ? "新しいセッションを始める"
+          : "もう一度始める"}
+      </Button>
+    </>
+  );
+}
 
 export function TrainingResultPersistenceSection(props: {
   isAuthenticated: boolean;
@@ -139,10 +301,8 @@ export function TrainingResultPersistenceSection(props: {
 }) {
   if (!props.isAuthenticated) {
     return (
-      <div className="ui-stack-md">
-        <Notice tone="warning">
-          ゲスト利用のため、この結果は保存されません。
-        </Notice>
+      <div className="ui-stack-md ui-result-persistence">
+        <Notice>ゲスト利用のため、この結果は保存されません。</Notice>
         <p className="ui-subtitle">
           ログインすると、次回以降のセッションから結果保存と統計を使えます。この結果は後から保存されません。
         </p>
@@ -162,46 +322,40 @@ export function TrainingResultPersistenceSection(props: {
     return null;
   }
 
+  const status = getTrainingResultSaveStatusViewModel({
+    canSaveResult: props.canSaveResult,
+    isSavePending: props.isSavePending,
+    saveResult: props.saveResult,
+  });
+
   return (
-    <>
-      <Notice
-        tone={
-          props.saveResult?.ok
-            ? "success"
-            : props.saveResult
-              ? "error"
-              : props.canSaveResult
-                ? "info"
-                : "error"
-        }
-      >
-        {props.saveResult?.ok ? (
-          <div className="ui-stack-md">
-            <div>結果を自動保存しました。</div>
-            <div className="ui-nav-row">
-              <ButtonLink
-                href={`/sessions/${props.saveResult.sessionId}`}
-                pendingLabel="セッション詳細を開いています..."
-              >
-                セッション詳細を見る
-              </ButtonLink>
-              <ButtonLink href="/stats" pendingLabel="統計を開いています...">
-                統計を見る
-              </ButtonLink>
-            </div>
-          </div>
-        ) : props.saveResult ? (
-          <div>{getSaveFailureMessage(props.saveResult)}</div>
-        ) : props.canSaveResult ? (
-          <div>
-            {props.isSavePending
-              ? "結果を自動保存しています..."
-              : "保存の準備をしています..."}
-          </div>
-        ) : (
-          <div>セッション情報が不足しているため保存できません。</div>
-        )}
-      </Notice>
+    <div className="ui-result-save-card" data-tone={status.tone}>
+      <div className="ui-result-save-card__header">
+        <Chip tone={status.tone === "success" ? "neutral" : status.tone}>
+          {status.label}
+        </Chip>
+        <strong className="ui-result-save-card__title">{status.title}</strong>
+      </div>
+      <p className="ui-result-save-card__message">{status.message}</p>
+
+      {props.saveResult?.ok ? (
+        <div className="ui-nav-row">
+          <ButtonLink
+            href={`/sessions/${props.saveResult.sessionId}`}
+            pendingLabel="セッション詳細を開いています..."
+            variant="secondary"
+          >
+            セッション詳細を見る
+          </ButtonLink>
+          <ButtonLink
+            href="/stats"
+            pendingLabel="統計を開いています..."
+            variant="secondary"
+          >
+            統計を見る
+          </ButtonLink>
+        </div>
+      ) : null}
 
       {props.saveResult && !props.saveResult.ok && props.canSaveResult ? (
         <div className="ui-action-row">
@@ -216,12 +370,6 @@ export function TrainingResultPersistenceSection(props: {
           </Button>
         </div>
       ) : null}
-    </>
+    </div>
   );
-}
-
-function getSaveFailureMessage(
-  result: Extract<SaveTrainingSessionResult, { ok: false }>,
-): string {
-  return getTrainingResultSaveErrorMessage(result);
 }

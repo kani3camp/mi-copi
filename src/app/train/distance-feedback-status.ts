@@ -1,8 +1,8 @@
 import { getTrainingAnswerFeedbackKind } from "../../features/training/model/feedback.ts";
 
 export interface DistanceFeedbackStatus {
-  label: "完全一致" | "惜しい" | "ずれあり";
-  tone: "brand" | "amber" | "coral";
+  label: "正解" | "惜しい" | "不正解";
+  tone: "success" | "warning" | "error";
 }
 
 export function getDistanceFeedbackStatus(
@@ -11,18 +11,18 @@ export function getDistanceFeedbackStatus(
   switch (getTrainingAnswerFeedbackKind(errorSemitones)) {
     case "correct":
       return {
-        label: "完全一致",
-        tone: "brand",
+        label: "正解",
+        tone: "success",
       };
     case "close":
       return {
         label: "惜しい",
-        tone: "amber",
+        tone: "warning",
       };
     default:
       return {
-        label: "ずれあり",
-        tone: "coral",
+        label: "不正解",
+        tone: "error",
       };
   }
 }

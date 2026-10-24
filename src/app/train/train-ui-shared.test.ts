@@ -18,6 +18,9 @@ const { buildDistanceFeedbackDiagramSteps } = await import(
 const { getDistanceFeedbackStatus } = await import(
   new URL("./distance-feedback-status.ts", import.meta.url).href
 );
+const { getTrainingResultSaveStatusViewModel } = await import(
+  new URL("./training-result-save-status.ts", import.meta.url).href
+);
 
 test("distance feedback diagram keeps the base note on the left for upward questions", () => {
   const labels = buildDistanceFeedbackDiagramSteps({
@@ -297,21 +300,77 @@ test("distance feedback layout input: 13 steps and valid indices at range edge",
 
 test("distance feedback status does not infer reverse direction for distance mode", () => {
   assert.deepEqual(getDistanceFeedbackStatus(0), {
-    label: "完全一致",
-    tone: "brand",
+    label: "正解",
+    tone: "success",
   });
 });
 
 test("distance feedback status marks one semitone error as close", () => {
   assert.deepEqual(getDistanceFeedbackStatus(-1), {
     label: "惜しい",
-    tone: "amber",
+    tone: "warning",
   });
 });
 
 test("distance feedback status marks larger errors without direction language", () => {
   assert.deepEqual(getDistanceFeedbackStatus(2), {
-    label: "ずれあり",
-    tone: "coral",
+    label: "不正解",
+    tone: "error",
   });
+});
+
+test("training result save status exposes explicit saving state", () => {
+  assert.deepEqual(
+    getTrainingResultSaveStatusViewModel({
+      canSaveResult: true,
+      isSavePending: true,
+      saveResult: null,
+    }),
+    {
+      tone: "info",
+      label: "保存中",
+      title: "結果を保存しています...",
+      message: "この画面のまま待つと、そのまま保存状態が更新されます。",
+    },
+  );
+});
+
+test("training result save status exposes explicit failure state", () => {
+  assert.deepEqual(
+    getTrainingResultSaveStatusViewModel({
+      canSaveResult: true,
+      isSavePending: false,
+      saveResult: {
+        ok: false,
+        code: "SAVE_FAILED",
+        message: "Failed to persist the training session.",
+      },
+    }),
+    {
+      tone: "error",
+      label: "保存失敗",
+      title: "結果を保存できませんでした。",
+      message: "結果を保存できませんでした。結果画面のまま再試行できます。",
+    },
+  );
+});
+
+test("training result save status exposes explicit saved state", () => {
+  assert.deepEqual(
+    getTrainingResultSaveStatusViewModel({
+      canSaveResult: true,
+      isSavePending: false,
+      saveResult: {
+        ok: true,
+        sessionId: "session-1",
+        savedQuestionCount: 3,
+      },
+    }),
+    {
+      tone: "success",
+      label: "保存済み",
+      title: "結果を自動保存しました。",
+      message: "セッション詳細と統計から、今回の結果をすぐ確認できます。",
+    },
+  );
 });

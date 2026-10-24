@@ -1,0 +1,35 @@
+.comparison {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+.comparison > div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+}
+.comparison dt {
+  font-family: var(--mc-font-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+.comparison dd {
+  margin: 0;
+  color: var(--mc-ink);
+  font-family: var(--mc-font-text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.correct dt {
+  color: var(--mc-sage-text);
+}
+.answer dt {
+  color: var(--mc-violet-text);
+}
+
+.notes dd {
+  font-family: var(--mc-font-mono);
+}

@@ -4,14 +4,12 @@ import { useCallback, useReducer, useRef, useState } from "react";
 
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
 import { useTrainingSessionCore } from "../../../features/training/client/use-training-session-core";
-import { TRAINING_CONFIG_LIMITS } from "../../../features/training/model/config";
 import { getTrainingModeTone } from "../../../features/training/model/format";
-import { formatDirectionModeLabel } from "../../../features/training/model/interval-notation";
 import { distanceTrainingSessionAdapter } from "../../../features/training/model/modes/distance-session-adapter";
 import type {
   DistanceTrainingConfig,
-  NoteClass,
   SaveTrainingSessionInput,
+  SessionPhase,
 } from "../../../features/training/model/types";
 import type { DistanceTrainingPageBootstrap } from "../../../features/training/server/getTrainingPageBootstrap";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
@@ -20,21 +18,13 @@ import {
   getTrainingConfigPersistErrorMessage,
 } from "../../../lib/async-action-errors";
 import { ButtonLink } from "../../ui/navigation-link";
-import {
-  AppShell,
-  Button,
-  Chip,
-  Field,
-  FieldGrid,
-  Notice,
-  SectionHeader,
-  Surface,
-} from "../../ui/primitives";
+import { AppShell, Notice, SectionHeader, Surface } from "../../ui/primitives";
 import { confirmManualSessionEnd } from "../train-ui-shared";
 import {
   type DistanceTrainingConfigAction,
   reduceDistanceTrainingConfig,
 } from "../training-config-form-state";
+import { TrainingConfigPanel } from "../training-config-panel";
 import { TrainingProgressHeader } from "../training-page-shell";
 import { useTrainingRouteBootstrap } from "../training-route-bootstrap";
 import {
@@ -43,21 +33,6 @@ import {
   DistanceResultPanel,
 } from "./distance-train-panels";
 import { buildDistanceTrainViewModel } from "./distance-train-presenter";
-
-const NOTE_CLASS_OPTIONS: NoteClass[] = [
-  "C",
-  "C#",
-  "D",
-  "D#",
-  "E",
-  "F",
-  "F#",
-  "G",
-  "G#",
-  "A",
-  "A#",
-  "B",
-];
 
 interface DistanceTrainClientProps {
   hasStoredConfig: boolean;
@@ -192,8 +167,16 @@ export function DistanceTrainClient({
       <TrainingProgressHeader
         modeLabel="距離モード"
         modeTone={getTrainingModeTone("distance")}
-        questionLabel={viewModel.questionLabel}
-        meta={viewModel.headerMeta}
+        questionLabel={
+          session.phase === "config" ? undefined : viewModel.questionLabel
+        }
+        meta={
+          <DistanceTrainingHeaderMeta
+            phase={session.phase}
+            runningScoreLabel={viewModel.runningScoreLabel}
+            statusLabel={viewModel.headerMeta}
+          />
+        }
         actions={
           <ButtonLink
             href="/"
@@ -212,220 +195,18 @@ export function DistanceTrainClient({
       ) : null}
 
       {session.phase === "config" ? (
-        <Surface tone="accent">
-          <SectionHeader
-            title="出題設定"
-            description="必要な設定だけを整えて、そのまま開始します。"
-          />
-          <div className="ui-form-layout">
-            <div className="ui-form-section">
-              <h3 className="ui-form-section__title">終了条件</h3>
-              <FieldGrid>
-                <Field label="終了方法">
-                  <select
-                    className="ui-select"
-                    onChange={(event) =>
-                      dispatchConfigAction({
-                        type: "set_end_condition_type",
-                        value: event.target.value,
-                      })
-                    }
-                    value={config.endCondition.type}
-                  >
-                    <option value="question_count">問題数</option>
-                    <option value="time_limit">制限時間</option>
-                  </select>
-                </Field>
-                {config.endCondition.type === "question_count" ? (
-                  <Field label="問題数">
-                    <select
-                      className="ui-select"
-                      onChange={(event) =>
-                        dispatchConfigAction({
-                          type: "set_question_count",
-                          value: event.target.value,
-                        })
-                      }
-                      value={config.endCondition.questionCount}
-                    >
-                      {viewModel.questionCountOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option} 問
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                ) : (
-                  <Field label="制限時間（秒）">
-                    <select
-                      className="ui-select"
-                      onChange={(event) =>
-                        dispatchConfigAction({
-                          type: "set_time_limit_seconds",
-                          value: event.target.value,
-                        })
-                      }
-                      value={config.endCondition.timeLimitSeconds}
-                    >
-                      {viewModel.timeLimitOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option} 秒
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                )}
-              </FieldGrid>
-            </div>
-
-            <div className="ui-form-section">
-              <h3 className="ui-form-section__title">出題範囲</h3>
-              <FieldGrid>
-                <Field label="最小半音数">
-                  <input
-                    className="ui-input"
-                    max={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.max}
-                    min={TRAINING_CONFIG_LIMITS.intervalRange.minSemitone.min}
-                    onChange={(event) =>
-                      dispatchConfigAction({
-                        type: "set_min_semitone",
-                        value: event.target.value,
-                      })
-                    }
-                    type="number"
-                    value={config.intervalRange.minSemitone}
-                  />
-                </Field>
-                <Field label="最大半音数">
-                  <input
-                    className="ui-input"
-                    max={TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.max}
-                    min={Math.max(
-                      TRAINING_CONFIG_LIMITS.intervalRange.maxSemitone.min,
-                      config.intervalRange.minSemitone,
-                    )}
-                    onChange={(event) =>
-                      dispatchConfigAction({
-                        type: "set_max_semitone",
-                        value: event.target.value,
-                      })
-                    }
-                    type="number"
-                    value={config.intervalRange.maxSemitone}
-                  />
-                </Field>
-                <Field label="出題方向">
-                  <select
-                    className="ui-select"
-                    onChange={(event) =>
-                      dispatchConfigAction({
-                        type: "set_direction_mode",
-                        value: event.target.value,
-                      })
-                    }
-                    value={config.directionMode}
-                  >
-                    <option value="mixed">
-                      {formatDirectionModeLabel("mixed")}
-                    </option>
-                    <option value="up_only">
-                      {formatDirectionModeLabel("up_only")}
-                    </option>
-                  </select>
-                </Field>
-                <Field label="基準音モード">
-                  <select
-                    className="ui-select"
-                    onChange={(event) =>
-                      dispatchConfigAction({
-                        type: "set_base_note_mode",
-                        value: event.target.value,
-                      })
-                    }
-                    value={config.baseNoteMode}
-                  >
-                    <option value="random">ランダム</option>
-                    <option value="fixed">固定</option>
-                  </select>
-                </Field>
-              </FieldGrid>
-
-              {config.baseNoteMode === "fixed" ? (
-                <Field label="固定する基準音">
-                  <select
-                    className="ui-select"
-                    onChange={(event) =>
-                      dispatchConfigAction({
-                        type: "set_fixed_base_note",
-                        value: event.target.value,
-                      })
-                    }
-                    value={config.fixedBaseNote ?? "C"}
-                  >
-                    {NOTE_CLASS_OPTIONS.map((note) => (
-                      <option key={note} value={note}>
-                        {note}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              ) : null}
-            </div>
-
-            <div className="ui-form-section">
-              <h3 className="ui-form-section__title">回答スタイル</h3>
-              <label className="ui-checkbox-card">
-                <input
-                  checked={config.includeUnison}
-                  onChange={(event) =>
-                    dispatchConfigAction({
-                      type: "toggle_include_unison",
-                      checked: event.target.checked,
-                    })
-                  }
-                  type="checkbox"
-                />
-                <span>同音を含める</span>
-              </label>
-              <label className="ui-checkbox-card">
-                <input
-                  checked={config.includeOctave}
-                  onChange={(event) =>
-                    dispatchConfigAction({
-                      type: "toggle_include_octave",
-                      checked: event.target.checked,
-                    })
-                  }
-                  type="checkbox"
-                />
-                <span>オクターブを含める</span>
-              </label>
-              <Field label="音程表記の粒度">
-                <select
-                  className="ui-select"
-                  onChange={(event) =>
-                    dispatchConfigAction({
-                      type: "set_interval_granularity",
-                      value:
-                        event.target.value === "aug_dim" ? "aug_dim" : "simple",
-                    })
-                  }
-                  value={config.intervalGranularity}
-                >
-                  <option value="simple">シンプル</option>
-                  <option value="aug_dim">増減あり</option>
-                </select>
-              </Field>
-              <div className="ui-form-chip-list">
-                {viewModel.answerChoiceChips.map((choice) => (
-                  <Chip key={choice.value} tone="teal">
-                    {choice.label}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-          </div>
-
+        <TrainingConfigPanel
+          config={config}
+          onChange={dispatchConfigAction}
+          questionCountOptions={viewModel.questionCountOptions}
+          timeLimitOptions={viewModel.timeLimitOptions}
+          answerChoiceChips={viewModel.answerChoiceChips}
+          onGranularityChange={(value) =>
+            dispatchConfigAction({ type: "set_interval_granularity", value })
+          }
+          onStart={handleStart}
+          startDisabled={isStartBlockedByBootstrap}
+        >
           {bootstrap.isBootstrapPending ? (
             <Notice>保存済み設定を確認しています...</Notice>
           ) : null}
@@ -448,19 +229,7 @@ export function DistanceTrainClient({
           {session.configError ? (
             <Notice tone="error">{session.configError}</Notice>
           ) : null}
-
-          <div className="ui-sticky-actions">
-            <Button
-              block
-              disabled={isStartBlockedByBootstrap}
-              onClick={handleStart}
-              type="button"
-              variant="primary"
-            >
-              開始
-            </Button>
-          </div>
-        </Surface>
+        </TrainingConfigPanel>
       ) : null}
 
       {session.phase === "preparing" && session.activeQuestion ? (
@@ -479,7 +248,7 @@ export function DistanceTrainClient({
       {(session.phase === "playing" || session.phase === "answering") &&
       session.activeQuestion ? (
         <DistanceQuestionPanel
-          answerChoiceValues={viewModel.answerChoiceValues}
+          answerChoiceRows={viewModel.answerChoiceRows}
           direction={session.activeQuestion.question.direction}
           intervalNotationStyle={settings.intervalNotationStyle}
           isPlaybackLocked={session.phase === "playing"}
@@ -520,5 +289,40 @@ export function DistanceTrainClient({
         />
       ) : null}
     </AppShell>
+  );
+}
+
+function DistanceTrainingHeaderMeta(props: {
+  phase: SessionPhase;
+  statusLabel: string | null;
+  runningScoreLabel: string | null;
+}) {
+  if (props.phase === "result") {
+    return props.statusLabel;
+  }
+
+  if (!props.statusLabel && !props.runningScoreLabel) {
+    return null;
+  }
+
+  return (
+    <div className="ui-training-progress-meta">
+      {props.statusLabel ? (
+        <div className="ui-training-progress-meta__item" data-tone="info">
+          <span className="ui-training-progress-meta__label">残り</span>
+          <strong className="ui-training-progress-meta__value">
+            {props.statusLabel}
+          </strong>
+        </div>
+      ) : null}
+      {props.runningScoreLabel ? (
+        <div className="ui-training-progress-meta__item" data-tone="brand">
+          <span className="ui-training-progress-meta__label">スコア</span>
+          <strong className="ui-training-progress-meta__value">
+            {props.runningScoreLabel}
+          </strong>
+        </div>
+      ) : null}
+    </div>
   );
 }

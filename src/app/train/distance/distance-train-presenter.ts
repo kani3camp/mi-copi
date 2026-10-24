@@ -10,6 +10,7 @@ import {
   getDistanceAnswerChoices,
   getDistanceQuestionCount,
 } from "../../../features/training/model/distance-guest.ts";
+import { formatScoreLabel } from "../../../features/training/model/format.ts";
 import { getIntervalLabel } from "../../../features/training/model/interval-notation.ts";
 import type {
   DistanceTrainingConfig,
@@ -47,14 +48,22 @@ export function buildDistanceTrainViewModel(props: {
           createDefaultTimeLimitEndCondition().timeLimitSeconds,
         );
   const answerChoiceValues = getDistanceAnswerChoices(props.config);
+  const answerChoiceRows = splitAnswerChoicesIntoRows(answerChoiceValues);
   const cannotSaveBecauseNoAnswers =
     props.phase === "result" && props.results.length === 0;
+  const liveSummary = props.summary ?? buildDistanceGuestSummary(props.results);
+  const isActiveTrainingPhase =
+    props.phase === "preparing" ||
+    props.phase === "playing" ||
+    props.phase === "answering" ||
+    props.phase === "feedback";
 
   return {
     answerChoiceChips: answerChoiceValues.map((choice) => ({
       label: getIntervalLabel(choice, props.intervalNotationStyle),
       value: choice,
     })),
+    answerChoiceRows,
     answerChoiceValues,
     cannotSaveBecauseNoAnswers,
     headerMeta: buildTrainingHeaderMeta({
@@ -75,7 +84,10 @@ export function buildDistanceTrainViewModel(props: {
       plannedQuestionCount,
     ),
     recentResults: props.results.slice(-3).reverse(),
-    summary: props.summary ?? buildDistanceGuestSummary(props.results),
+    runningScoreLabel: isActiveTrainingPhase
+      ? formatScoreLabel(liveSummary.sessionScore)
+      : null,
+    summary: liveSummary,
     timeLimitOptions,
   };
 }
@@ -89,9 +101,25 @@ function getDistanceHeaderLabel(
     return "結果";
   }
 
-  if (activeQuestionIndex !== null) {
+  if (activeQuestionIndex !== null && plannedQuestionCount > 0) {
     return `${activeQuestionIndex + 1} / ${plannedQuestionCount}`;
   }
 
+  if (activeQuestionIndex !== null) {
+    return `${activeQuestionIndex + 1}`;
+  }
+
   return phase === "config" ? undefined : formatTrainingPhaseLabel(phase);
+}
+
+function splitAnswerChoicesIntoRows(values: number[]): number[][] {
+  if (values.length === 0) {
+    return [];
+  }
+
+  const midpoint = Math.ceil(values.length / 2);
+
+  return [values.slice(0, midpoint), values.slice(midpoint)].filter(
+    (row) => row.length > 0,
+  );
 }

@@ -10,7 +10,7 @@ The core milestones are implemented and the largest remaining risk is unverified
 
 ## References
 
-- `docs/product/ui-system.md`
+- `DESIGN.md`
 - `docs/delivery/acceptance-criteria.md`
 - `docs/plans/2026-03-12-whole-app-design-polish.md`
 

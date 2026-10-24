@@ -2,7 +2,7 @@
 
 Canonical source:
 - This document defines the implementation-facing TypeScript shapes derived from the product docs.
-- Product policy is set by `docs/product/requirements.md`, `docs/product/basic-design.md`, and `docs/product/ui-system.md`.
+- Product policy is set by `docs/product/requirements.md`, `docs/product/basic-design.md`, and `DESIGN.md`.
 - DB-facing field names must stay aligned with `docs/implementation/db-schema.md` and `docs/implementation/api-contracts.md`.
 
 Related docs:

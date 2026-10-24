@@ -2,7 +2,7 @@
 
 ## Goal
 
-Align all user-facing screens with `docs/product/ui-system.md` and replace the current ad-hoc inline MVP styling with a token-driven, mobile-first visual layer, while keeping behavior, routes, data contracts, and training logic unchanged.
+Align all user-facing screens with `DESIGN.md` and replace the current ad-hoc inline MVP styling with a token-driven, mobile-first visual layer, while keeping behavior, routes, data contracts, and training logic unchanged.
 
 ## Why Now
 
@@ -10,7 +10,7 @@ The app already has working flows across training, home, login, settings, stats,
 
 ## References
 
-- `docs/product/ui-system.md`
+- `DESIGN.md`
 - `docs/product/requirements.md`
 - `docs/product/basic-design.md`
 - `docs/delivery/acceptance-criteria.md`

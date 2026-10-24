@@ -1,0 +1,67 @@
+.shell {
+  padding-inline: 16px;
+  gap: 20px;
+}
+.shell :global(.ui-title) {
+  font-size: 26px;
+}
+.shell :global(.ui-page-header) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.shell :global(.ui-page-header__actions) {
+  margin: 0;
+}
+.panel {
+  padding: 16px;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-md);
+  box-shadow: none;
+  background: var(--mc-card);
+  gap: 16px;
+}
+.choice {
+  display: grid;
+  gap: 12px;
+}
+.choice + .choice {
+  border-top: 1px solid var(--mc-line);
+  padding-top: 16px;
+}
+.choice p {
+  margin: 0;
+  color: var(--mc-body);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.accountSummary {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-family: var(--mc-font-text);
+}
+.accountSummary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.name {
+  color: var(--mc-ink);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.email {
+  color: var(--mc-body);
+  font-size: 14px;
+  line-height: 1.6;
+}
+@media (min-width: 768px) {
+  .shell {
+    padding-inline: 32px;
+  }
+  .panel {
+    padding: 24px;
+  }
+}

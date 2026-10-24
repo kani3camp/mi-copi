@@ -1,13 +1,9 @@
+import type { CSSProperties } from "react";
 import type {
   DistanceGuestResult,
   DistanceGuestSummary,
 } from "../../../features/training/model/distance-guest";
-import {
-  formatAccuracyLabel,
-  formatAvgErrorLabel,
-  formatResponseTimeMsLabel,
-  formatScoreLabel,
-} from "../../../features/training/model/format";
+import { formatResponseTimeMsLabel } from "../../../features/training/model/format";
 import {
   formatPitchComparisonSemitoneLabel,
   formatQuestionDirectionLabel,
@@ -20,6 +16,7 @@ import type {
   SessionFinishReason,
 } from "../../../features/training/model/types";
 import type { SaveTrainingSessionResult } from "../../../features/training/server/saveTrainingSession";
+import { AnswerComparison } from "../../ui/answer-comparison";
 import {
   Button,
   Chip,
@@ -31,11 +28,13 @@ import {
 } from "../../ui/primitives";
 import {
   DistanceFeedbackDiagram,
+  FeedbackControls,
+  FeedbackMetrics,
   FeedbackStatusChip,
-  formatFinishReasonLabel,
   MiniStatRow,
   PlaybackButtonPair,
   TrainingResultPersistenceSection,
+  TrainingResultSummary,
 } from "../train-ui-shared";
 
 export function DistanceQuestionPanel(props: {
@@ -44,18 +43,21 @@ export function DistanceQuestionPanel(props: {
   direction: QuestionDirection;
   replayBaseCount: number;
   replayTargetCount: number;
-  answerChoiceValues: number[];
+  answerChoiceRows: number[][];
   intervalNotationStyle: IntervalNotationStyle;
   onReplayBase: () => void;
   onReplayTarget: () => void;
   onAnswer: (value: number) => void;
 }) {
   return (
-    <Surface tone="accent">
+    <Surface tone="accent" className="ui-question-panel">
       <SectionHeader
         title="音を聴いて答える"
-        description="再生ボタンで聞き直しながら、音程名をひとつ選びます。"
-        actions={<Chip tone="teal">回答中</Chip>}
+        actions={
+          <Chip tone="neutral">
+            {formatQuestionDirectionLabel(props.direction)}
+          </Chip>
+        }
       />
       <PlaybackButtonPair
         isPlaybackLocked={props.isPlaybackLocked}
@@ -68,7 +70,6 @@ export function DistanceQuestionPanel(props: {
             id: "direction",
             label: "方向",
             value: formatQuestionDirectionLabel(props.direction),
-            tone: "teal",
           },
           {
             id: "base-replay-count",
@@ -79,22 +80,32 @@ export function DistanceQuestionPanel(props: {
             id: "target-replay-count",
             label: "問題音",
             value: `${props.replayTargetCount}回`,
-            tone: "blue",
           },
         ]}
       />
       <div className="ui-train-answer-grid">
-        {props.answerChoiceValues.map((choice) => (
-          <Button
-            key={choice}
-            type="button"
-            onClick={() => props.onAnswer(choice)}
-            block
-            disabled={props.isPlaybackLocked}
-            variant="secondary"
+        {props.answerChoiceRows.map((row) => (
+          <div
+            key={row.join("-")}
+            className="ui-train-answer-grid__row"
+            style={{ "--answer-columns": row.length } as CSSProperties}
           >
-            {getIntervalLabel(choice, props.intervalNotationStyle)}
-          </Button>
+            {row.map((choice) => (
+              <Button
+                key={choice}
+                type="button"
+                onClick={() => props.onAnswer(choice)}
+                block
+                disabled={props.isPlaybackLocked}
+                variant="secondary"
+                className="ui-train-answer-button"
+              >
+                <span className="ui-train-answer-button__label">
+                  {getIntervalLabel(choice, props.intervalNotationStyle)}
+                </span>
+              </Button>
+            ))}
+          </div>
         ))}
       </div>
     </Surface>
@@ -125,7 +136,7 @@ export function DistanceFeedbackPanel(props: {
   );
 
   return (
-    <Surface tone="elevated">
+    <Surface tone="elevated" className="ui-feedback-panel">
       <SectionHeader
         title="フィードバック"
         actions={
@@ -135,7 +146,7 @@ export function DistanceFeedbackPanel(props: {
         }
       />
 
-      <SummaryBlock>
+      <SummaryBlock className="ui-feedback-answer-block">
         <SummaryStat
           label="正解"
           value={correctIntervalLabel}
@@ -151,48 +162,20 @@ export function DistanceFeedbackPanel(props: {
         answeredSemitones={props.feedbackResult.answeredDistanceSemitones}
       />
 
-      <SummaryBlock>
-        <SummaryStat
-          label="誤差"
-          value={formatPitchComparisonSemitoneLabel({
-            targetMidi: props.feedbackResult.question.targetMidi,
-            answerMidi,
-          })}
-        />
-        <SummaryStat
-          label="回答時間"
-          value={formatResponseTimeMsLabel(props.feedbackResult.responseTimeMs)}
-        />
-        <SummaryStat
-          label="スコア"
-          value={formatScoreLabel(props.feedbackResult.score)}
-        />
-      </SummaryBlock>
+      <FeedbackMetrics
+        targetMidi={props.feedbackResult.question.targetMidi}
+        answerMidi={answerMidi}
+        responseTimeMs={props.feedbackResult.responseTimeMs}
+        score={props.feedbackResult.score}
+      />
 
-      <div className="ui-sticky-actions">
-        <PlaybackButtonPair
-          isPlaybackLocked={false}
-          onReplayBase={props.onReplayBase}
-          onReplayTarget={props.onReplayCorrectTarget}
-          targetLabel="正解音"
-        />
-        <Button
-          type="button"
-          onClick={props.onContinue}
-          variant="primary"
-          block
-        >
-          {props.lastAnsweredWasFinal ? "結果を見る" : "次へ"}
-        </Button>
-        <Button
-          type="button"
-          onClick={props.onEndSession}
-          block
-          variant="ghost"
-        >
-          ここで終了
-        </Button>
-      </div>
+      <FeedbackControls
+        lastAnsweredWasFinal={props.lastAnsweredWasFinal}
+        onReplayBase={props.onReplayBase}
+        onReplayCorrectTarget={props.onReplayCorrectTarget}
+        onContinue={props.onContinue}
+        onEndSession={props.onEndSession}
+      />
     </Surface>
   );
 }
@@ -211,68 +194,13 @@ export function DistanceResultPanel(props: {
   onReset: () => void;
 }) {
   return (
-    <Surface tone="elevated">
-      <SectionHeader
-        title="結果"
-        description="今回の精度と反応速度をまとめました。"
+    <Surface className="ui-training-result">
+      <TrainingResultSummary
+        summary={props.summary}
+        finishReason={props.finishReason}
+        cannotSaveBecauseNoAnswers={props.cannotSaveBecauseNoAnswers}
+        onReset={props.onReset}
       />
-
-      <SummaryBlock>
-        <SummaryStat
-          label="セッションスコア"
-          value={formatScoreLabel(props.summary.sessionScore)}
-          emphasis="primary"
-        />
-        <SummaryStat
-          label="正答率"
-          value={formatAccuracyLabel(props.summary.accuracyRate)}
-        />
-        <SummaryStat label="回答数" value={props.summary.questionCount} />
-        <SummaryStat
-          label="平均誤差"
-          value={formatAvgErrorLabel(props.summary.avgErrorAbs)}
-        />
-        <SummaryStat
-          label="平均回答時間"
-          value={formatResponseTimeMsLabel(props.summary.avgResponseTimeMs)}
-        />
-        <SummaryStat
-          label="終了理由"
-          value={formatFinishReasonLabel(props.finishReason)}
-        />
-      </SummaryBlock>
-
-      {props.recentResults.length > 0 ? (
-        <div className="ui-stack-md">
-          <SectionHeader title="直近の回答" />
-          <div className="ui-list">
-            {props.recentResults.map((result) => (
-              <div
-                key={result.answeredAt}
-                className="ui-list-link ui-list-link--compact"
-              >
-                <strong>問題 {result.question.questionIndex + 1}</strong>
-                <span className="ui-muted">
-                  正解{" "}
-                  {getIntervalLabel(
-                    result.question.distanceSemitones,
-                    props.intervalNotationStyle,
-                  )}{" "}
-                  / 回答{" "}
-                  {getIntervalLabel(
-                    result.answeredDistanceSemitones,
-                    props.intervalNotationStyle,
-                  )}
-                </span>
-                <span className="ui-muted">
-                  {formatDistanceErrorLabel(result)} /{" "}
-                  {formatResponseTimeMsLabel(result.responseTimeMs)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       <TrainingResultPersistenceSection
         isAuthenticated={props.isAuthenticated}
@@ -295,17 +223,35 @@ export function DistanceResultPanel(props: {
         </Notice>
       ) : null}
 
-      <div className="ui-sticky-actions">
-        <div className="ui-stack-sm">
-          <strong>次のセッション</strong>
-          <span className="ui-muted">設定に戻って続けて練習できます。</span>
+      {props.recentResults.length > 0 ? (
+        <div className="ui-stack-md">
+          <SectionHeader title="直近の回答" />
+          <div className="ui-list ui-result-recent-list">
+            {props.recentResults.map((result) => (
+              <div
+                key={result.answeredAt}
+                className="ui-list-link ui-list-link--compact"
+              >
+                <strong>問題 {result.question.questionIndex + 1}</strong>
+                <AnswerComparison
+                  correct={getIntervalLabel(
+                    result.question.distanceSemitones,
+                    props.intervalNotationStyle,
+                  )}
+                  answer={getIntervalLabel(
+                    result.answeredDistanceSemitones,
+                    props.intervalNotationStyle,
+                  )}
+                />
+                <span className="ui-muted">
+                  {formatDistanceErrorLabel(result)} /{" "}
+                  {formatResponseTimeMsLabel(result.responseTimeMs)}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-        <Button type="button" onClick={props.onReset} block variant="primary">
-          {props.cannotSaveBecauseNoAnswers
-            ? "新しいセッションを始める"
-            : "もう一度始める"}
-        </Button>
-      </div>
+      ) : null}
     </Surface>
   );
 }

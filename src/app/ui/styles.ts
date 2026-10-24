@@ -55,7 +55,7 @@ function mapLegacyChipTone(
   tone: ChipTone,
 ): Exclude<ChipTone, "active" | "info" | "error"> {
   if (tone === "active") {
-    return "teal";
+    return "brand";
   }
 
   if (tone === "info") {
