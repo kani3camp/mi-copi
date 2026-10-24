@@ -51,7 +51,9 @@ jobs:
           fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           NODE
       - name: Install all updated dependencies as one peer-compatible set
-        run: npm install
+        run: |
+          rm package-lock.json
+          npm install
       - name: Upgrade existing compatible dependency ranges
         run: npm update
       - name: Report remaining outdated dependencies
