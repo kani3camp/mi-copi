@@ -539,16 +539,30 @@ async function runKeyboardGuestScenario(context, browserConfig) {
       const createOscillator = AudioContextClass.prototype.createOscillator;
       AudioContextClass.prototype.createOscillator = function () {
         window.keyboardAudioProbe.context = this;
+        const audioContext = this;
         const oscillator = createOscillator.call(this);
         const start = oscillator.start;
+        const stop = oscillator.stop;
+        let active = false;
+        const markStopped = () => {
+          if (!active) return;
+          active = false;
+          window.keyboardAudioProbe.active--;
+        };
         oscillator.start = function (...args) {
           window.keyboardAudioProbe.frequencies.push(this.frequency.value);
+          active = true;
           window.keyboardAudioProbe.active++;
           return start.apply(this, args);
         };
-        oscillator.addEventListener("ended", () => {
-          window.keyboardAudioProbe.active--;
-        });
+        oscillator.stop = function (when) {
+          const result = stop.call(this, when);
+          // A cancelled source is disconnected immediately; WebKit may omit its ended event.
+          if (when === undefined || when <= audioContext.currentTime)
+            markStopped();
+          return result;
+        };
+        oscillator.addEventListener("ended", markStopped);
         return oscillator;
       };
     });
