@@ -33,3 +33,5 @@ jobs:
             git commit -m "fix(deps): pin compatible Biome to preserve markdown formatting"
             git push origin HEAD:codex/security-dependencies-20261024
           fi
+
+# Retest after fixing Better Auth lazy cache lint.
