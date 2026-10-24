@@ -524,6 +524,7 @@ async function runKeyboardGuestScenario(context, browserConfig) {
   const page = await context.newPage();
   acceptConfirmDialogs(page);
   const scenario = startScenario(browserConfig, "guest-keyboard");
+  let audioStep = "initial playback";
 
   try {
     await page.addInitScript(() => {
@@ -537,6 +538,7 @@ async function runKeyboardGuestScenario(context, browserConfig) {
       if (!AudioContextClass) return;
       const createOscillator = AudioContextClass.prototype.createOscillator;
       AudioContextClass.prototype.createOscillator = function () {
+        window.keyboardAudioProbe.context = this;
         const oscillator = createOscillator.call(this);
         const start = oscillator.start;
         oscillator.start = function (...args) {
@@ -577,7 +579,8 @@ async function runKeyboardGuestScenario(context, browserConfig) {
       ),
     );
 
-    await startTraining(page);
+    // WebKit requires a real user gesture; element.click() does not unlock audio.
+    await page.getByRole("button", { name: "開始", exact: true }).tap();
     await page.waitForSelector('[data-note][data-reference="true"]');
 
     scenario.checks.push(
@@ -600,8 +603,9 @@ async function runKeyboardGuestScenario(context, browserConfig) {
       ),
     );
 
-    await clickElement(page.locator("[data-note]").nth(2));
+    await page.locator("button[data-note]").nth(2).tap();
     await page.waitForSelector("text=フィードバック");
+    audioStep = "feedback effect";
     await page.waitForFunction(() => window.keyboardAudioProbe.active === 0);
     const feedback = page.locator(".ui-feedback-panel");
     const beforeAudition = await feedback.innerText();
@@ -629,6 +633,7 @@ async function runKeyboardGuestScenario(context, browserConfig) {
     ];
     for (const key of await keys.all()) {
       const note = await key.getAttribute("data-note");
+      audioStep = `${note} audition`;
       const previousCount = await page.evaluate(
         () => window.keyboardAudioProbe.frequencies.length,
       );
@@ -660,6 +665,7 @@ async function runKeyboardGuestScenario(context, browserConfig) {
     );
 
     // A note still sounding must not suppress the next question's two tones.
+    audioStep = "next question";
     await keys.first().tap();
     const beforeNext = await page.evaluate(
       () => window.keyboardAudioProbe.frequencies.length,
@@ -678,6 +684,7 @@ async function runKeyboardGuestScenario(context, browserConfig) {
     );
     await page.locator("button[data-note]:not(:disabled)").first().tap();
     await page.waitForSelector("text=フィードバック");
+    audioStep = "session end";
     await page.waitForFunction(() => window.keyboardAudioProbe.active === 0);
     await page
       .getByRole("button", { name: /を試聴$/ })
@@ -715,7 +722,15 @@ async function runKeyboardGuestScenario(context, browserConfig) {
       ),
     );
   } catch (error) {
-    scenario.failures.push(renderUnexpectedError(error));
+    scenario.failures.push(`${audioStep}: ${renderUnexpectedError(error)}`);
+    scenario.observations.audioProbe = await page
+      .evaluate(() => ({
+        active: window.keyboardAudioProbe?.active,
+        frequencies: window.keyboardAudioProbe?.frequencies,
+        state: window.keyboardAudioProbe?.context?.state,
+        currentTime: window.keyboardAudioProbe?.context?.currentTime,
+      }))
+      .catch(() => null);
   } finally {
     await page.close();
   }
