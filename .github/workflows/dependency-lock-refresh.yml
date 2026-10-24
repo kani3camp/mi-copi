@@ -36,8 +36,10 @@ jobs:
             'better-auth': '1.7.12',
             'drizzle-orm': '0.45.4'
           });
+          delete pkg.devDependencies['@better-auth/cli'];
+          pkg.scripts['auth:generate:schema'] = pkg.scripts['auth:generate:schema'].replace('node node_modules/@better-auth/cli/dist/index.mjs generate', 'auth generate');
           Object.assign(pkg.devDependencies, {
-            '@better-auth/cli': '1.7.12',
+            'auth': '1.7.12',
             'drizzle-kit': '0.31.11',
             '@storybook/addon-a11y': '10.6.3',
             '@storybook/addon-vitest': '10.6.3',
