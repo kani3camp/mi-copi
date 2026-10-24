@@ -4,15 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getDb } from "../db/client";
 import { betterAuthSchema } from "../db/schema/auth";
 
-type AppAuth = ReturnType<typeof betterAuth>;
-
-let authInstance: AppAuth | null = null;
-
-export function getAuth(): AppAuth {
-  if (authInstance) {
-    return authInstance;
-  }
-
+function createAuth() {
   const secret = process.env.BETTER_AUTH_SECRET;
   const baseURL = process.env.BETTER_AUTH_URL;
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
@@ -26,7 +18,7 @@ export function getAuth(): AppAuth {
     throw new Error("BETTER_AUTH_URL is not set.");
   }
 
-  authInstance = betterAuth({
+  return betterAuth({
     database: drizzleAdapter(getDb(), {
       provider: "pg",
       schema: betterAuthSchema,
@@ -44,6 +36,18 @@ export function getAuth(): AppAuth {
           }
         : undefined,
   });
+}
 
-  return authInstance;
+type AppAuth = ReturnType<typeof createAuth>;
+
+let authInstance: AppAuth | null = null;
+
+export function getAuth(): AppAuth {
+  if (authInstance) {
+    return authInstance;
+  }
+
+  const instance = createAuth();
+  authInstance = instance;
+  return instance;
 }

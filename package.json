@@ -5,7 +5,7 @@
     "node": ">=24.22.1 <25"
   },
   "scripts": {
-    "auth:generate:schema": "node -e \"const fs=require('fs'); const path=require('path'); const importPath=path.join(process.cwd(),'src/lib/auth/index.ts').split(path.sep).join('/'); const source='import { getAuth } from \\'' + importPath + '\\';\\nexport const auth = getAuth();\\n'; fs.writeFileSync('/tmp/mi-copi-better-auth.config.ts', source);\" && DATABASE_URL=\"${DATABASE_URL:-postgres://user:password@localhost:5432/mi_copi}\" BETTER_AUTH_SECRET=\"${BETTER_AUTH_SECRET:-test-secret}\" BETTER_AUTH_URL=\"${BETTER_AUTH_URL:-http://localhost:3000}\" GOOGLE_CLIENT_ID=\"${GOOGLE_CLIENT_ID:-test-google-client-id}\" GOOGLE_CLIENT_SECRET=\"${GOOGLE_CLIENT_SECRET:-test-google-client-secret}\" node node_modules/@better-auth/cli/dist/index.mjs generate --config /tmp/mi-copi-better-auth.config.ts --output /tmp/mi-copi-better-auth.generated.ts --yes",
+    "auth:generate:schema": "node -e \"const fs=require('fs'); const path=require('path'); const importPath=path.join(process.cwd(),'src/lib/auth/index.ts').split(path.sep).join('/'); const source='import { getAuth } from \\'' + importPath + '\\';\\nexport const auth = getAuth();\\n'; fs.writeFileSync('/tmp/mi-copi-better-auth.config.ts', source);\" && DATABASE_URL=\"${DATABASE_URL:-postgres://user:password@localhost:5432/mi_copi}\" BETTER_AUTH_SECRET=\"${BETTER_AUTH_SECRET:-test-secret}\" BETTER_AUTH_URL=\"${BETTER_AUTH_URL:-http://localhost:3000}\" GOOGLE_CLIENT_ID=\"${GOOGLE_CLIENT_ID:-test-google-client-id}\" GOOGLE_CLIENT_SECRET=\"${GOOGLE_CLIENT_SECRET:-test-google-client-secret}\" auth generate --config /tmp/mi-copi-better-auth.config.ts --output /tmp/mi-copi-better-auth.generated.ts --yes",
     "db:generate": "DATABASE_URL=\"${DATABASE_URL:-postgres://user:password@localhost:5432/mi_copi}\" node node_modules/drizzle-kit/bin.cjs generate",
     "dev": "next dev",
     "build": "next build",
@@ -27,29 +27,29 @@
     "verify:storybook": "npm run build-storybook && npm run test:storybook"
   },
   "dependencies": {
-    "better-auth": "1.3.8",
-    "drizzle-orm": "0.45.1",
-    "next": "16.1.6",
-    "postgres": "3.4.8",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "better-auth": "1.7.12",
+    "drizzle-orm": "0.45.4",
+    "next": "16.4.3",
+    "postgres": "3.4.9",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@better-auth/cli": "1.3.8",
-    "@biomejs/biome": "^2.4.6",
-    "@storybook/addon-a11y": "^10.2.17",
-    "@storybook/addon-vitest": "^10.2.17",
-    "@storybook/nextjs-vite": "^10.2.17",
-    "@types/node": "24.1.0",
-    "@types/react": "19.2.14",
-    "@types/react-dom": "19.2.3",
-    "@vitest/browser-playwright": "^4.0.18",
-    "@vitest/coverage-v8": "^4.0.18",
-    "drizzle-kit": "0.31.4",
+    "@biomejs/biome": "2.4.6",
+    "@storybook/addon-a11y": "10.6.3",
+    "@storybook/addon-vitest": "10.6.3",
+    "@storybook/nextjs-vite": "10.6.3",
+    "@types/node": "^24.0.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitest/browser-playwright": "4.1.12",
+    "@vitest/coverage-v8": "4.1.12",
+    "auth": "1.7.12",
+    "drizzle-kit": "0.31.11",
     "playwright": "^1.58.2",
-    "storybook": "^10.2.17",
+    "storybook": "10.6.3",
     "typescript": "5.9.3",
-    "vite": "^7.3.1",
-    "vitest": "^4.0.18"
+    "vite": "7.3.7",
+    "vitest": "4.1.12"
   }
 }
