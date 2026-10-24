@@ -148,6 +148,7 @@ function TrainingScreen(props: {
             })}
             lastAnsweredWasFinal={false}
             showLabels={props.showLabels}
+            onPreviewNote={fn()}
             {...handlers}
           />
         )}

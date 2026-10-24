@@ -13,6 +13,7 @@ import {
   getQuestionPlaybackDurationMs,
   type PlaybackKind,
   playFeedbackEffect,
+  playFeedbackNote,
   playQuestionAudio,
 } from "../../../app/train/audio-playback";
 import { createTrainingResultSaveFailureResult } from "../../../lib/async-action-errors";
@@ -117,6 +118,13 @@ export function useTrainingSessionCore<
   const autoSaveAttemptedSessionRef = useRef<string | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const playbackLockRef = useRef(false);
+  const feedbackPreviewRef = useRef<AbortController | null>(null);
+  const stopFeedbackPreview = useCallback(() => {
+    feedbackPreviewRef.current?.abort();
+    feedbackPreviewRef.current = null;
+  }, []);
+
+  useEffect(() => stopFeedbackPreview, [stopFeedbackPreview]);
   const answeringUnlockTimeoutRef = useRef<ReturnType<
     typeof globalThis.setTimeout
   > | null>(null);
@@ -253,6 +261,8 @@ export function useTrainingSessionCore<
         new Date().toISOString(),
       );
 
+      stopFeedbackPreview();
+
       dispatch({
         type: "session_finished",
         endedAt: finalized.endedAt,
@@ -273,6 +283,7 @@ export function useTrainingSessionCore<
     state.deadlineAtMs,
     state.phase,
     state.startedAt,
+    stopFeedbackPreview,
   ]);
 
   useEffect(() => {
@@ -458,6 +469,38 @@ export function useTrainingSessionCore<
     });
   }
 
+  function previewFeedbackNote(midi: number) {
+    const currentState = sessionStateRef.current;
+    if (
+      currentState.phase !== "feedback" ||
+      currentState.config?.mode !== "keyboard" ||
+      !currentState.feedbackResult ||
+      playbackLockRef.current
+    ) {
+      return;
+    }
+
+    const controller = new AbortController();
+    feedbackPreviewRef.current = controller;
+    void playFeedbackNote(
+      midi,
+      audioContextRef,
+      masterVolume,
+      playbackLockRef,
+      controller.signal,
+    )
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setAudioError("音声の再生に失敗しました。そのまま続行できます。");
+        }
+      })
+      .finally(() => {
+        if (feedbackPreviewRef.current === controller) {
+          feedbackPreviewRef.current = null;
+        }
+      });
+  }
+
   function continueAfterFeedback() {
     const adapter = adapterRef.current;
 
@@ -471,6 +514,7 @@ export function useTrainingSessionCore<
     }
 
     if (state.lastAnsweredWasFinal) {
+      stopFeedbackPreview();
       const finalized = finalizeCurrentSession(
         "target_reached",
         state.feedbackResult.answeredAt,
@@ -489,6 +533,8 @@ export function useTrainingSessionCore<
     if (!state.activeQuestion || !state.questionGeneratorState) {
       return;
     }
+
+    stopFeedbackPreview();
 
     const nextQuestion = adapter.takeNextQuestion(
       state.config,
@@ -511,6 +557,8 @@ export function useTrainingSessionCore<
     if (state.phase !== "feedback") {
       return;
     }
+
+    stopFeedbackPreview();
 
     const finalized = finalizeCurrentSession(
       "manual_end",
@@ -551,6 +599,7 @@ export function useTrainingSessionCore<
   }
 
   function resetSession() {
+    stopFeedbackPreview();
     setConfigError(null);
     setAudioError(null);
     setSaveResult(null);
@@ -576,6 +625,7 @@ export function useTrainingSessionCore<
     lastAnsweredWasFinal: state.lastAnsweredWasFinal,
     pendingSaveInput: state.pendingSaveInput,
     phase: state.phase,
+    previewFeedbackNote,
     remainingTimeMs,
     replayBase,
     replayCorrectTarget,

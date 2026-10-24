@@ -37,6 +37,9 @@
 - Enter after a valid answer is submitted.
 - Show the answer outcome for the current question.
 - Append one `QuestionResult` to in-memory session results.
+- In keyboard mode, all displayed keys allow audio-only auditioning, including keys unrelated to the correct or answered key. Reuse the existing volume, timbre, mobile audio resume, and shared playback lock; ignore taps while another sound is playing.
+- Audition MIDI follows the current question's direction from the reference, with the correct key using the exact target MIDI (including octave questions). Auditioning never dispatches an answer or replay-count update and never modifies results or save input.
+- Cancel an active or pending audition on next question, session completion, timeout, reset, or unmount. Playback failure uses the existing inline audio notice and does not prevent progress.
 
 Session time-limit handling:
 

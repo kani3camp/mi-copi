@@ -1,9 +1,81 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-const { buildKeyboardGuestSaveInput, evaluateKeyboardAnswer } = await import(
-  new URL("./keyboard-guest.ts", import.meta.url).href
-);
+const {
+  buildKeyboardGuestSaveInput,
+  evaluateKeyboardAnswer,
+  getKeyboardFeedbackMidi,
+} = await import(new URL("./keyboard-guest.ts", import.meta.url).href);
+
+test("feedback audition covers all chromatic keys in the question direction", () => {
+  const question = {
+    questionIndex: 0,
+    direction: "up" as const,
+    baseNote: "C#" as const,
+    baseMidi: 61,
+    targetNote: "G#" as const,
+    targetMidi: 68,
+    distanceSemitones: 7,
+    notationStyle: "sharp" as const,
+  };
+  const notes = [
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#",
+    "A",
+    "A#",
+    "B",
+  ] as const;
+  assert.deepEqual(
+    notes.map((note) => getKeyboardFeedbackMidi(question, note)),
+    [72, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71],
+  );
+  assert.deepEqual(
+    notes.map((note) =>
+      getKeyboardFeedbackMidi(
+        {
+          ...question,
+          direction: "down",
+          targetMidi: 56,
+          distanceSemitones: 5,
+        },
+        note,
+      ),
+    ),
+    [60, 61, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59],
+  );
+});
+
+test("feedback correct key uses the exact target for unison and both octaves", () => {
+  for (const [direction, targetMidi] of [
+    ["up", 60],
+    ["up", 72],
+    ["down", 48],
+  ] as const) {
+    assert.equal(
+      getKeyboardFeedbackMidi(
+        {
+          questionIndex: 0,
+          direction,
+          baseNote: "C",
+          baseMidi: 60,
+          targetNote: "C",
+          targetMidi,
+          distanceSemitones: Math.abs(targetMidi - 60),
+          notationStyle: "sharp",
+        },
+        "C",
+      ),
+      targetMidi,
+    );
+  }
+});
 
 test("keyboard guest keeps descending exact answers on the lower octave", () => {
   const question = {

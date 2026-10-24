@@ -235,6 +235,8 @@ Time-limit rule:
 ### Keyboard Mode
 - Show the correct note name and the answered note name in text.
 - Distinguish correct key and answered key visually on the keyboard.
+- During per-question feedback, every displayed white or black key can be tapped to audition its pitch using the existing audio settings and playback lock.
+- Auditioning is available only during feedback and must not change committed answers, correctness, scores, response times, replay counts, or saved records. Stop an audition when leaving feedback so it cannot interfere with the next question.
 - Error does not need a signed semitone text label in the MVP if the keyboard relationship is visually clear.
 - Black-key note text may display both sharp and flat forms, e.g. `C#(Db)`.
 - Note-name text should omit octave number in feedback display.
