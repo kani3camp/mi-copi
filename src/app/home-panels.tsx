@@ -84,7 +84,6 @@ function HomeModeEntry(props: {
       href={`/train/${props.mode}`}
       pendingLabel={`${formatTrainingModeLabel(props.mode)}を開いています...`}
       className="ui-home-entry"
-      aria-label={`${formatTrainingModeLabel(props.mode)}の練習を始める`}
     >
       <span className="ui-home-entry__mode">
         {formatTrainingModeLabel(props.mode)}
