@@ -1,0 +1,56 @@
+# Temporary workflow for the security dependency upgrade PR.
+# This file is removed from the branch before the PR is merged.
+name: Refresh dependency lockfile
+
+on:
+  push:
+    branches:
+      - codex/security-dependencies-20261024
+    paths:
+      - .github/workflows/dependency-lock-refresh.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.repository == 'kani3camp/mi-copi'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Update framework and authentication
+        run: npm install --save-exact next@16.4.3 react@19.3.0 react-dom@19.3.0 better-auth@1.7.12
+      - name: Update development tooling security patches
+        run: |
+          npm install --save-dev --save-exact \
+            @better-auth/cli@1.7.12 \
+            @storybook/addon-a11y@10.6.3 \
+            @storybook/addon-vitest@10.6.3 \
+            @storybook/nextjs-vite@10.6.3 \
+            storybook@10.6.3 \
+            vite@7.3.7 \
+            vitest@4.1.12 \
+            @vitest/browser-playwright@4.1.12 \
+            @vitest/coverage-v8@4.1.12
+      - name: Upgrade existing compatible dependency ranges
+        run: npm update
+      - name: Report remaining outdated dependencies
+        run: npm outdated || true
+      - name: Commit updated package and lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "fix(deps): update security-sensitive runtime and tooling packages"
+            git push origin HEAD:codex/security-dependencies-20261024
+          fi
+      - name: Report production vulnerability audit
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
