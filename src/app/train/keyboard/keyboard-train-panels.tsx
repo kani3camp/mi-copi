@@ -111,6 +111,7 @@ export const KeyboardFeedbackPanel = memo(
     onEndSession: () => void;
     onReplayBase: () => void;
     onReplayCorrectTarget: () => void;
+    onPreviewNote: (note: NoteClass) => void;
     onContinue: () => void;
   }) {
     const answerMidi = getTargetMidi(
@@ -123,6 +124,7 @@ export const KeyboardFeedbackPanel = memo(
       <Surface tone="elevated" className="ui-feedback-panel">
         <SectionHeader
           title="フィードバック"
+          description="鍵盤をタップすると音を確認できます。"
           actions={
             <FeedbackStatusChip
               errorSemitones={props.feedbackResult.errorSemitones}
@@ -149,6 +151,7 @@ export const KeyboardFeedbackPanel = memo(
           correctNote={props.feedbackResult.question.targetNote}
           referenceNote={props.feedbackResult.question.baseNote}
           showLabels={props.showLabels}
+          onPreviewNote={props.onPreviewNote}
         />
         <FeedbackMetrics
           targetMidi={props.feedbackResult.question.targetMidi}
@@ -272,6 +275,7 @@ const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
   correctNote: NoteClass;
   referenceNote: NoteClass;
   showLabels: boolean;
+  onPreviewNote: (note: NoteClass) => void;
 }) {
   return (
     <div
@@ -288,10 +292,11 @@ const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
               isAnswered={note === props.answeredNote}
               isCorrect={note === props.correctNote}
               isReference={note === props.referenceNote}
+              onPreviewNote={props.onPreviewNote}
             />
           ))}
         </div>
-        <div className="ui-keyboard-pad__black-row" aria-hidden="true">
+        <div className="ui-keyboard-pad__black-row">
           {BLACK_KEY_LAYOUT.map(({ left, note }) => (
             <KeyboardDisplayKey
               key={note}
@@ -300,6 +305,7 @@ const FeedbackKeyboardView = memo(function FeedbackKeyboardView(props: {
               isAnswered={note === props.answeredNote}
               isCorrect={note === props.correctNote}
               isReference={note === props.referenceNote}
+              onPreviewNote={props.onPreviewNote}
               left={left}
             />
           ))}
@@ -353,13 +359,16 @@ function KeyboardDisplayKey(props: {
   isReference: boolean;
   isCorrect: boolean;
   isAnswered: boolean;
+  onPreviewNote: (note: NoteClass) => void;
   left?: string;
 }) {
   const isExactMatch = props.isCorrect && props.isAnswered;
 
   return (
-    <div
-      aria-hidden="true"
+    <button
+      type="button"
+      aria-label={`${formatKeyboardNoteLabel(props.note)}を試聴`}
+      onClick={() => props.onPreviewNote(props.note)}
       className="ui-keyboard-key"
       data-note={props.note}
       data-black={isBlackKey(props.note) ? "true" : "false"}
@@ -377,7 +386,7 @@ function KeyboardDisplayKey(props: {
         isCorrect={props.isCorrect}
         isAnswered={props.isAnswered}
       />
-    </div>
+    </button>
   );
 }
 

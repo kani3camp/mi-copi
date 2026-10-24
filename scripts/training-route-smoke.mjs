@@ -524,10 +524,54 @@ async function runKeyboardGuestScenario(context, browserConfig) {
   const page = await context.newPage();
   acceptConfirmDialogs(page);
   const scenario = startScenario(browserConfig, "guest-keyboard");
+  let audioStep = "initial playback";
 
   try {
+    await page.addInitScript(() => {
+      const AudioContextClass =
+        window.AudioContext || window.webkitAudioContext;
+      window.keyboardAudioProbe = {
+        frequencies: [],
+        active: 0,
+        available: Boolean(AudioContextClass),
+      };
+      if (!AudioContextClass) return;
+      const createOscillator = AudioContextClass.prototype.createOscillator;
+      AudioContextClass.prototype.createOscillator = function () {
+        window.keyboardAudioProbe.context = this;
+        const audioContext = this;
+        const oscillator = createOscillator.call(this);
+        const start = oscillator.start;
+        const stop = oscillator.stop;
+        let active = false;
+        const markStopped = () => {
+          if (!active) return;
+          active = false;
+          window.keyboardAudioProbe.active--;
+        };
+        oscillator.start = function (...args) {
+          window.keyboardAudioProbe.frequencies.push(this.frequency.value);
+          active = true;
+          window.keyboardAudioProbe.active++;
+          return start.apply(this, args);
+        };
+        oscillator.stop = function (when) {
+          const result = stop.call(this, when);
+          // A cancelled source is disconnected immediately; WebKit may omit its ended event.
+          if (when === undefined || when <= audioContext.currentTime)
+            markStopped();
+          return result;
+        };
+        oscillator.addEventListener("ended", markStopped);
+        return oscillator;
+      };
+    });
     await page.goto(`${BASE_URL}/train/keyboard`);
     await page.waitForLoadState("networkidle");
+    const audioAvailable = await page.evaluate(
+      () => window.keyboardAudioProbe.available,
+    );
+    scenario.observations.audioPlaybackAvailable = audioAvailable;
     await expectVisible(
       page.locator("h2"),
       "出題設定",
@@ -549,7 +593,8 @@ async function runKeyboardGuestScenario(context, browserConfig) {
       ),
     );
 
-    await startTraining(page);
+    // WebKit requires a real user gesture; element.click() does not unlock audio.
+    await page.getByRole("button", { name: "開始", exact: true }).tap();
     await page.waitForSelector('[data-note][data-reference="true"]');
 
     scenario.checks.push(
@@ -572,10 +617,96 @@ async function runKeyboardGuestScenario(context, browserConfig) {
       ),
     );
 
-    await clickElement(page.locator("[data-note]").nth(2));
+    await page.locator("button[data-note]").nth(2).tap();
     await page.waitForSelector("text=フィードバック");
+    audioStep = "feedback effect";
+    await page.waitForFunction(() => window.keyboardAudioProbe.active === 0);
+    const feedback = page.locator(".ui-feedback-panel");
+    const beforeAudition = await feedback.innerText();
+    const keys = feedback.getByRole("button", { name: /を試聴$/ });
+    scenario.checks.push(
+      assertEqual(
+        await keys.count(),
+        12,
+        "all feedback keys are accessible audition buttons",
+      ),
+    );
+    const notes = [
+      "C",
+      "C#",
+      "D",
+      "D#",
+      "E",
+      "F",
+      "F#",
+      "G",
+      "G#",
+      "A",
+      "A#",
+      "B",
+    ];
+    for (const key of await keys.all()) {
+      const note = await key.getAttribute("data-note");
+      audioStep = `${note} audition`;
+      const previousCount = await page.evaluate(
+        () => window.keyboardAudioProbe.frequencies.length,
+      );
+      await key.tap();
+      if (!audioAvailable) continue;
+      await page.waitForFunction(
+        (count) => window.keyboardAudioProbe.frequencies.length > count,
+        previousCount,
+      );
+      const frequency = await page.evaluate(() =>
+        window.keyboardAudioProbe.frequencies.at(-1),
+      );
+      const midi = Math.round(69 + 12 * Math.log2(frequency / 440));
+      scenario.checks.push(
+        assertEqual(
+          notes[((midi % 12) + 12) % 12],
+          note,
+          `${note} feedback tap plays its pitch`,
+        ),
+      );
+      await page.waitForFunction(() => window.keyboardAudioProbe.active === 0);
+    }
+    scenario.checks.push(
+      assertEqual(
+        await feedback.innerText(),
+        beforeAudition,
+        "audition preserves feedback, score and response time",
+      ),
+    );
+
+    // A note still sounding must not suppress the next question's two tones.
+    audioStep = "next question";
+    await keys.first().tap();
+    const beforeNext = await page.evaluate(
+      () => window.keyboardAudioProbe.frequencies.length,
+    );
+    await page.getByRole("button", { name: "次へ", exact: true }).tap();
+    await page.waitForSelector(".ui-question-panel");
+    if (audioAvailable)
+      await page.waitForFunction(
+        (count) =>
+          window.keyboardAudioProbe.frequencies.length >= count + 2 &&
+          window.keyboardAudioProbe.active === 0,
+        beforeNext,
+      );
+    await page.waitForFunction(() =>
+      Boolean(document.querySelector("button[data-note]:not(:disabled)")),
+    );
+    await page.locator("button[data-note]:not(:disabled)").first().tap();
+    await page.waitForSelector("text=フィードバック");
+    audioStep = "session end";
+    await page.waitForFunction(() => window.keyboardAudioProbe.active === 0);
+    await page
+      .getByRole("button", { name: /を試聴$/ })
+      .first()
+      .tap();
     await page.getByRole("button", { name: "ここで終了" }).click();
     await waitForResultPanel(page);
+    await page.waitForFunction(() => window.keyboardAudioProbe.active === 0);
 
     scenario.checks.push(
       assertTextIncludes(
@@ -605,7 +736,15 @@ async function runKeyboardGuestScenario(context, browserConfig) {
       ),
     );
   } catch (error) {
-    scenario.failures.push(renderUnexpectedError(error));
+    scenario.failures.push(`${audioStep}: ${renderUnexpectedError(error)}`);
+    scenario.observations.audioProbe = await page
+      .evaluate(() => ({
+        active: window.keyboardAudioProbe?.active,
+        frequencies: window.keyboardAudioProbe?.frequencies,
+        state: window.keyboardAudioProbe?.context?.state,
+        currentTime: window.keyboardAudioProbe?.context?.currentTime,
+      }))
+      .catch(() => null);
   } finally {
     await page.close();
   }

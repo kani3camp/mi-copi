@@ -144,6 +144,34 @@ export async function playFeedbackEffect(
   });
 }
 
+export async function playFeedbackNote(
+  midi: number,
+  audioContextRef: MutableRefObject<AudioContext | null>,
+  masterVolume: number,
+  playbackLockRef: MutableRefObject<boolean>,
+  signal: AbortSignal,
+): Promise<boolean> {
+  return runGuardedPlayback(
+    playbackLockRef,
+    async () => {
+      // Create/resume in the tap handler's call stack for mobile audio unlock.
+      const audioContext = await getAudioContext(audioContextRef);
+      if (signal.aborted) {
+        return;
+      }
+
+      await playTone(
+        audioContext,
+        getPlaybackFrequencyFromMidi(midi),
+        NOTE_DURATION_SECONDS,
+        masterVolume,
+        signal,
+      );
+    },
+    signal,
+  );
+}
+
 export function getPlaybackFrequencyFromMidi(midi: number): number {
   return transposeFrequency(getFrequencyFromMidi(midi));
 }
@@ -213,6 +241,7 @@ function playTone(
   frequency: number,
   durationSeconds: number,
   masterVolume: number,
+  signal?: AbortSignal,
 ): Promise<void> {
   return new Promise((resolve) => {
     const oscillator = audioContext.createOscillator();
@@ -233,25 +262,47 @@ function playTone(
     gainNode.connect(audioContext.destination);
     oscillator.start(now);
     oscillator.stop(now + durationSeconds);
-    oscillator.onended = () => resolve();
+    const finish = () => {
+      signal?.removeEventListener("abort", cancel);
+      oscillator.disconnect();
+      gainNode.disconnect();
+      resolve();
+    };
+    const cancel = () => {
+      oscillator.stop();
+      finish();
+    };
+    oscillator.onended = finish;
+    signal?.addEventListener("abort", cancel, { once: true });
   });
 }
 
 async function runGuardedPlayback(
   playbackLockRef: MutableRefObject<boolean>,
   playback: () => Promise<void>,
+  signal?: AbortSignal,
 ): Promise<boolean> {
-  if (playbackLockRef.current) {
+  if (playbackLockRef.current || signal?.aborted) {
     return false;
   }
 
   playbackLockRef.current = true;
+  let released = false;
+  const release = () => {
+    if (released) {
+      return;
+    }
+    released = true;
+    playbackLockRef.current = false;
+  };
+  signal?.addEventListener("abort", release, { once: true });
 
   try {
     await playback();
     return true;
   } finally {
-    playbackLockRef.current = false;
+    signal?.removeEventListener("abort", release);
+    release();
   }
 }
 

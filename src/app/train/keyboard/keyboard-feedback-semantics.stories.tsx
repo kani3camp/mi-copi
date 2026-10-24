@@ -7,6 +7,7 @@ import { createKeyboardResult } from "../train-story-fixtures";
 import { KeyboardFeedbackPanel } from "./keyboard-train-panels";
 
 const handlers = {
+  onPreviewNote: fn(),
   onEndSession: fn(),
   onReplayBase: fn(),
   onReplayCorrectTarget: fn(),
