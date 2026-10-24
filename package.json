@@ -35,7 +35,7 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.6",
+    "@biomejs/biome": "2.4.6",
     "@storybook/addon-a11y": "10.6.3",
     "@storybook/addon-vitest": "10.6.3",
     "@storybook/nextjs-vite": "10.6.3",
@@ -44,12 +44,12 @@
     "@types/react-dom": "19.3.0",
     "@vitest/browser-playwright": "4.1.12",
     "@vitest/coverage-v8": "4.1.12",
+    "auth": "1.7.12",
     "drizzle-kit": "0.31.11",
     "playwright": "^1.58.2",
     "storybook": "10.6.3",
     "typescript": "5.9.3",
     "vite": "7.3.7",
-    "vitest": "4.1.12",
-    "auth": "1.7.12"
+    "vitest": "4.1.12"
   }
 }
