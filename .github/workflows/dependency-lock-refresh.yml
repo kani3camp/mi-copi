@@ -31,16 +31,20 @@ jobs:
           const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
           Object.assign(pkg.dependencies, {
             'next': '16.4.3',
-            'react': '19.3.0',
-            'react-dom': '19.3.0',
+            'react': '19.3.1',
+            'react-dom': '19.3.1',
             'better-auth': '1.7.12',
-            'drizzle-orm': '0.45.4'
+            'drizzle-orm': '0.45.4',
+            'postgres': '3.4.9'
           });
           delete pkg.devDependencies['@better-auth/cli'];
           pkg.scripts['auth:generate:schema'] = pkg.scripts['auth:generate:schema'].replace('node node_modules/@better-auth/cli/dist/index.mjs generate', 'auth generate');
           Object.assign(pkg.devDependencies, {
             'auth': '1.7.12',
             'drizzle-kit': '0.31.11',
+            '@types/react': '19.3.0',
+            '@types/react-dom': '19.3.0',
+            '@types/node': '^24.0.0',
             '@storybook/addon-a11y': '10.6.3',
             '@storybook/addon-vitest': '10.6.3',
             '@storybook/nextjs-vite': '10.6.3',
