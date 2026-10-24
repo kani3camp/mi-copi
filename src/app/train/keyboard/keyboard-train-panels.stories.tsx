@@ -19,6 +19,7 @@ interface KeyboardPanelStoryArgs {
   onAnswer: (note: string) => void;
   onEndSession: () => void;
   onReplayCorrectTarget: () => void;
+  onPreviewNote: (note: string) => void;
   onContinue: () => void;
   onRetrySave: () => void;
   onReset: () => void;
@@ -175,13 +176,16 @@ export const FeedbackIncorrect: Story = {
       onEndSession={args.onEndSession}
       onReplayBase={args.onReplayBase}
       onReplayCorrectTarget={args.onReplayCorrectTarget}
+      onPreviewNote={args.onPreviewNote}
       onContinue={args.onContinue}
     />
   ),
   args: {
+    onAnswer: fn(),
     onReplayBase: fn(),
     onEndSession: fn(),
     onReplayCorrectTarget: fn(),
+    onPreviewNote: fn(),
     onContinue: fn(),
   },
   play: async ({ args, canvasElement }) => {
@@ -206,6 +210,16 @@ export const FeedbackIncorrect: Story = {
       "結果を見る",
       "ここで終了",
     ]);
+    const keys = canvas.getAllByRole("button", { name: /を試聴$/ });
+    await expect(keys).toHaveLength(12);
+    for (const key of keys) {
+      await userEvent.click(key);
+      await expect(args.onPreviewNote).toHaveBeenLastCalledWith(
+        key.getAttribute("data-note"),
+      );
+    }
+    await expect(args.onPreviewNote).toHaveBeenCalledTimes(12);
+    await expect(args.onAnswer).not.toHaveBeenCalled();
     await userEvent.click(canvas.getByRole("button", { name: "基準音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "正解音を再生" }));
     await userEvent.click(canvas.getByRole("button", { name: "結果を見る" }));
@@ -213,6 +227,35 @@ export const FeedbackIncorrect: Story = {
     await expect(args.onReplayBase).toHaveBeenCalledTimes(1);
     await expect(args.onReplayCorrectTarget).toHaveBeenCalledTimes(1);
     await expect(args.onContinue).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const FeedbackHiddenLabels: Story = {
+  ...FeedbackIncorrect,
+  render: (args) => (
+    <KeyboardFeedbackPanel
+      feedbackResult={createKeyboardResult()}
+      lastAnsweredWasFinal={false}
+      showLabels={false}
+      onEndSession={args.onEndSession}
+      onReplayBase={args.onReplayBase}
+      onReplayCorrectTarget={args.onReplayCorrectTarget}
+      onPreviewNote={args.onPreviewNote}
+      onContinue={args.onContinue}
+    />
+  ),
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvasElement.querySelector(".ui-keyboard-key__label"),
+    ).toBeNull();
+    await expect(
+      canvas.getAllByRole("button", { name: /を試聴$/ }),
+    ).toHaveLength(12);
+    const blackKey = canvas.getByRole("button", { name: "C# / Dbを試聴" });
+    blackKey.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onPreviewNote).toHaveBeenCalledWith("C#");
   },
 };
 

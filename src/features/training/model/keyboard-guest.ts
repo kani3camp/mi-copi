@@ -73,6 +73,18 @@ export function getKeyboardAnswerChoices(): NoteClass[] {
   return NOTE_CLASSES;
 }
 
+export function getKeyboardFeedbackMidi(
+  question: Question,
+  note: NoteClass,
+): number {
+  return getAnsweredMidi(
+    question.baseMidi,
+    note,
+    question.direction,
+    question.targetMidi,
+  );
+}
+
 export function validateKeyboardTrainingConfig(
   config: KeyboardTrainingConfig,
 ): string | null {

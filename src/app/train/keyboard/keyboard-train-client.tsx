@@ -6,6 +6,7 @@ import { useCallback, useReducer, useState } from "react";
 import { useGlobalUserSettings } from "../../../features/settings/client/global-user-settings-provider";
 import { useTrainingSessionCore } from "../../../features/training/client/use-training-session-core";
 import { getTrainingModeTone } from "../../../features/training/model/format";
+import { getKeyboardFeedbackMidi } from "../../../features/training/model/keyboard-guest";
 import type {
   KeyboardTrainingConfig,
   NoteClass,
@@ -298,6 +299,13 @@ export function KeyboardTrainClient({
           onEndSession={handleEndSession}
           onReplayBase={session.replayBase}
           onReplayCorrectTarget={session.replayCorrectTarget}
+          onPreviewNote={(note) => {
+            if (session.feedbackResult) {
+              session.previewFeedbackNote(
+                getKeyboardFeedbackMidi(session.feedbackResult.question, note),
+              );
+            }
+          }}
           showLabels={settings.keyboardNoteLabelsVisible}
         />
       ) : null}
