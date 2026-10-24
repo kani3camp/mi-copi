@@ -43,5 +43,11 @@ type AppAuth = ReturnType<typeof createAuth>;
 let authInstance: AppAuth | null = null;
 
 export function getAuth(): AppAuth {
-  return (authInstance ??= createAuth());
+  if (authInstance) {
+    return authInstance;
+  }
+
+  const instance = createAuth();
+  authInstance = instance;
+  return instance;
 }
