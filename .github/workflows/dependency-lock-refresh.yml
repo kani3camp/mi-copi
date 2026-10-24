@@ -1,0 +1,35 @@
+name: Pin Biome for backward-compatible security upgrade
+
+on:
+  push:
+    branches:
+      - codex/security-dependencies-20261024
+    paths:
+      - .github/workflows/dependency-lock-refresh.yml
+
+permissions:
+  contents: write
+
+jobs:
+  pin-biome:
+    if: github.repository == 'kani3camp/mi-copi'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Keep existing Biome formatting contract
+        run: npm install --save-dev --save-exact @biomejs/biome@2.4.6
+      - name: Verify formatting on unchanged docs
+        run: npm run check
+      - name: Commit patched lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "fix(deps): pin compatible Biome to preserve markdown formatting"
+            git push origin HEAD:codex/security-dependencies-20261024
+          fi
